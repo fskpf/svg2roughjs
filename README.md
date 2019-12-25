@@ -9,7 +9,7 @@ It's an ES6 module, so you can run `npm pack` and depend on the tar ball to impo
 
 ```
   "dependencies": {
-    "svg2roughjs": "../svg2roughjs-1.0.0.tgz"
+    "svg2roughjs": "<path-to>/svg2roughjs-<version>.tgz"
   },
 ```
 

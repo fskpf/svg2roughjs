@@ -4,14 +4,13 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "preinstall": "cd ../ && npm pack",
     "start": "webpack-dev-server --open",
     "build": "webpack"
   },
   "author": "Fabian Schwarzkopf",
   "license": "MIT",
   "dependencies": {
-    "svg2roughjs": "../svg2roughjs-1.0.0.tgz"
+    "svg2roughjs": "../"
   },
   "devDependencies": {
     "prettier": "^1.19.1",
