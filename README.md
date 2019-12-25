@@ -28,7 +28,7 @@ svg2roughjs.svg = svg // or maybe use the DOMParser to load an SVG file instead
 The `roughConfig` property may be used to pass additional Rough.js style properties , e.g. to change the fill-style, roughness or bowing, as shown in the `sample-application`. 
 
 ## Sample Images
-These images are taken from the `sample-application` which contains the original input SVG files.
+These images are taken from the `sample-application` which contains the original input SVG files (created with [yEd Live](https://www.yworks.com/yed-live)).
 <img src="./sample-images/hierarchical-sample.png" width="600">
 <img src="./sample-images/bpmn-sample.png" width="600">
 <img src="./sample-images/movies-sample.png" width="600">
