@@ -1,9 +1,21 @@
 {
   "name": "svg2roughjs",
   "version": "1.0.0",
-  "description": "Leverages Rough.js to convert SVGs to a hand-drawn image",
+  "description": "Leverages Rough.js to convert SVGs to a hand-drawn, sketchy representation",
   "main": "./index.js",
   "author": "Fabian Schwarzkopf",
+  "homepage": "https://github.com/fskpf/svg2roughjs#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fskpf/svg2roughjs.git"
+  },
+  "keywords": [
+    "svg",
+    "roughjs",
+    "javascript",
+    "hand-drawn",
+    "sketch"
+  ],
   "license": "MIT",
   "dependencies": {
     "roughjs": "^3.1.0",
