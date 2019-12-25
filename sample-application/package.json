@@ -1,0 +1,23 @@
+{
+  "name": "svg2roughjs-sample",
+  "description": "A simple sample application to test and try svg2roughjs",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "preinstall": "cd ../ && npm pack",
+    "start": "webpack-dev-server --open",
+    "build": "webpack"
+  },
+  "author": "Fabian Schwarzkopf",
+  "license": "MIT",
+  "dependencies": {
+    "svg2roughjs": "../svg2roughjs-1.0.0.tgz"
+  },
+  "devDependencies": {
+    "prettier": "^1.19.1",
+    "raw-loader": "^4.0.0",
+    "webpack": "^4.41.4",
+    "webpack-cli": "^3.3.10",
+    "webpack-dev-server": "^3.10.1"
+  }
+}

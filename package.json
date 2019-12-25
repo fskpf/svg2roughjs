@@ -1,0 +1,16 @@
+{
+  "name": "svg2roughjs",
+  "version": "1.0.0",
+  "description": "Leverages Rough.js to convert SVGs to a hand-drawn image",
+  "main": "./index.js",
+  "author": "Fabian Schwarzkopf",
+  "license": "MIT",
+  "dependencies": {
+    "roughjs": "^3.1.0",
+    "svg-pathdata": "^5.0.2",
+    "tinycolor2": "^1.4.1"
+  },
+  "devDependencies": {
+    "prettier": "^1.19.1"
+  }
+}

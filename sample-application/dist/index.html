@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>title</title>
+  <style>
+    body {
+      position: relative;
+    }
+    #preview {
+      position: relative;
+    }
+    #input {
+      position: absolute;
+      top: 0;
+      left: 0;
+      opacity: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <select id="sample-select">
+    <option value="bpmn1">bpmn1.svg</option>
+    <option value="computer-network">computer-network.svg</option>
+    <option value="flowchart4">flowchart4.svg</option>
+    <option value="hierarchical1">hierarchical1.svg</option>
+    <option value="hierarchical2">hierarchical2.svg</option>
+    <option value="mindmap">mindmap.svg</option>
+    <option value="singlemovie">singlemovie.svg</option>
+    <option value="movies">movies.svg</option>
+    <option value="organic1">organic1.svg</option>
+    <option value="organic2">organic2.svg</option>
+    <option value="tree1">tree1.svg</option>
+    <option value="venn">venn.svg</option>
+  </select>
+  <button onclick="opacity(0)">Opacity 0</button>
+  <button onclick="opacity(0.3)">Opacity 0.3</button>
+  <button onclick="opacity(1)">Opacity 1</button>
+
+  <select id="fill-style">
+    <option value="hachure">hachure</option>
+    <option value="solid">solid</option>
+    <option value="zigzag">zigzag</option>
+    <option value="cross-hatch">cross-hatch</option>
+    <option value="dots">dots</option>
+    <option value="sunburst">sunburst</option>
+    <option value="dashed">dashed</option>
+    <option value="zigzag-line">zigzag-line</option>
+  </select>
+
+  <br/>
+  <input id="roughness-input" type="range" value="1" min="0" max="15" step="1">
+  <label for="roughness-input" style="margin-right: 2em;">Roughness</label>
+  <input id="bowing-input" type="range" value="1" min="0" max="15" step="1">
+  <label for="bowing-input">Bowing</label>
+
+  <div id="preview">
+    <div id="output"></div>
+    <div id="input"></div>
+  </div>
+
+  <script>
+    function opacity(value) {
+      document.getElementById('input').style.opacity = value
+    }
+  </script>
+  <script src="main.js"></script>
+</body>
+
+</html>
