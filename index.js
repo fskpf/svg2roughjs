@@ -34,8 +34,8 @@ export default class Svg2Roughjs {
     if (this.$svg !== svg) {
       this.$svg = svg
 
-      this.width = svg.width.baseVal.value || 300
-      this.height = svg.height.baseVal.value || 150
+      this.width = svg.width ? svg.width.baseVal.value : 300
+      this.height = svg.height ? svg.height.baseVal.value : 150
       this.canvas.width = this.width
       this.canvas.height = this.height
 
@@ -417,7 +417,7 @@ export default class Svg2Roughjs {
    * @param {SVGTransform?} svgTransform
    */
   drawPolyline(polyline, svgTransform) {
-    const points = [...polyline.points]
+    const points = polyline.points ? [...polyline.points] : []
     const transformed = points.map(p => {
       const pt = this.applyMatrix(p, svgTransform)
       return [pt.x, pt.y]
@@ -430,7 +430,7 @@ export default class Svg2Roughjs {
    * @param {SVGTransform?} svgTransform
    */
   drawPolygon(polygon, svgTransform) {
-    const points = [...polygon.points]
+    const points = polygon.points ? [...polygon.points] : []
     const transformed = points.map(p => {
       const pt = this.applyMatrix(p, svgTransform)
       return [pt.x, pt.y]
@@ -443,10 +443,10 @@ export default class Svg2Roughjs {
    * @param {SVGTransform?} svgTransform
    */
   drawEllipse(ellipse, svgTransform) {
-    const cx = ellipse.cx.baseVal.value
-    const cy = ellipse.cy.baseVal.value
-    const rx = ellipse.rx.baseVal.value
-    const ry = ellipse.ry.baseVal.value
+    const cx = ellipse.cx ? ellipse.cx.baseVal.value : 0
+    const cy = ellipse.cy ? ellipse.cy.baseVal.value : 0
+    const rx = ellipse.rx ? ellipse.rx.baseVal.value : 0
+    const ry = ellipse.ry ? ellipse.ry.baseVal.value : 0
     const center = this.applyMatrix(new Point(cx, cy), svgTransform)
     // transform a point on the ellipse to get the transformed radius
     const radiusPoint = this.applyMatrix(new Point(cx + rx, cy + ry), svgTransform)
@@ -466,9 +466,9 @@ export default class Svg2Roughjs {
    * @param {SVGTransform?} svgTransform
    */
   drawCircle(circle, svgTransform) {
-    const cx = circle.cx.baseVal.value
-    const cy = circle.cy.baseVal.value
-    const r = circle.r.baseVal.value
+    const cx = circle.cx ? circle.cx.baseVal.value : 0
+    const cy = circle.cy ? circle.cy.baseVal.value : 0
+    const r = circle.r ? circle.r.baseVal.value : 0
     const center = this.applyMatrix(new Point(cx, cy), svgTransform)
     // transform a point on the ellipse to get the transformed radius
     const radiusPoint = this.applyMatrix(new Point(cx + r, cy + r), svgTransform)
@@ -482,11 +482,11 @@ export default class Svg2Roughjs {
    */
   drawLine(line, svgTransform) {
     const p1 = this.applyMatrix(
-      new Point(line.x1.baseVal.value, line.y1.baseVal.value),
+      new Point(line.x1 ? line.x1.baseVal.value : 0, line.y1 ? line.y1.baseVal.value : 0),
       svgTransform
     )
     const p2 = this.applyMatrix(
-      new Point(line.x2.baseVal.value, line.y2.baseVal.value),
+      new Point(line.x2 ? line.x2.baseVal.value : 0, line.y2 ? line.y2.baseVal.value : 0),
       svgTransform
     )
     this.rc.line(p1.x, p1.y, p2.x, p2.y, this.parseStyleConfig(line))
@@ -629,10 +629,10 @@ export default class Svg2Roughjs {
    * @param {SVGTransform?} svgTransform
    */
   drawRect(rect, svgTransform) {
-    const x = rect.x.baseVal.value
-    const y = rect.y.baseVal.value
-    const width = rect.width.baseVal.value
-    const height = rect.height.baseVal.value
+    const x = rect.x ? rect.x.baseVal.value : 0
+    const y = rect.y ? rect.y.baseVal.value : 0
+    const width = rect.width ? rect.width.baseVal.value : 0
+    const height = rect.height ? rect.height.baseVal.value : 0
     const p1 = this.applyMatrix(new Point(x, y), svgTransform)
     const p2 = this.applyMatrix(new Point(x + width, y + height), svgTransform)
     this.rc.rectangle(p1.x, p1.y, p2.x - p1.x, p2.y - p1.y, this.parseStyleConfig(rect))

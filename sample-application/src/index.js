@@ -14,17 +14,28 @@ import SAMPLE_SINGLE_MOVIE from '../public/singlemovie.svg'
 import Svg2Roughjs from 'svg2roughjs'
 
 function loadSvg(svg2roughjs, fileContent) {
+  const inputElement = document.getElementById('input')
+
   const parser = new DOMParser()
+  const parsererrorNS = parser
+    .parseFromString('INVALID', 'text/xml')
+    .getElementsByTagName('parsererror')[0].namespaceURI
   const doc = parser.parseFromString(fileContent, 'image/svg+xml')
+
   const svg = doc.firstElementChild
 
-  const inputElement = document.getElementById('input')
   while (inputElement.childElementCount > 0) {
     inputElement.removeChild(inputElement.firstElementChild)
   }
   inputElement.appendChild(svg)
 
-  svg2roughjs.svg = svg
+  if (doc.getElementsByTagNameNS(parsererrorNS, 'parsererror').length > 0) {
+    console.error('Error parsing XML')
+    inputElement.style.opacity = 1
+  } else {
+    inputElement.style.opacity = 0
+    svg2roughjs.svg = svg
+  }
 }
 
 function run() {
