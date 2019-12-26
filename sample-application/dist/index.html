@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>title</title>
+  <title>Svg2Rough.js Sample</title>
   <style>
     body {
       position: relative;
@@ -21,6 +21,8 @@
 </head>
 
 <body>
+  <h2><a href="https://github.com/fskpf/svg2roughjs" target="_blank">Svg2Rough.js on GitHub</a></h1>
+  <input type="file" id="file-chooser" accept="image/svg+xml">
   <select id="sample-select">
     <option value="bpmn1">bpmn1.svg</option>
     <option value="computer-network">computer-network.svg</option>
@@ -38,8 +40,12 @@
   <button onclick="opacity(0)">Opacity 0</button>
   <button onclick="opacity(0.3)">Opacity 0.3</button>
   <button onclick="opacity(1)">Opacity 1</button>
+  <button id="download-btn">Download Result</button>
 
-  <select id="fill-style">
+  <br/>
+
+  <label for="fill-style">Fill Style</label>
+  <select id="fill-style" style="margin-right: 2em;">
     <option value="hachure">hachure</option>
     <option value="solid">solid</option>
     <option value="zigzag">zigzag</option>
@@ -50,7 +56,6 @@
     <option value="zigzag-line">zigzag-line</option>
   </select>
 
-  <br/>
   <input id="roughness-input" type="range" value="1" min="0" max="15" step="1">
   <label for="roughness-input" style="margin-right: 2em;">Roughness</label>
   <input id="bowing-input" type="range" value="1" min="0" max="15" step="1">

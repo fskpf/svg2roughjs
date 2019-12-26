@@ -34,8 +34,8 @@ export default class Svg2Roughjs {
     if (this.$svg !== svg) {
       this.$svg = svg
 
-      this.width = svg.width.baseVal.value
-      this.height = svg.height.baseVal.value
+      this.width = svg.width.baseVal.value || 300
+      this.height = svg.height.baseVal.value || 150
       this.canvas.width = this.width
       this.canvas.height = this.height
 

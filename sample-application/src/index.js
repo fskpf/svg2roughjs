@@ -13,6 +13,20 @@ import SAMPLE_SINGLE_MOVIE from '../public/singlemovie.svg'
 
 import Svg2Roughjs from 'svg2roughjs'
 
+function loadSvg(svg2roughjs, fileContent) {
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(fileContent, 'image/svg+xml')
+  const svg = doc.firstElementChild
+
+  const inputElement = document.getElementById('input')
+  while (inputElement.childElementCount > 0) {
+    inputElement.removeChild(inputElement.firstElementChild)
+  }
+  inputElement.appendChild(svg)
+
+  svg2roughjs.svg = svg
+}
+
 function run() {
   const svg2roughjs = new Svg2Roughjs('#output')
   const sampleSelect = document.getElementById('sample-select')
@@ -57,18 +71,12 @@ function run() {
         break
     }
 
-    const parser = new DOMParser()
-    const doc = parser.parseFromString(sampleString, 'image/svg+xml')
-    const svg = doc.firstElementChild
-
-    const inputElement = document.getElementById('input')
-    while (inputElement.childElementCount > 0) {
-      inputElement.removeChild(inputElement.firstElementChild)
-    }
-    inputElement.appendChild(svg)
-
-    svg2roughjs.svg = svg
+    loadSvg(svg2roughjs, sampleString)
   })
+
+  // pre-select a sample
+  sampleSelect.selectedIndex = 4
+  sampleSelect.dispatchEvent(new Event('change'))
 
   const fillStyleSelect = document.getElementById('fill-style')
   const roughnessInput = document.getElementById('roughness-input')
@@ -96,9 +104,43 @@ function run() {
     }
   })
 
-  // pre-select a sample
-  sampleSelect.selectedIndex = 4
-  sampleSelect.dispatchEvent(new Event('change'))
+  const fileInput = document.getElementById('file-chooser')
+  fileInput.addEventListener('change', e => {
+    const files = fileInput.files
+    if (files.length > 0) {
+      const file = files[0]
+      const reader = new FileReader()
+      reader.readAsText(file)
+      reader.addEventListener('load', () => {
+        loadSvg(svg2roughjs, reader.result)
+      })
+    }
+  })
+
+  const downloadBtn = document.getElementById('download-btn')
+  downloadBtn.addEventListener('click', () => {
+    // we add a white background for the download
+    const canvas = document.querySelector('canvas')
+    const canvasClone = canvas.cloneNode()
+
+    canvasClone.width = canvas.width
+    canvasClone.height = canvas.height
+
+    // add white background
+    const ctx = canvasClone.getContext('2d')
+    ctx.fillStyle = 'white'
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+    // transfer content
+    ctx.drawImage(canvas, 0, 0)
+
+    // download file
+    const image = canvasClone.toDataURL('image/png', 1.0).replace('image/png', 'image/octet-stream')
+    const link = document.createElement('a')
+    link.download = 'svg2roughjs.png'
+    link.href = image
+    link.click()
+  })
 }
 
 run()
