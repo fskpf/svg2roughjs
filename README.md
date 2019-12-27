@@ -6,8 +6,14 @@ Try the sample application [here](https://fskpf.github.io/).
 
 Note: Labels are currently not supported.
 
-## Usage
-It's an ES6 module, so you can run `npm pack` and depend on the tar ball to import `Svg2Roughjs`.
+## Installation
+Just install it from the NPM registry with
+
+```
+npm install --save svg2roughjs
+```
+
+or pack it yourself with `npm pack` and depend on the tar ball to import `Svg2Roughjs`.
 
 ```
   "dependencies": {
@@ -15,6 +21,7 @@ It's an ES6 module, so you can run `npm pack` and depend on the tar ball to impo
   },
 ```
 
+## Usage
 For example see `/sample-application/` which is a simple web application with controls to load some sample SVG files and change some of Rough.js parameters.
 
 Then you can import it as usual
