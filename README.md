@@ -1,10 +1,10 @@
+[![npm version](https://badge.fury.io/js/svg2roughjs.svg)](https://badge.fury.io/js/svg2roughjs)
+
 # svg2rough.js
 
 Utilizes [Rough.js](https://github.com/pshihn/rough) to convert an SVG to a hand-drawn visualization.
 
 Try the sample application [here](https://fskpf.github.io/).
-
-Note: Labels are currently not supported.
 
 ## Installation
 Just install it from the NPM registry with
