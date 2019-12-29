@@ -69,6 +69,27 @@ export default class Svg2Roughjs {
   }
 
   /**
+   * Set a font-family for the rendering of text elements.
+   * If set to `null`, then the font-family of the SVGTextElement is used.
+   * By default, 'Comic Sans MS, sans-serif' is used.
+   * @param {string | null}
+   */
+  set fontFamily(fontFamily) {
+    if (this.$fontFamily !== fontFamily) {
+      this.$fontFamily = fontFamily
+      this.redraw()
+    }
+  }
+
+  /**
+   * The font-family that is used for rendering of text elements.
+   * If set to `null`, then the font-family of the SVGTextElement is used.
+   */
+  get fontFamily() {
+    return this.$fontFamily
+  }
+
+  /**
    * @param {string} selector
    * @param {object?} roughConfig Config object passed to the Rough.js ctor
    */
@@ -83,11 +104,12 @@ export default class Svg2Roughjs {
     canvas.height = this.height
     container.appendChild(canvas)
     this.canvas = canvas
+    this.ctx = canvas.getContext('2d')
+    this.$fontFamily = 'Comic Sans MS, sans-serif'
   }
 
   clearCanvas() {
-    const ctx = this.canvas.getContext('2d')
-    ctx.clearRect(0, 0, this.width, this.height)
+    this.ctx.clearRect(0, 0, this.width, this.height)
   }
 
   redraw() {
@@ -409,6 +431,9 @@ export default class Svg2Roughjs {
       case 'polygon':
         this.drawPolygon(element, svgTransform)
         break
+      case 'text':
+        this.drawText(element, svgTransform)
+        break
     }
   }
 
@@ -443,10 +468,10 @@ export default class Svg2Roughjs {
    * @param {SVGTransform?} svgTransform
    */
   drawEllipse(ellipse, svgTransform) {
-    const cx = ellipse.cx ? ellipse.cx.baseVal.value : 0
-    const cy = ellipse.cy ? ellipse.cy.baseVal.value : 0
-    const rx = ellipse.rx ? ellipse.rx.baseVal.value : 0
-    const ry = ellipse.ry ? ellipse.ry.baseVal.value : 0
+    const cx = ellipse.cx.baseVal.value
+    const cy = ellipse.cy.baseVal.value
+    const rx = ellipse.rx.baseVal.value
+    const ry = ellipse.ry.baseVal.value
     const center = this.applyMatrix(new Point(cx, cy), svgTransform)
     // transform a point on the ellipse to get the transformed radius
     const radiusPoint = this.applyMatrix(new Point(cx + rx, cy + ry), svgTransform)
@@ -466,9 +491,9 @@ export default class Svg2Roughjs {
    * @param {SVGTransform?} svgTransform
    */
   drawCircle(circle, svgTransform) {
-    const cx = circle.cx ? circle.cx.baseVal.value : 0
-    const cy = circle.cy ? circle.cy.baseVal.value : 0
-    const r = circle.r ? circle.r.baseVal.value : 0
+    const cx = circle.cx.baseVal.value
+    const cy = circle.cy.baseVal.value
+    const r = circle.r.baseVal.value
     const center = this.applyMatrix(new Point(cx, cy), svgTransform)
     // transform a point on the ellipse to get the transformed radius
     const radiusPoint = this.applyMatrix(new Point(cx + r, cy + r), svgTransform)
@@ -482,11 +507,11 @@ export default class Svg2Roughjs {
    */
   drawLine(line, svgTransform) {
     const p1 = this.applyMatrix(
-      new Point(line.x1 ? line.x1.baseVal.value : 0, line.y1 ? line.y1.baseVal.value : 0),
+      new Point(line.x1.baseVal.value, line.y1.baseVal.value),
       svgTransform
     )
     const p2 = this.applyMatrix(
-      new Point(line.x2 ? line.x2.baseVal.value : 0, line.y2 ? line.y2.baseVal.value : 0),
+      new Point(line.x2.baseVal.value, line.y2.baseVal.value),
       svgTransform
     )
     this.rc.line(p1.x, p1.y, p2.x, p2.y, this.parseStyleConfig(line))
@@ -629,12 +654,103 @@ export default class Svg2Roughjs {
    * @param {SVGTransform?} svgTransform
    */
   drawRect(rect, svgTransform) {
-    const x = rect.x ? rect.x.baseVal.value : 0
-    const y = rect.y ? rect.y.baseVal.value : 0
-    const width = rect.width ? rect.width.baseVal.value : 0
-    const height = rect.height ? rect.height.baseVal.value : 0
+    const x = rect.x.baseVal.value
+    const y = rect.y.baseVal.value
+    const width = rect.width.baseVal.value
+    const height = rect.height.baseVal.value
     const p1 = this.applyMatrix(new Point(x, y), svgTransform)
     const p2 = this.applyMatrix(new Point(x + width, y + height), svgTransform)
     this.rc.rectangle(p1.x, p1.y, p2.x - p1.x, p2.y - p1.y, this.parseStyleConfig(rect))
+  }
+
+  /**
+   * @param {SVGTextElement} text
+   * @param {SVGTransform?} svgTransform
+   */
+  drawText(text, svgTransform) {
+    this.ctx.save()
+
+    const textLocation = new Point(
+      text.x ? text.x.baseVal.value : 0,
+      text.y ? text.y.baseVal.value : 0
+    )
+
+    // text style
+    this.ctx.font = this.getCssFont(text)
+    const style = this.parseStyleConfig(text)
+    if (style.fill) {
+      this.ctx.fillStyle = style.fill
+    }
+
+    const textAnchor = text.getAttribute('text-anchor')
+    if (textAnchor) {
+      this.ctx.textAlign = textAnchor !== 'middle' ? textAnchor : 'center'
+    }
+
+    // apply the global transform
+    this.ctx.setTransform(svgTransform.matrix)
+
+    // consider dx/dy of the text element
+    const dx = this.getLengthInPx(text.dx)
+    const dy = this.getLengthInPx(text.dy)
+    this.ctx.translate(dx, dy)
+
+    if (text.childElementCount === 0) {
+      this.ctx.fillText(text.textContent, textLocation.x, textLocation.y)
+    } else {
+      for (let i = 0; i < text.childElementCount; i++) {
+        const child = text.children[i]
+        if (child.tagName === 'tspan') {
+          const dx = this.getLengthInPx(child.dx)
+          const dy = this.getLengthInPx(child.dy)
+          this.ctx.translate(dx, dy)
+          this.ctx.fillText(child.textContent, textLocation.x, textLocation.y)
+        }
+      }
+    }
+
+    this.ctx.restore()
+  }
+
+  /**
+   * @param {SVGAnimatedLengthList} svgLengthList
+   * @return {number} length in pixels
+   */
+  getLengthInPx(svgLengthList) {
+    if (svgLengthList && svgLengthList.baseVal.length > 0) {
+      return svgLengthList.baseVal[0].value
+    }
+    return 0
+  }
+
+  /**
+   * @param {SVGTextElement} text
+   * @return {string}
+   */
+  getCssFont(text) {
+    let cssFont = ''
+    const fontStyle = text.getAttribute('font-style')
+    if (fontStyle) {
+      cssFont += fontStyle
+    }
+    const fontWeight = text.getAttribute('font-weight')
+    if (fontWeight) {
+      cssFont += ` ${fontWeight}`
+    }
+    const fontSize = text.getAttribute('font-size')
+    if (fontSize) {
+      cssFont += ` ${fontSize}`
+    }
+    if (this.fontFamily) {
+      cssFont += ` ${this.fontFamily}`
+    } else {
+      const fontFamily = text.getAttribute('font-family')
+      if (fontFamily) {
+        cssFont += ` ${fontFamily}`
+      }
+    }
+
+    cssFont = cssFont.trim()
+    return cssFont
   }
 }

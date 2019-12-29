@@ -86,7 +86,7 @@ function run() {
   })
 
   // pre-select a sample
-  sampleSelect.selectedIndex = 4
+  sampleSelect.selectedIndex = 0
   sampleSelect.dispatchEvent(new Event('change'))
 
   const fillStyleSelect = document.getElementById('fill-style')
@@ -151,6 +151,15 @@ function run() {
     link.download = 'svg2roughjs.png'
     link.href = image
     link.click()
+  })
+
+  const originalFontCheckbox = document.getElementById('original-font')
+  originalFontCheckbox.addEventListener('change', e => {
+    if (originalFontCheckbox.checked) {
+      svg2roughjs.fontFamily = null
+    } else {
+      svg2roughjs.fontFamily = 'Comic Sans MS, sans-serif'
+    }
   })
 }
 
