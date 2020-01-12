@@ -389,6 +389,8 @@ export default class Svg2Roughjs {
     if (stroke) {
       if (stroke.indexOf('url') !== -1) {
         config.stroke = this.parseFillUrl(fill, strokeOpacity)
+      } else if (stroke === 'none') {
+        config.stroke = 'transparent'
       } else {
         const color = tinycolor(stroke)
         color.setAlpha(strokeOpacity)
