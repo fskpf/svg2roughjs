@@ -343,13 +343,27 @@ export default class Svg2Roughjs {
   }
 
   /**
+   * @param {SVGElement} element 
+   * @param {string} attributeName Name of the attribute to look up
+   * @return {string|null} attribute value if it exists
+   */
+  getEffectiveAttribute(element, attributeName) {
+    const attr = element.getAttribute(attributeName)
+    if (!attr) {
+      const parent = element.parentElement
+      return parent ? this.getEffectiveAttribute(parent, attributeName) : null
+    }
+    return attr
+  }
+
+  /**
    * @param {SVGElement} element
    * @return {object} config for Rough.js drawing
    */
   parseStyleConfig(element) {
     const config = Object.assign({}, this.$roughConfig)
 
-    const fill = element.getAttribute('fill')
+    const fill = this.getEffectiveAttribute(element, 'fill')
     const fillOpacity = this.getOpacity(element, 'fill-opacity')
     if (fill) {
       if (fill.indexOf('url') !== -1) {
@@ -369,10 +383,10 @@ export default class Svg2Roughjs {
     config.fillWeight = this.getRandomNumber(0.5, 3)
     // roughjs default is -41deg
     config.hachureAngle = this.getRandomNumber(-30, -50)
-    // roughjs defailt is 4 * strokeWidth
+    // roughjs default is 4 * strokeWidth
     config.hachureGap = this.getRandomNumber(3, 5)
 
-    const stroke = element.getAttribute('stroke')
+    const stroke = this.getEffectiveAttribute(element, 'stroke')
     const strokeOpacity = this.getOpacity(element, 'stroke-opacity')
     if (stroke) {
       if (stroke.indexOf('url') !== -1) {
@@ -386,7 +400,7 @@ export default class Svg2Roughjs {
       config.stroke = 'transparent'
     }
 
-    const strokeWidth = element.getAttribute('stroke-width')
+    const strokeWidth = this.getEffectiveAttribute(element, 'stroke-width')
     if (strokeWidth) {
       config.strokeWidth = strokeWidth
     } else {
