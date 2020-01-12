@@ -363,7 +363,7 @@ export default class Svg2Roughjs {
   parseStyleConfig(element) {
     const config = Object.assign({}, this.$roughConfig)
 
-    const fill = this.getEffectiveAttribute(element, 'fill')
+    const fill = this.getEffectiveAttribute(element, 'fill') || 'black'
     const fillOpacity = this.getOpacity(element, 'fill-opacity')
     if (fill) {
       if (fill.indexOf('url') !== -1) {
@@ -375,8 +375,6 @@ export default class Svg2Roughjs {
         color.setAlpha(fillOpacity)
         config.fill = color.toString()
       }
-    } else {
-      config.fill = 'transparent'
     }
 
     // roughjs default is 0.5 * strokeWidth
