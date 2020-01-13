@@ -37,9 +37,8 @@
     <option value="tree1">tree1.svg</option>
     <option value="venn">venn.svg</option>
   </select>
-  <button onclick="opacity(0)">Opacity 0</button>
-  <button onclick="opacity(0.3)">Opacity 0.3</button>
-  <button onclick="opacity(1)">Opacity 1</button>
+  <label for="opacity">Compare: </label>
+  <input id="opacity" type="range" min="0" max="1" step="0.05" value="0" oninput="opacityChanged()">
   <button id="download-btn">Download Result</button>
 
   <br/>
@@ -51,7 +50,7 @@
     <option value="zigzag">zigzag</option>
     <option value="cross-hatch">cross-hatch</option>
     <option value="dots">dots</option>
-    <option value="sunburst">sunburst</option>
+    <option value="starburst">starburst</option>
     <option value="dashed">dashed</option>
     <option value="zigzag-line">zigzag-line</option>
   </select>
@@ -69,7 +68,8 @@
   </div>
 
   <script>
-    function opacity(value) {
+    function opacityChanged() {
+      var value = document.getElementById('opacity').value
       document.getElementById('input').style.opacity = value
     }
   </script>
