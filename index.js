@@ -348,7 +348,7 @@ export default class Svg2Roughjs {
    * @return {string|null} attribute value if it exists
    */
   getEffectiveAttribute(element, attributeName) {
-    const attr = element.getAttribute(attributeName)
+    const attr = getComputedStyle(element)[attributeName]
     if (!attr) {
       const parent = element.parentElement
       return parent ? this.getEffectiveAttribute(parent, attributeName) : null
