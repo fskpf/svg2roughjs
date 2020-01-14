@@ -306,7 +306,8 @@ export default class Svg2Roughjs {
    * @return {string}
    */
   parseFillUrl(url, opacity) {
-    const result = /url\(#?(.*?)\)/.exec(url)
+    // TODO: The URL might also be escaped, we might need to normalize it somehow
+    const result = /url\('#?(.*?)'\)/.exec(url) || /url\("#?(.*?)"\)/.exec(url) || /url\(#?(.*?)\)/.exec(url)
     if (result && result.length > 1) {
       const id = result[1]
       const fill = this.defs[id]
