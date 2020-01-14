@@ -400,6 +400,11 @@ export default class Svg2Roughjs {
       config.stroke = 'transparent'
     }
 
+    // unstroked but filled shapes look weird, so always apply a stroke if we fill something
+    if (config.fill !== 'transparent' && config.stroke === 'transparent') {
+      config.stroke = config.fill
+    }
+
     const strokeWidth = this.getEffectiveAttribute(element, 'stroke-width')
     if (strokeWidth) {
       config.strokeWidth = strokeWidth
