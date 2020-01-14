@@ -757,7 +757,9 @@ export default class Svg2Roughjs {
     }
 
     // apply the global transform
-    this.ctx.setTransform(svgTransform.matrix)
+    if (svgTransform) {
+      this.ctx.setTransform(svgTransform.matrix)
+    }
 
     // consider dx/dy of the text element
     const dx = this.getLengthInPx(text.dx)
