@@ -40,7 +40,7 @@ export default class Svg2Roughjs {
       this.canvas.height = this.height
 
       // pre-process defs for subsequent references
-      this.parseDefs()
+      this.collectElementsWithID()
 
       this.redraw()
     }
@@ -193,24 +193,14 @@ export default class Svg2Roughjs {
   /**
    * Stores defs elements with their IDs for later use.
    */
-  parseDefs() {
+  collectElementsWithID() {
     this.defs = {}
-    const defs = [...this.svg.querySelectorAll('defs')]
-    defs.forEach(defsElement => {
-      for (let i = 0; i < defsElement.childElementCount; i++) {
-        const def = defsElement.children[i]
-        this.storeDefElement(def)
+    const elementsWithID = [...this.svg.querySelectorAll('*[id]')]
+    for (const elt of elementsWithID) {
+      const id = elt.getAttribute('id')
+      if (id) {
+        this.defs[id] = elt
       }
-    })
-  }
-
-  /**
-   * @param {SVGElement} defElement
-   */
-  storeDefElement(defElement) {
-    const id = defElement.getAttribute('id')
-    if (id) {
-      this.defs[id] = defElement
     }
   }
 
