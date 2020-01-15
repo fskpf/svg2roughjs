@@ -544,7 +544,13 @@ export default class Svg2Roughjs {
         useWidth = use.width.baseVal.value
         useHeight = use.height.baseVal.value
       }
-      this.drawElement(defElement, svgTransform, useWidth, useHeight)
+      // We need to account for x and y attributes as well. Those change where the element is drawn.
+      // We can simply change the transform to include that.
+      const x = use.x.baseVal.value
+      const y = use.y.baseVal.value
+      let matrix = this.svg.createSVGMatrix().translate(x, y)
+      matrix = svgTransform ? svgTransform.matrix.multiply(matrix) : matrix
+      this.drawElement(defElement, this.svg.createSVGTransformFromMatrix(matrix), useWidth, useHeight)
     }
   }
 
