@@ -1,7 +1,7 @@
 import tinycolor from 'tinycolor2'
 import { SVGPathData, encodeSVGPath } from 'svg-pathdata'
 
-import rough from 'roughjs/dist/rough.umd'
+import rough from 'roughjs/bundled/rough.esm'
 
 class Point {
   /**
@@ -360,7 +360,7 @@ export default class Svg2Roughjs {
       if (fill.indexOf('url') !== -1) {
         config.fill = this.parseFillUrl(fill, fillOpacity)
       } else if (fill === 'none') {
-        config.fill = 'transparent' // roughjs fills paths even though they have 'fill="none"'
+        delete config.fill
       } else {
         const color = tinycolor(fill)
         color.setAlpha(fillOpacity)
@@ -381,18 +381,18 @@ export default class Svg2Roughjs {
       if (stroke.indexOf('url') !== -1) {
         config.stroke = this.parseFillUrl(fill, strokeOpacity)
       } else if (stroke === 'none') {
-        config.stroke = 'transparent'
+        config.stroke = 'none'
       } else {
         const color = tinycolor(stroke)
         color.setAlpha(strokeOpacity)
         config.stroke = color.toString()
       }
     } else {
-      config.stroke = 'transparent'
+      config.stroke = 'none'
     }
 
     // unstroked but filled shapes look weird, so always apply a stroke if we fill something
-    if (config.fill !== 'transparent' && config.stroke === 'transparent') {
+    if (config.fill && config.stroke === 'none') {
       config.stroke = config.fill
     }
 
