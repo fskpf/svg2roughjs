@@ -740,6 +740,8 @@ export default class Svg2Roughjs {
       rx = Math.min(rx, width / 2)
       ry = Math.min(ry, height / 2)
 
+      const factor = 4 / 3 * (Math.sqrt(2) - 1)
+
       let path = ''
       // Construct path for the rounded rectangle
       // perform an absolute moveto operation to location (x+rx,y), where x is the value of the ‘rect’ element's ‘x’ attribute converted to user space, rx is the effective value of the ‘rx’ attribute converted to user space and y is the value of the ‘y’ attribute converted to user space
@@ -749,25 +751,33 @@ export default class Svg2Roughjs {
       const p2 = this.applyMatrix(new Point(x + width - rx, y), svgTransform)
       path += `L ${p2}`
       // perform an absolute elliptical arc operation to coordinate (x+width,y+ry), where the effective values for the ‘rx’ and ‘ry’ attributes on the ‘rect’ element converted to user space are used as the rx and ry attributes on the elliptical arc command, respectively, the x-axis-rotation is set to zero, the large-arc-flag is set to zero, and the sweep-flag is set to one
+      const p3c1 = this.applyMatrix(new Point(x + width - rx + factor * rx, y), svgTransform)
+      const p3c2 = this.applyMatrix(new Point(x + width, y + factor * ry), svgTransform)
       const p3 = this.applyMatrix(new Point(x + width, y + ry), svgTransform)
-      path += `A ${rx} ${ry} 0 0 1 ${p3}`
+      path += `C ${p3c1} ${p3c2} ${p3}` // We cannot use the arc command, since we no longer draw in the expected coordinates. So approximate everything with lines and béziers
       // perform a absolute vertical lineto to location (x+width,y+height-ry), where height is the ‘rect’ element's ‘height’ attribute converted to user space
       const p4 = this.applyMatrix(new Point(x + width, y + height - ry), svgTransform)
       path += `L ${p4}`
       // perform an absolute elliptical arc operation to coordinate (x+width-rx,y+height)
+      const p5c1 = this.applyMatrix(new Point(x + width, y + height - ry + factor * ry), svgTransform)
+      const p5c2 = this.applyMatrix(new Point(x + width - factor * rx, y + height), svgTransform)
       const p5 = this.applyMatrix(new Point(x + width - rx, y + height), svgTransform)
-      path += `A ${rx} ${ry} 0 0 1 ${p5}`
+      path += `C ${p5c1} ${p5c2} ${p5}`
       // perform an absolute horizontal lineto to location (x+rx,y+height)
       const p6 = this.applyMatrix(new Point(x + rx, y + height), svgTransform)
       path += `L ${p6}`
       // perform an absolute elliptical arc operation to coordinate (x,y+height-ry)
+      const p7c1 = this.applyMatrix(new Point(x + rx - factor * rx, y + height), svgTransform)
+      const p7c2 = this.applyMatrix(new Point(x, y + height - factor * ry), svgTransform)
       const p7 = this.applyMatrix(new Point(x, y + height - ry), svgTransform)
-      path += `A ${rx} ${ry} 0 0 1 ${p7}`
+      path += `C ${p7c1} ${p7c2} ${p7}`
       // perform an absolute absolute vertical lineto to location (x,y+ry)
       const p8 = this.applyMatrix(new Point(x, y + ry), svgTransform)
       path += `L ${p8}`
       // perform an absolute elliptical arc operation to coordinate (x+rx,y)
-      path += `A ${rx} ${ry} 0 0 1 ${p1}`
+      const p9c1 = this.applyMatrix(new Point(x, y + factor * ry), svgTransform)
+      const p9c2 = this.applyMatrix(new Point(x + factor * rx, y), svgTransform)
+      path += `C ${p9c1} ${p9c2} ${p1}`
       path += "z"
       this.rc.path(path, this.parseStyleConfig(rect))
     }
