@@ -510,11 +510,8 @@ export default class Svg2Roughjs {
       const p4 = this.applyMatrix(new Point(cx, cy - ry), svgTransform)
       const c1 = this.applyMatrix(new Point(cx + rx, cy + factor * ry), svgTransform)
       const c2 = this.applyMatrix(new Point(cx + factor * rx, cy + ry), svgTransform)
-      const c3 = this.applyMatrix(new Point(cx - factor * rx, cy + ry), svgTransform)
       const c4 = this.applyMatrix(new Point(cx - rx, cy + factor * ry), svgTransform)
-      const c5 = this.applyMatrix(new Point(cx - rx, cy - factor * ry), svgTransform)
       const c6 = this.applyMatrix(new Point(cx - factor * rx, cy - ry), svgTransform)
-      const c7 = this.applyMatrix(new Point(cx + factor * rx, cy - ry), svgTransform)
       const c8 = this.applyMatrix(new Point(cx + rx, cy - factor * ry), svgTransform)
       const path = `M ${p1} C ${c1} ${c2} ${p2} S ${c4} ${p3} S ${c6} ${p4} S ${c8} ${p1}z`
       this.rc.path(path, this.parseStyleConfig(ellipse))
@@ -530,10 +527,27 @@ export default class Svg2Roughjs {
     const cy = circle.cy.baseVal.value
     const r = circle.r.baseVal.value
     const center = this.applyMatrix(new Point(cx, cy), svgTransform)
-    // transform a point on the ellipse to get the transformed radius
-    const radiusPoint = this.applyMatrix(new Point(cx + r, cy + r), svgTransform)
-    const transformedWidth = 2 * (radiusPoint.x - center.x)
-    this.rc.circle(center.x, center.y, transformedWidth, this.parseStyleConfig(circle))
+
+    if (svgTransform === null) {
+      // transform a point on the ellipse to get the transformed radius
+      const radiusPoint = this.applyMatrix(new Point(cx + r, cy + r), svgTransform)
+      const transformedWidth = 2 * (radiusPoint.x - center.x)
+      this.rc.circle(center.x, center.y, transformedWidth, this.parseStyleConfig(circle))
+    } else {
+      // in other cases we need to construct the path manually.
+      const factor = 4 / 3 * (Math.sqrt(2) - 1)
+      const p1 = this.applyMatrix(new Point(cx + r, cy), svgTransform)
+      const p2 = this.applyMatrix(new Point(cx, cy + r), svgTransform)
+      const p3 = this.applyMatrix(new Point(cx - r, cy), svgTransform)
+      const p4 = this.applyMatrix(new Point(cx, cy - r), svgTransform)
+      const c1 = this.applyMatrix(new Point(cx + r, cy + factor * r), svgTransform)
+      const c2 = this.applyMatrix(new Point(cx + factor * r, cy + r), svgTransform)
+      const c4 = this.applyMatrix(new Point(cx - r, cy + factor * r), svgTransform)
+      const c6 = this.applyMatrix(new Point(cx - factor * r, cy - r), svgTransform)
+      const c8 = this.applyMatrix(new Point(cx + r, cy - factor * r), svgTransform)
+      const path = `M ${p1} C ${c1} ${c2} ${p2} S ${c4} ${p3} S ${c6} ${p4} S ${c8} ${p1}z`
+      this.rc.path(path, this.parseStyleConfig(circle))
+    }
   }
 
   /**
