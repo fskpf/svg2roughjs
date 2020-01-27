@@ -24,6 +24,10 @@ class Point {
     this.$x = x || 0
     this.$y = y || 0
   }
+
+  toString() {
+    return `${this.x},${this.y}`
+  }
 }
 
 export default class Svg2Roughjs {
@@ -483,18 +487,38 @@ export default class Svg2Roughjs {
     const cy = ellipse.cy.baseVal.value
     const rx = ellipse.rx.baseVal.value
     const ry = ellipse.ry.baseVal.value
-    const center = this.applyMatrix(new Point(cx, cy), svgTransform)
-    // transform a point on the ellipse to get the transformed radius
-    const radiusPoint = this.applyMatrix(new Point(cx + rx, cy + ry), svgTransform)
-    const transformedWidth = 2 * (radiusPoint.x - center.x)
-    const transformedHeight = 2 * (radiusPoint.y - center.y)
-    this.rc.ellipse(
-      center.x,
-      center.y,
-      transformedWidth,
-      transformedHeight,
-      this.parseStyleConfig(ellipse)
-    )
+    if (svgTransform === null) {
+      // Simple case, there's no transform and we can use the ellipse command
+      const center = this.applyMatrix(new Point(cx, cy), svgTransform)
+      // transform a point on the ellipse to get the transformed radius
+      const radiusPoint = this.applyMatrix(new Point(cx + rx, cy + ry), svgTransform)
+      const transformedWidth = 2 * (radiusPoint.x - center.x)
+      const transformedHeight = 2 * (radiusPoint.y - center.y)
+      this.rc.ellipse(
+        center.x,
+        center.y,
+        transformedWidth,
+        transformedHeight,
+        this.parseStyleConfig(ellipse)
+      )
+    } else {
+      // in other cases we need to construct the path manually.
+      const factor = 4 / 3 * (Math.sqrt(2) - 1)
+      const p1 = this.applyMatrix(new Point(cx + rx, cy), svgTransform)
+      const p2 = this.applyMatrix(new Point(cx, cy + ry), svgTransform)
+      const p3 = this.applyMatrix(new Point(cx - rx, cy), svgTransform)
+      const p4 = this.applyMatrix(new Point(cx, cy - ry), svgTransform)
+      const c1 = this.applyMatrix(new Point(cx + rx, cy + factor * ry), svgTransform)
+      const c2 = this.applyMatrix(new Point(cx + factor * rx, cy + ry), svgTransform)
+      const c3 = this.applyMatrix(new Point(cx - factor * rx, cy + ry), svgTransform)
+      const c4 = this.applyMatrix(new Point(cx - rx, cy + factor * ry), svgTransform)
+      const c5 = this.applyMatrix(new Point(cx - rx, cy - factor * ry), svgTransform)
+      const c6 = this.applyMatrix(new Point(cx - factor * rx, cy - ry), svgTransform)
+      const c7 = this.applyMatrix(new Point(cx + factor * rx, cy - ry), svgTransform)
+      const c8 = this.applyMatrix(new Point(cx + rx, cy - factor * ry), svgTransform)
+      const path = `M ${p1} C ${c1} ${c2} ${p2} S ${c4} ${p3} S ${c6} ${p4} S ${c8} ${p1}z`
+      this.rc.path(path, this.parseStyleConfig(ellipse))
+    }
   }
 
   /**
@@ -706,30 +730,30 @@ export default class Svg2Roughjs {
       // Construct path for the rounded rectangle
       // perform an absolute moveto operation to location (x+rx,y), where x is the value of the ‘rect’ element's ‘x’ attribute converted to user space, rx is the effective value of the ‘rx’ attribute converted to user space and y is the value of the ‘y’ attribute converted to user space
       const p1 = this.applyMatrix(new Point(x + rx, y), svgTransform)
-      path += `M ${p1.x} ${p1.y}`
+      path += `M ${p1}`
       // perform an absolute horizontal lineto operation to location (x+width-rx,y), where width is the ‘rect’ element's ‘width’ attribute converted to user space
       const p2 = this.applyMatrix(new Point(x + width - rx, y), svgTransform)
-      path += `L ${p2.x} ${p2.y}`
+      path += `L ${p2}`
       // perform an absolute elliptical arc operation to coordinate (x+width,y+ry), where the effective values for the ‘rx’ and ‘ry’ attributes on the ‘rect’ element converted to user space are used as the rx and ry attributes on the elliptical arc command, respectively, the x-axis-rotation is set to zero, the large-arc-flag is set to zero, and the sweep-flag is set to one
       const p3 = this.applyMatrix(new Point(x + width, y + ry), svgTransform)
-      path += `A ${rx} ${ry} 0 0 1 ${p3.x} ${p3.y}`
+      path += `A ${rx} ${ry} 0 0 1 ${p3}`
       // perform a absolute vertical lineto to location (x+width,y+height-ry), where height is the ‘rect’ element's ‘height’ attribute converted to user space
       const p4 = this.applyMatrix(new Point(x + width, y + height - ry), svgTransform)
-      path += `L ${p4.x} ${p4.y}`
+      path += `L ${p4}`
       // perform an absolute elliptical arc operation to coordinate (x+width-rx,y+height)
       const p5 = this.applyMatrix(new Point(x + width - rx, y + height), svgTransform)
-      path += `A ${rx} ${ry} 0 0 1 ${p5.x} ${p5.y}`
+      path += `A ${rx} ${ry} 0 0 1 ${p5}`
       // perform an absolute horizontal lineto to location (x+rx,y+height)
       const p6 = this.applyMatrix(new Point(x + rx, y + height), svgTransform)
-      path += `L ${p6.x} ${p6.y}`
+      path += `L ${p6}`
       // perform an absolute elliptical arc operation to coordinate (x,y+height-ry)
       const p7 = this.applyMatrix(new Point(x, y + height - ry), svgTransform)
-      path += `A ${rx} ${ry} 0 0 1 ${p7.x} ${p7.y}`
+      path += `A ${rx} ${ry} 0 0 1 ${p7}`
       // perform an absolute absolute vertical lineto to location (x,y+ry)
       const p8 = this.applyMatrix(new Point(x, y + ry), svgTransform)
-      path += `L ${p8.x} ${p8.y}`
+      path += `L ${p8}`
       // perform an absolute elliptical arc operation to coordinate (x+rx,y)
-      path += `A ${rx} ${ry} 0 0 1 ${p1.x} ${p1.y}`
+      path += `A ${rx} ${ry} 0 0 1 ${p1}`
       path += "z"
       this.rc.path(path, this.parseStyleConfig(rect))
     }
