@@ -4,6 +4,7 @@
   "description": "Leverages Rough.js to convert SVGs to a hand-drawn, sketchy representation",
   "main": "./index.js",
   "author": "Fabian Schwarzkopf",
+  "contributors": ["Johannes Rössel"],
   "homepage": "https://github.com/fskpf/svg2roughjs#readme",
   "repository": {
     "type": "git",

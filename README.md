@@ -49,4 +49,4 @@ These images are taken from the [sample application](https://fskpf.github.io/) w
 * [TinyColor](https://github.com/bgrins/TinyColor) - Help with color manipulation
 
 ## License
-[MIT License](https://github.com/fskpf/svg2roughjs/blob/master/LICENSE.md) (c) Fabian Schwarzkopf
+[MIT License](https://github.com/fskpf/svg2roughjs/blob/master/LICENSE.md) © Fabian Schwarzkopf and Johannes Rössel
