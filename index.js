@@ -1,7 +1,8 @@
 import tinycolor from 'tinycolor2'
 import { SVGPathData, encodeSVGPath } from 'svg-pathdata'
-
 import rough from 'roughjs/bundled/rough.esm'
+
+var units = require('units-css')
 
 class Point {
   /**
@@ -401,7 +402,8 @@ export default class Svg2Roughjs {
       config.stroke = config.fill
     }
 
-    const strokeWidth = this.getEffectiveAttribute(element, 'stroke-width')
+    let strokeWidth = this.getEffectiveAttribute(element, 'stroke-width')
+    strokeWidth = units.convert('px', strokeWidth)
     if (strokeWidth) {
       config.strokeWidth = strokeWidth
     } else {
