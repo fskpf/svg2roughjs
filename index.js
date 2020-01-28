@@ -95,6 +95,15 @@ export default class Svg2Roughjs {
     return this.$fontFamily
   }
 
+  set randomize(randomize) {
+    this.$randomize = randomize
+    this.redraw()
+  }
+
+  get randomize() {
+    return this.$randomize
+  }
+
   /**
    * @param {string} selector
    * @param {object?} roughConfig Config object passed to the Rough.js ctor
@@ -111,7 +120,8 @@ export default class Svg2Roughjs {
     container.appendChild(canvas)
     this.canvas = canvas
     this.ctx = canvas.getContext('2d')
-    this.$fontFamily = 'Comic Sans MS, sans-serif'
+    this.$fontFamily = 'Comic Sans MS, cursive'
+    this.$randomize = true
   }
 
   clearCanvas() {
@@ -374,13 +384,6 @@ export default class Svg2Roughjs {
       }
     }
 
-    // roughjs default is 0.5 * strokeWidth
-    config.fillWeight = this.getRandomNumber(0.5, 3)
-    // roughjs default is -41deg
-    config.hachureAngle = this.getRandomNumber(-30, -50)
-    // roughjs default is 4 * strokeWidth
-    config.hachureGap = this.getRandomNumber(3, 5)
-
     const stroke = this.getEffectiveAttribute(element, 'stroke')
     const strokeOpacity = this.getOpacity(element, 'stroke-opacity')
     if (stroke) {
@@ -408,6 +411,15 @@ export default class Svg2Roughjs {
       config.strokeWidth = strokeWidth
     } else {
       config.strokeWidth = 0
+    }
+
+    if (this.randomize) {
+      // roughjs default is 0.5 * strokeWidth
+      config.fillWeight = this.getRandomNumber(0.5, 3)
+      // roughjs default is -41deg
+      config.hachureAngle = this.getRandomNumber(-30, -50)
+      // roughjs default is 4 * strokeWidth
+      config.hachureGap = this.getRandomNumber(3, 5)
     }
 
     return config

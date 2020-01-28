@@ -16,6 +16,7 @@
       top: 0;
       left: 0;
       opacity: 0;
+      background-color: white;
     }
   </style>
 </head>
@@ -55,12 +56,14 @@
     <option value="zigzag-line">zigzag-line</option>
   </select>
 
-  <input id="roughness-input" type="range" value="1" min="0" max="15" step="1">
+  <input id="roughness-input" type="range" value="1" min="0" max="4" step="0.5">
   <label for="roughness-input" style="margin-right: 2em;">Roughness</label>
   <input id="bowing-input" type="range" value="1" min="0" max="15" step="1">
   <label for="bowing-input" style="margin-right: 2em;">Bowing</label>
   <input id="original-font" type="checkbox">
   <label for="original-font">Use original font</label>
+  <input id="randomize" type="checkbox" checked>
+  <label for="randomize">Randomize hatching per shape</label>
 
   <div id="preview">
     <div id="output"></div>

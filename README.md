@@ -34,7 +34,7 @@ const svg2roughjs = new Svg2Roughjs('#output')
 const svg = document.getElementById('some-svg-element')
 svg2roughjs.svg = svg // or maybe use the DOMParser to load an SVG file instead
 ```
-The `roughConfig` property may be used to pass additional Rough.js style properties , e.g. to change the fill-style, roughness or bowing, as shown in the `sample-application`. 
+The `roughConfig` property may be used to pass additional Rough.js style properties, e.g. to change the fill-style, roughness or bowing, as shown in the `sample-application`.
 
 ## Sample Images
 These images are taken from the [sample application](https://fskpf.github.io/) which contains the original input SVG files (created with [yEd Live](https://www.yworks.com/yed-live)).

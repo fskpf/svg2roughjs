@@ -161,6 +161,14 @@ function run() {
       svg2roughjs.fontFamily = 'Comic Sans MS, sans-serif'
     }
   })
+  const randomizeCheckbox = document.getElementById('randomize')
+  randomizeCheckbox.addEventListener('change', e => {
+    if (randomizeCheckbox.checked) {
+      svg2roughjs.randomize = true
+    } else {
+      svg2roughjs.randomize = false
+    }
+  })
 }
 
 run()
