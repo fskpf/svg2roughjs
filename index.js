@@ -729,7 +729,7 @@ export default class Svg2Roughjs {
     const height = rect.height.baseVal.value
     let rx = rect.hasAttribute('rx') ? rect.rx.baseVal.value : null
     let ry = rect.hasAttribute('ry') ? rect.ry.baseVal.value : null
-    if (svgTransform === null && !rx && !ry) {
+    if (!svgTransform && !rx && !ry) {
       // Simple case; just a rectangle
       const p1 = this.applyMatrix(new Point(x, y), svgTransform)
       const p2 = this.applyMatrix(new Point(x + width, y + height), svgTransform)
