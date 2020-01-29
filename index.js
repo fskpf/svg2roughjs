@@ -365,9 +365,10 @@ export default class Svg2Roughjs {
 
   /**
    * @param {SVGElement} element
+   * @param {SVGTransform?} svgTransform
    * @return {object} config for Rough.js drawing
    */
-  parseStyleConfig(element) {
+  parseStyleConfig(element, svgTransform) {
     const config = Object.assign({}, this.$roughConfig)
 
     const fill = this.getEffectiveAttribute(element, 'fill') || 'black'
@@ -406,8 +407,15 @@ export default class Svg2Roughjs {
     }
 
     let strokeWidth = this.getEffectiveAttribute(element, 'stroke-width')
-    strokeWidth = units.convert('px', strokeWidth)
     if (strokeWidth) {
+      // Convert to user space units (px)
+      strokeWidth = units.convert('px', strokeWidth)
+      // If we have a transform, include the scaling factor
+      if (svgTransform) {
+        // For lack of a better option here, just use the mean of x and y scaling factors
+        const factor = (svgTransform.matrix.a + svgTransform.matrix.d) / 2
+        strokeWidth *= factor
+      }
       config.strokeWidth = strokeWidth
     } else {
       config.strokeWidth = 0
@@ -476,7 +484,7 @@ export default class Svg2Roughjs {
       const pt = this.applyMatrix(p, svgTransform)
       return [pt.x, pt.y]
     })
-    this.rc.linearPath(transformed, this.parseStyleConfig(polyline))
+    this.rc.linearPath(transformed, this.parseStyleConfig(polyline, svgTransform))
   }
 
   /**
@@ -489,7 +497,7 @@ export default class Svg2Roughjs {
       const pt = this.applyMatrix(p, svgTransform)
       return [pt.x, pt.y]
     })
-    this.rc.polygon(transformed, this.parseStyleConfig(polygon))
+    this.rc.polygon(transformed, this.parseStyleConfig(polygon, svgTransform))
   }
 
   /**
@@ -513,7 +521,7 @@ export default class Svg2Roughjs {
         center.y,
         transformedWidth,
         transformedHeight,
-        this.parseStyleConfig(ellipse)
+        this.parseStyleConfig(ellipse, svgTransform)
       )
     } else {
       // in other cases we need to construct the path manually.
@@ -528,7 +536,7 @@ export default class Svg2Roughjs {
       const c6 = this.applyMatrix(new Point(cx - factor * rx, cy - ry), svgTransform)
       const c8 = this.applyMatrix(new Point(cx + rx, cy - factor * ry), svgTransform)
       const path = `M ${p1} C ${c1} ${c2} ${p2} S ${c4} ${p3} S ${c6} ${p4} S ${c8} ${p1}z`
-      this.rc.path(path, this.parseStyleConfig(ellipse))
+      this.rc.path(path, this.parseStyleConfig(ellipse, svgTransform))
     }
   }
 
@@ -546,7 +554,7 @@ export default class Svg2Roughjs {
       // transform a point on the ellipse to get the transformed radius
       const radiusPoint = this.applyMatrix(new Point(cx + r, cy + r), svgTransform)
       const transformedWidth = 2 * (radiusPoint.x - center.x)
-      this.rc.circle(center.x, center.y, transformedWidth, this.parseStyleConfig(circle))
+      this.rc.circle(center.x, center.y, transformedWidth, this.parseStyleConfig(circle, svgTransform))
     } else {
       // in other cases we need to construct the path manually.
       const factor = 4 / 3 * (Math.sqrt(2) - 1)
@@ -560,7 +568,7 @@ export default class Svg2Roughjs {
       const c6 = this.applyMatrix(new Point(cx - factor * r, cy - r), svgTransform)
       const c8 = this.applyMatrix(new Point(cx + r, cy - factor * r), svgTransform)
       const path = `M ${p1} C ${c1} ${c2} ${p2} S ${c4} ${p3} S ${c6} ${p4} S ${c8} ${p1}z`
-      this.rc.path(path, this.parseStyleConfig(circle))
+      this.rc.path(path, this.parseStyleConfig(circle, svgTransform))
     }
   }
 
@@ -577,7 +585,7 @@ export default class Svg2Roughjs {
       new Point(line.x2.baseVal.value, line.y2.baseVal.value),
       svgTransform
     )
-    this.rc.line(p1.x, p1.y, p2.x, p2.y, this.parseStyleConfig(line))
+    this.rc.line(p1.x, p1.y, p2.x, p2.y, this.parseStyleConfig(line, svgTransform))
   }
 
   /**
@@ -624,7 +632,7 @@ export default class Svg2Roughjs {
       debugger
       return
     }
-    this.rc.path(transformedPathData, this.parseStyleConfig(path))
+    this.rc.path(transformedPathData, this.parseStyleConfig(path, svgTransform))
   }
 
   /**
@@ -733,7 +741,7 @@ export default class Svg2Roughjs {
       // Simple case; just a rectangle
       const p1 = this.applyMatrix(new Point(x, y), svgTransform)
       const p2 = this.applyMatrix(new Point(x + width, y + height), svgTransform)
-      this.rc.rectangle(p1.x, p1.y, p2.x - p1.x, p2.y - p1.y, this.parseStyleConfig(rect))
+      this.rc.rectangle(p1.x, p1.y, p2.x - p1.x, p2.y - p1.y, this.parseStyleConfig(rect, svgTransform))
     } else {
       // Rounded rectangle
       // Negative values are an error and result in the default value
@@ -793,7 +801,8 @@ export default class Svg2Roughjs {
       const p9c2 = this.applyMatrix(new Point(x + factor * rx, y), svgTransform)
       path += `C ${p9c1} ${p9c2} ${p1}`
       path += "z"
-      this.rc.path(path, this.parseStyleConfig(rect))
+      this.rc.path(path, this.parseStyleConfig(rect, svgTransform))
+
     }
   }
 
@@ -811,7 +820,7 @@ export default class Svg2Roughjs {
 
     // text style
     this.ctx.font = this.getCssFont(text)
-    const style = this.parseStyleConfig(text)
+    const style = this.parseStyleConfig(text, svgTransform)
     if (style.fill) {
       this.ctx.fillStyle = style.fill
     }
