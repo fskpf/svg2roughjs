@@ -155,9 +155,13 @@ export default class Svg2Roughjs {
         height: viewBoxHeight
       } = svg.viewBox.baseVal
 
+      const svgX = svg.x.baseVal.value
+      const svgY = svg.y.baseVal.value
+
       const viewBoxMatrix = this.svg
         .createSVGMatrix()
         .translate(-viewBoxX, -viewBoxY)
+        .translate(svgX, svgY)
         .scaleNonUniform(width / viewBoxWidth, height / viewBoxHeight)
       const combinedMatrix = svgTransform
         ? svgTransform.matrix.multiply(viewBoxMatrix)
@@ -313,7 +317,8 @@ export default class Svg2Roughjs {
    */
   parseFillUrl(url, opacity) {
     // TODO: The URL might also be escaped, we might need to normalize it somehow
-    const result = /url\('#?(.*?)'\)/.exec(url) || /url\("#?(.*?)"\)/.exec(url) || /url\(#?(.*?)\)/.exec(url)
+    const result =
+      /url\('#?(.*?)'\)/.exec(url) || /url\("#?(.*?)"\)/.exec(url) || /url\(#?(.*?)\)/.exec(url)
     if (result && result.length > 1) {
       const id = result[1]
       const fill = this.defs[id]
@@ -350,7 +355,7 @@ export default class Svg2Roughjs {
   }
 
   /**
-   * @param {SVGElement} element 
+   * @param {SVGElement} element
    * @param {string} attributeName Name of the attribute to look up
    * @return {string|null} attribute value if it exists
    */
@@ -442,6 +447,13 @@ export default class Svg2Roughjs {
   drawElement(element, svgTransform, width, height) {
     switch (element.tagName) {
       case 'svg':
+        if (!width && !height) {
+          // what if the use-element has a width/height and also the SVG element that is referenced?
+          if (element.getAttribute('width') && element.getAttribute('height')) {
+            width = element.width.baseVal.value
+            height = element.height.baseVal.value
+          }
+        }
         this.drawSvg(element, svgTransform, width, height)
         break
       case 'rect':
@@ -525,7 +537,7 @@ export default class Svg2Roughjs {
       )
     } else {
       // in other cases we need to construct the path manually.
-      const factor = 4 / 3 * (Math.sqrt(2) - 1)
+      const factor = (4 / 3) * (Math.sqrt(2) - 1)
       const p1 = this.applyMatrix(new Point(cx + rx, cy), svgTransform)
       const p2 = this.applyMatrix(new Point(cx, cy + ry), svgTransform)
       const p3 = this.applyMatrix(new Point(cx - rx, cy), svgTransform)
@@ -557,7 +569,7 @@ export default class Svg2Roughjs {
       this.rc.circle(center.x, center.y, transformedWidth, this.parseStyleConfig(circle, svgTransform))
     } else {
       // in other cases we need to construct the path manually.
-      const factor = 4 / 3 * (Math.sqrt(2) - 1)
+      const factor = (4 / 3) * (Math.sqrt(2) - 1)
       const p1 = this.applyMatrix(new Point(cx + r, cy), svgTransform)
       const p2 = this.applyMatrix(new Point(cx, cy + r), svgTransform)
       const p3 = this.applyMatrix(new Point(cx - r, cy), svgTransform)
@@ -611,7 +623,12 @@ export default class Svg2Roughjs {
       const y = use.y.baseVal.value
       let matrix = this.svg.createSVGMatrix().translate(x, y)
       matrix = svgTransform ? svgTransform.matrix.multiply(matrix) : matrix
-      this.drawElement(defElement, this.svg.createSVGTransformFromMatrix(matrix), useWidth, useHeight)
+      this.drawElement(
+        defElement,
+        this.svg.createSVGTransformFromMatrix(matrix),
+        useWidth,
+        useHeight
+      )
     }
   }
 
