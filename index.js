@@ -812,8 +812,13 @@ export default class Svg2Roughjs {
         path += "z"
       }
 
+      // must use square line cap here so it looks like a rectangle. Default seems to be butt.
+      this.ctx.save()
+      this.ctx.lineCap = 'square'
+
       this.rc.path(path, this.parseStyleConfig(rect, svgTransform))
 
+      this.ctx.restore()
     }
   }
 
