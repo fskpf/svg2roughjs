@@ -1,5 +1,5 @@
 import tinycolor from 'tinycolor2'
-import { SVGPathData, encodeSVGPath } from 'svg-pathdata'
+import { SVGPathData, encodeSVGPath, SVGPathDataTransformer } from 'svg-pathdata'
 import rough from 'roughjs/bundled/rough.esm'
 
 var units = require('units-css')
@@ -638,11 +638,26 @@ export default class Svg2Roughjs {
    */
   drawPath(path, svgTransform) {
     const dataAttrs = path.getAttribute('d')
-    const pathData = new SVGPathData(dataAttrs).toAbs()
-    const transformedCommands = pathData.commands.map(command =>
-      this.transformPathCommand(command, svgTransform)
-    )
-    const transformedPathData = encodeSVGPath(transformedCommands)
+    let pathData =
+      // Parse path data and convert to absolute coordinates
+      new SVGPathData(dataAttrs).toAbs()
+        // Normalize H and V to L commands - those cannot work with how we draw transformed paths otherwise
+        .transform(SVGPathDataTransformer.NORMALIZE_HVZ())
+        // Normalize S and T to Q and C commands - Rough.js has a bug with T where it expects 4 parameters instead of 2
+        .transform(SVGPathDataTransformer.NORMALIZE_ST())
+        // Convert elliptical arcs to cubic béziers - those are easier to transform
+        .transform(SVGPathDataTransformer.A_TO_C())
+    // If there's a transform, transform the whole path accordingly
+    if (svgTransform) {
+      pathData = pathData.transform(SVGPathDataTransformer.MATRIX(
+        svgTransform.matrix.a,
+        svgTransform.matrix.b,
+        svgTransform.matrix.c,
+        svgTransform.matrix.d,
+        svgTransform.matrix.e,
+        svgTransform.matrix.f))
+    }
+    const transformedPathData = encodeSVGPath(pathData.commands)
     if (transformedPathData.indexOf('undefined') !== -1) {
       // DEBUG STUFF
       console.error('broken path data')
@@ -650,97 +665,6 @@ export default class Svg2Roughjs {
       return
     }
     this.rc.path(transformedPathData, this.parseStyleConfig(path, svgTransform))
-  }
-
-  /**
-   * @param {SVGCommand} command
-   * @param {SVGTransform?} svgTransform
-   */
-  transformPathCommand(command, svgTransform) {
-    if (!svgTransform || command.type === SVGPathData.CLOSE_PATH) {
-      return command
-    }
-
-    const transformed = { type: command.type, relative: command.relative }
-    if (
-      command.type === SVGPathData.MOVE_TO ||
-      command.type === SVGPathData.LINE_TO ||
-      command.type === SVGPathData.SMOOTH_QUAD_TO
-    ) {
-      // x, y
-      const { x, y } = this.applyMatrix(new Point(command.x, command.y), svgTransform)
-      transformed.x = x
-      transformed.y = y
-    } else if (command.type === SVGPathData.HORIZ_LINE_TO) {
-      // x
-      const { x } = this.applyMatrix(new Point(command.x, 0), svgTransform)
-      transformed.x = x
-    } else if (command.type === SVGPathData.VERT_LINE_TO) {
-      // y
-      const { y } = this.applyMatrix(new Point(0, command.y), svgTransform)
-      transformed.y = y
-    } else if (command.type === SVGPathData.QUAD_TO) {
-      // x, y, x1, y1
-      const { x, y } = this.applyMatrix(new Point(command.x, command.y), svgTransform)
-      const { x: x1, y: y1 } = this.applyMatrix(new Point(command.x1, command.y1), svgTransform)
-      transformed.x = x
-      transformed.y = y
-      transformed.x1 = x1
-      transformed.y1 = y1
-    } else if (command.type === SVGPathData.CURVE_TO) {
-      // x, y, x1, y1, x2, y2
-      const { x, y } = this.applyMatrix(new Point(command.x, command.y), svgTransform)
-      const { x: x1, y: y1 } = this.applyMatrix(new Point(command.x1, command.y1), svgTransform)
-      const { x: x2, y: y2 } = this.applyMatrix(new Point(command.x2, command.y2), svgTransform)
-      transformed.x = x
-      transformed.y = y
-      transformed.x1 = x1
-      transformed.y1 = y1
-      transformed.x2 = x2
-      transformed.y2 = y2
-    } else if (command.type === SVGPathData.SMOOTH_CURVE_TO) {
-      // x, y, x2, y2
-      const { x, y } = this.applyMatrix(new Point(command.x, command.y), svgTransform)
-      const { x: x2, y: y2 } = this.applyMatrix(new Point(command.x2, command.y2), svgTransform)
-      transformed.x = x
-      transformed.y = y
-      transformed.x2 = x2
-      transformed.y2 = y2
-    } else if (command.type === SVGPathData.ARC) {
-      // rX: number;
-      // rY: number;
-      // xRot: number;
-      // sweepFlag: 0 | 1;
-      // lArcFlag: 0 | 1;
-      // x: number;
-      // y: number;
-      // cX?: number;
-      // cY?: number;
-      // phi1?: number;
-      // phi2?: number;
-      transformed.xRot = command.xRot
-      transformed.sweepFlag = command.sweepFlag
-      transformed.lArcFlag = command.lArcFlag
-      const { x: rX, y: rY } = this.applyMatrix(new Point(command.rX, command.rY), svgTransform)
-      transformed.rX = rX
-      transformed.rY = rY
-      const { x, y } = this.applyMatrix(new Point(command.x, command.y), svgTransform)
-      transformed.x = x
-      transformed.y = y
-      if (typeof command.cX !== 'undefined' && typeof command.cY !== 'undefined') {
-        const { x: cX, y: cY } = this.applyMatrix(new Point(command.cX, command.cY), svgTransform)
-        transformed.cX = cX
-        transformed.cY = cY
-      }
-      if (typeof phi1 !== 'undefined') {
-        transformed.phi1 = command.phi1
-      }
-      if (typeof phi2 !== 'undefined') {
-        transformed.phi2 = command.phi2
-      }
-    }
-
-    return transformed
   }
 
   /**
