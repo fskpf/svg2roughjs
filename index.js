@@ -129,6 +129,9 @@ export default class Svg2Roughjs {
   }
 
   redraw() {
+    if (!this.svg) {
+      return
+    }
     this.clearCanvas()
     this.drawSvg(this.svg, undefined, this.width, this.height)
   }
