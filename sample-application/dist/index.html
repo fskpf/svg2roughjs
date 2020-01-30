@@ -7,6 +7,7 @@
   <style>
     body {
       position: relative;
+      margin: 0;
     }
     #preview {
       position: relative;
@@ -18,11 +19,48 @@
       opacity: 0;
       background-color: white;
     }
+    .header {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 20px;
+      padding: 20px 0;
+      width: 100%;
+      background-image: linear-gradient(60deg, #29323c 0%, #485563 100%);
+    }
+    .header-img {
+      width: 100px;
+      height: 100px;
+      padding: 0 40px;
+    }
+    .title {
+      text-align: center;
+      font-family: sans-serif;
+    }
+    .title h1 {
+      margin-bottom: 5px;
+      font-weight: bold;
+      letter-spacing: 5px;
+      font-size: 35px;
+    }
+    a:link, a:visited, a:hover, a:active {
+      color: #fff;
+      text-decoration: none;
+    }
   </style>
 </head>
 
 <body>
-  <h2><a href="https://github.com/fskpf/svg2roughjs" target="_blank">Svg2Rough.js on GitHub</a></h1>
+
+  <div class="header">
+    <img class="header-img" src="./svg-logo/svg-logo.svg" alt="W3C SVG Logo">
+    <div class="title">
+      <h1><a href="https://github.com/fskpf/svg2roughjs" target="_blank">Svg2Rough.js</a></h1>
+      <a class="subtitle" href="https://github.com/fskpf/svg2roughjs" target="_blank">on GitHub</a>
+    </div>
+    <img class="header-img" src="./svg-logo/svg-logo-rough.png" alt="Sketchy W3C SVG Logo">
+  </div>
+
   <input type="file" id="file-chooser" accept="image/svg+xml">
   <select id="sample-select">
     <option value="bpmn1">bpmn1.svg</option>

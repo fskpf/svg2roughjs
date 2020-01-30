@@ -15,13 +15,11 @@ import Svg2Roughjs from 'svg2roughjs'
 
 function loadSvg(svg2roughjs, fileContent) {
   const inputElement = document.getElementById('input')
+  const outputElement = document.getElementById('output')
+  const canvas = outputElement.querySelector('canvas')
 
   const parser = new DOMParser()
-  const parsererrorNS = parser
-    .parseFromString('INVALID', 'text/xml')
-    .getElementsByTagName('parsererror')[0].namespaceURI
   const doc = parser.parseFromString(fileContent, 'image/svg+xml')
-
   const svg = doc.firstElementChild
 
   while (inputElement.childElementCount > 0) {
@@ -29,11 +27,17 @@ function loadSvg(svg2roughjs, fileContent) {
   }
   inputElement.appendChild(svg)
 
-  if (doc.getElementsByTagNameNS(parsererrorNS, 'parsererror').length > 0) {
+  if (svg.tagName === 'HTML') {
     console.error('Error parsing XML')
     inputElement.style.opacity = 1
+    if (canvas) {
+      canvas.style.opacity = 0
+    }
   } else {
-    inputElement.style.opacity = 0
+    inputElement.style.opacity = document.getElementById('opacity').value
+    if (canvas) {
+      canvas.style.opacity = 1
+    }
     svg2roughjs.svg = svg
   }
 }
