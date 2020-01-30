@@ -414,7 +414,7 @@ export default class Svg2Roughjs {
     let strokeWidth = this.getEffectiveAttribute(element, 'stroke-width')
     if (strokeWidth) {
       // Convert to user space units (px)
-      strokeWidth = units.convert('px', strokeWidth)
+      strokeWidth = units.convert('px', strokeWidth, element.ownerSVGElement)
       // If we have a transform and an explicit stroke, include the scaling factor
       if (svgTransform && stroke !== 'none') {
         // For lack of a better option here, just use the mean of x and y scaling factors
@@ -847,18 +847,18 @@ export default class Svg2Roughjs {
     this.ctx.save()
 
     const textLocation = new Point(
-      text.x ? text.x.baseVal.value : 0,
-      text.y ? text.y.baseVal.value : 0
+      this.getLengthInPx(text.x),
+      this.getLengthInPx(text.y)
     )
 
     // text style
-    this.ctx.font = this.getCssFont(text)
+    this.ctx.font = this.getCssFont(text, svgTransform)
     const style = this.parseStyleConfig(text, svgTransform)
     if (style.fill) {
       this.ctx.fillStyle = style.fill
     }
 
-    const textAnchor = text.getAttribute('text-anchor')
+    const textAnchor = this.getEffectiveAttribute(text, 'text-anchor')
     if (textAnchor) {
       this.ctx.textAlign = textAnchor !== 'middle' ? textAnchor : 'center'
     }
@@ -903,26 +903,27 @@ export default class Svg2Roughjs {
 
   /**
    * @param {SVGTextElement} text
+   * @param {SVGTransform?} svgTransform
    * @return {string}
    */
-  getCssFont(text) {
+  getCssFont(text, svgTransform) {
     let cssFont = ''
-    const fontStyle = text.getAttribute('font-style')
+    const fontStyle = this.getEffectiveAttribute(text, 'font-style')
     if (fontStyle) {
       cssFont += fontStyle
     }
-    const fontWeight = text.getAttribute('font-weight')
+    const fontWeight = this.getEffectiveAttribute(text, 'font-weight')
     if (fontWeight) {
       cssFont += ` ${fontWeight}`
     }
-    const fontSize = text.getAttribute('font-size')
+    let fontSize = this.getEffectiveAttribute(text, 'font-size')
     if (fontSize) {
       cssFont += ` ${fontSize}`
     }
     if (this.fontFamily) {
       cssFont += ` ${this.fontFamily}`
     } else {
-      const fontFamily = text.getAttribute('font-family')
+      const fontFamily = this.getEffectiveAttribute(text, 'font-family')
       if (fontFamily) {
         cssFont += ` ${fontFamily}`
       }
