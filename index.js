@@ -801,7 +801,7 @@ export default class Svg2Roughjs {
     this.ctx.translate(dx, dy)
 
     if (text.childElementCount === 0) {
-      this.ctx.fillText(text.textContent, textLocation.x, textLocation.y)
+      this.ctx.fillText(this.getTextContent(text), textLocation.x, textLocation.y)
     } else {
       for (let i = 0; i < text.childElementCount; i++) {
         const child = text.children[i]
@@ -809,12 +809,45 @@ export default class Svg2Roughjs {
           const dx = this.getLengthInPx(child.dx)
           const dy = this.getLengthInPx(child.dy)
           this.ctx.translate(dx, dy)
-          this.ctx.fillText(child.textContent, textLocation.x, textLocation.y)
+          this.ctx.fillText(this.getTextContent(child), textLocation.x, textLocation.y)
         }
       }
     }
 
     this.ctx.restore()
+  }
+
+  /**
+   * Retrieves the text content from a text content element (text, tspan, ...)
+   * 
+   * @param {SVGTextContentElement} element 
+   * @returns {string}
+   */
+  getTextContent(element) {
+    let content = element.textContent
+    if (this.shouldNormalizeWhitespace(element)) {
+      content = content.replace(/[\n\r\t ]+/g, ' ').trim()
+    } else {
+      content = content.replace(/\r\n|[\n\r\t]/g, ' ')
+    }
+    return content
+  }
+
+  /**
+   * Determines whether the given element has default white-space handling, i.e. normalization.
+   * Returns false if the element (or an ancestor) has xml:space='preserve'
+   * @param {SVGElement} element
+   * @returns {boolean}
+   */
+  shouldNormalizeWhitespace(element) {
+    let xmlSpaceAttribute = null
+    while (element !== null && xmlSpaceAttribute === null) {
+      xmlSpaceAttribute = element.getAttribute('xml:space')
+      if (xmlSpaceAttribute === null) {
+        element = element.parentElement
+      }
+    }
+    return xmlSpaceAttribute !== 'preserve' // no attribute is also default handling
   }
 
   /**
