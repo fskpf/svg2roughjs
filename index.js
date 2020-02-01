@@ -847,7 +847,7 @@ export default class Svg2Roughjs {
   drawText(text, svgTransform) {
     this.ctx.save()
 
-    const textLocation = new Point(this.getLengthInPx(text.x), this.getLengthInPx(text.y))
+    let textLocation = new Point(this.getLengthInPx(text.x), this.getLengthInPx(text.y))
 
     // text style
     this.ctx.font = this.getCssFont(text, svgTransform)
@@ -882,6 +882,7 @@ export default class Svg2Roughjs {
       for (let i = 0; i < text.childElementCount; i++) {
         const child = text.children[i]
         if (child.tagName === 'tspan') {
+          textLocation = new Point(this.getLengthInPx(child.x), this.getLengthInPx(child.y))
           const dx = this.getLengthInPx(child.dx)
           const dy = this.getLengthInPx(child.dy)
           this.ctx.translate(dx, dy)
