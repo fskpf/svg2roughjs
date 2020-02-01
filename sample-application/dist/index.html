@@ -28,7 +28,7 @@
     }
 
     #input {
-      /* position: absolute; */
+      position: absolute;
       top: 0;
       left: 0;
       opacity: 0;
@@ -42,6 +42,11 @@
       padding: 20px 0;
       width: 100%;
       background-image: linear-gradient(60deg, #29323c 0%, #485563 100%);
+      /* background:
+        linear-gradient(90deg, #29323c 29px, transparent 1%) center,
+        linear-gradient(#29323c 29px, transparent 1%) center,
+        #92A0B0;
+      background-size: 30px 30px; */
     }
 
     .header-img {
@@ -92,7 +97,7 @@
       padding: 10px;
     }
 
-    .toolbar > * {
+    .toolbar>* {
       margin: 2px 5px;
     }
 
@@ -121,9 +126,11 @@
       display: flex;
       align-items: center;
     }
+
     .checkbox input {
       margin: 8px;
     }
+
     .checkbox * {
       cursor: pointer;
     }
