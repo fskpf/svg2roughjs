@@ -5,13 +5,28 @@
   <meta charset="UTF-8">
   <title>Svg2Rough.js Sample</title>
   <style>
+    body * {
+      box-sizing: border-box;
+    }
+
     body {
-      position: relative;
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      right: 0;
+      left: 0;
       margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: #2a333d;
     }
+
     #preview {
-      position: relative;
+      display: flex;
+      flex-direction: column;
+      overflow: auto;
+      width: 100%;
     }
+
     #input {
       /* position: absolute; */
       top: 0;
@@ -19,33 +34,98 @@
       opacity: 0;
       background-color: white;
     }
+
     .header {
       display: flex;
       justify-content: center;
       align-items: center;
-      margin-bottom: 20px;
       padding: 20px 0;
       width: 100%;
       background-image: linear-gradient(60deg, #29323c 0%, #485563 100%);
     }
+
     .header-img {
       width: 100px;
       height: 100px;
-      padding: 0 40px;
+      margin: 0 40px;
     }
+
     .title {
       text-align: center;
-      font-family: sans-serif;
+      font-family: Arial, Helvetica, sans-serif;
     }
+
     .title h1 {
       margin-bottom: 5px;
       font-weight: bold;
       letter-spacing: 5px;
       font-size: 35px;
     }
-    a:link, a:visited, a:hover, a:active {
+
+    a:link,
+    a:visited,
+    a:hover,
+    a:active {
       color: #fff;
       text-decoration: none;
+    }
+
+    .sidebar {
+      border-right: 1px solid rgba(0, 0, 0, 0.14);
+      display: flex;
+      flex-direction: column;
+      padding: 0 15px;
+      flex: 0 0 200px;
+    }
+
+    .sidebar h2 {
+      margin: 10px 0;
+      font-size: 18px;
+      text-align: center;
+      letter-spacing: 1px;
+    }
+
+    .toolbar {
+      display: flex;
+      justify-items: center;
+      flex-wrap: wrap;
+      padding: 10px;
+    }
+
+    .toolbar > * {
+      margin: 2px 5px;
+    }
+
+    .main {
+      position: absolute;
+      top: 140px;
+      right: 0;
+      left: 0;
+      bottom: 0;
+      overflow: hidden;
+      display: flex;
+    }
+
+    .image-container {
+      overflow: auto;
+      height: 100%;
+      position: relative;
+    }
+
+    .separator {
+      border-top: 1px solid rgba(0, 0, 0, 0.14);
+      margin: 15px 20px;
+    }
+
+    .checkbox {
+      display: flex;
+      align-items: center;
+    }
+    .checkbox input {
+      margin: 8px;
+    }
+    .checkbox * {
+      cursor: pointer;
     }
   </style>
 </head>
@@ -61,50 +141,71 @@
     <img class="header-img" src="./svg-logo/svg-logo-rough.png" alt="Sketchy W3C SVG Logo">
   </div>
 
-  <input type="file" id="file-chooser" accept="image/svg+xml">
-  <select id="sample-select">
-    <option value="bpmn1">bpmn1.svg</option>
-    <option value="computer-network">computer-network.svg</option>
-    <option value="flowchart4">flowchart4.svg</option>
-    <option value="hierarchical1">hierarchical1.svg</option>
-    <option value="hierarchical2">hierarchical2.svg</option>
-    <option value="mindmap">mindmap.svg</option>
-    <option value="singlemovie">singlemovie.svg</option>
-    <option value="movies">movies.svg</option>
-    <option value="organic1">organic1.svg</option>
-    <option value="organic2">organic2.svg</option>
-    <option value="tree1">tree1.svg</option>
-    <option value="venn">venn.svg</option>
-  </select>
-  <label for="opacity">Compare: </label>
-  <input id="opacity" type="range" min="0" max="1" step="0.05" value="0" oninput="opacityChanged()">
-  <button id="download-btn">Download Result</button>
+  <div class="main">
+    <div class="sidebar">
+      <h2>Drawing Options</h2>
 
-  <br/>
+      <div class="separator" style="margin-top: 5px;"></div>
 
-  <label for="fill-style">Fill Style</label>
-  <select id="fill-style" style="margin-right: 2em;">
-    <option value="hachure">hachure</option>
-    <option value="solid">solid</option>
-    <option value="zigzag">zigzag</option>
-    <option value="cross-hatch">cross-hatch</option>
-    <option value="dots">dots (excruciatingly slow)</option>
-    <option value="dashed">dashed (somewhat slow)</option>
-    <option value="zigzag-line">zigzag-line (slow)</option>
-  </select>
+      <label for="fill-style">Fill Style</label>
+      <select id="fill-style" style="margin: 2px 0;">
+        <option value="hachure">hachure</option>
+        <option value="solid">solid</option>
+        <option value="zigzag">zigzag</option>
+        <option value="cross-hatch">cross-hatch</option>
+        <option value="dots">dots (excruciatingly slow)</option>
+        <option value="dashed">dashed (somewhat slow)</option>
+        <option value="zigzag-line">zigzag-line (slow)</option>
+      </select>
+      <div class="separator"></div>
 
-  <input id="roughness-input" type="range" value="1" min="0" max="4" step="0.5">
-  <label for="roughness-input" style="margin-right: 2em;">Roughness</label>
-  <input id="bowing-input" type="range" value="1" min="0" max="15" step="1">
-  <label for="bowing-input" style="margin-right: 2em;">Bowing</label>
-  <input id="original-font" type="checkbox">
-  <label for="original-font">Use original font</label>
-  <input id="randomize" type="checkbox" checked>
-  <label for="randomize">Randomize hatching per shape</label>
+      <label for="roughness-input">Roughness</label>
+      <input id="roughness-input" type="range" value="1" min="0" max="4" step="0.5">
+      <div class="separator"></div>
+      <label for="bowing-input">Bowing</label>
+      <input id="bowing-input" type="range" value="1" min="0" max="15" step="1">
+      <div class="separator"></div>
+      <div class="checkbox">
+        <input id="original-font" type="checkbox">
+        <label for="original-font">Use original font</label>
+      </div>
+      <div class="separator"></div>
+      <div class="checkbox">
+        <input id="randomize" type="checkbox" checked>
+        <label for="randomize">Randomize hatching per shape</label>
+      </div>
+    </div>
 
-  <div id="preview">
-    <div id="output"></div>
-    <div id="input"></div>
+    <div id="preview">
+
+      <div class="toolbar">
+        <input type="file" id="file-chooser" accept="image/svg+xml">
+        <select id="sample-select">
+          <option value="bpmn1">bpmn1.svg</option>
+          <option value="computer-network">computer-network.svg</option>
+          <option value="flowchart4">flowchart4.svg</option>
+          <option value="hierarchical1">hierarchical1.svg</option>
+          <option value="hierarchical2">hierarchical2.svg</option>
+          <option value="mindmap">mindmap.svg</option>
+          <option value="singlemovie">singlemovie.svg</option>
+          <option value="movies">movies.svg</option>
+          <option value="organic1">organic1.svg</option>
+          <option value="organic2">organic2.svg</option>
+          <option value="tree1">tree1.svg</option>
+          <option value="venn">venn.svg</option>
+        </select>
+        <label for="opacity">Compare: </label>
+        <input id="opacity" type="range" min="0" max="1" step="0.05" value="0" oninput="opacityChanged()">
+        <button id="download-btn">Download Sketch (PNG)</button>
+      </div>
+
+      <div class="separator" style="margin: 0 35px 5px 35px;"></div>
+
+      <div class="image-container">
+        <div id="output"></div>
+        <div id="input"></div>
+      </div>
+    </div>
   </div>
 
   <script>
