@@ -528,6 +528,12 @@ export default class Svg2Roughjs {
     const cy = ellipse.cy.baseVal.value
     const rx = ellipse.rx.baseVal.value
     const ry = ellipse.ry.baseVal.value
+
+    if (rx === 0 || ry === 0) {
+      // zero-radius ellipse is not rendered
+      return
+    }
+
     if (svgTransform === null) {
       // Simple case, there's no transform and we can use the ellipse command
       const center = this.applyMatrix(new Point(cx, cy), svgTransform)
@@ -567,6 +573,12 @@ export default class Svg2Roughjs {
     const cx = circle.cx.baseVal.value
     const cy = circle.cy.baseVal.value
     const r = circle.r.baseVal.value
+
+    if (r === 0) {
+      // zero-radius circle is not rendered
+      return
+    }
+
     const center = this.applyMatrix(new Point(cx, cy), svgTransform)
 
     if (svgTransform === null) {
@@ -609,6 +621,12 @@ export default class Svg2Roughjs {
       new Point(line.x2.baseVal.value, line.y2.baseVal.value),
       svgTransform
     )
+
+    if (p1.x === p2.x && p1.y === p2.y) {
+      // zero-length line is not rendered
+      return
+    }
+
     this.rc.line(p1.x, p1.y, p2.x, p2.y, this.parseStyleConfig(line, svgTransform))
   }
 
@@ -692,6 +710,12 @@ export default class Svg2Roughjs {
     const y = rect.y.baseVal.value
     const width = rect.width.baseVal.value
     const height = rect.height.baseVal.value
+
+    if (width === 0 || height === 0) {
+      // zero-width or zero-height rect will not be rendered
+      return
+    }
+
     let rx = rect.hasAttribute('rx') ? rect.rx.baseVal.value : null
     let ry = rect.hasAttribute('ry') ? rect.ry.baseVal.value : null
     if (!svgTransform && !rx && !ry) {
