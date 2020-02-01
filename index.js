@@ -801,7 +801,7 @@ export default class Svg2Roughjs {
     this.ctx.translate(dx, dy)
 
     if (text.childElementCount === 0) {
-      this.ctx.fillText(this.getTextContent(text), textLocation.x, textLocation.y)
+      this.ctx.fillText(this.getTextContent(text), textLocation.x, textLocation.y, text.getBBox().width)
     } else {
       for (let i = 0; i < text.childElementCount; i++) {
         const child = text.children[i]
