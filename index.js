@@ -363,7 +363,8 @@ export default class Svg2Roughjs {
    * @return {string|null} attribute value if it exists
    */
   getEffectiveAttribute(element, attributeName) {
-    const attr = getComputedStyle(element)[attributeName]
+    // getComputedStyle doesn't work for, e.g. <svg fill='rgba(...)'>
+    const attr = getComputedStyle(element)[attributeName] || element.getAttribute(attributeName)
     if (!attr) {
       const parent = element.parentElement
       return parent ? this.getEffectiveAttribute(parent, attributeName) : null
@@ -486,6 +487,9 @@ export default class Svg2Roughjs {
       case 'text':
         this.drawText(element, svgTransform)
         break
+      case 'image':
+        this.drawImage(element, svgTransform)
+        break
     }
   }
 
@@ -569,7 +573,12 @@ export default class Svg2Roughjs {
       // transform a point on the ellipse to get the transformed radius
       const radiusPoint = this.applyMatrix(new Point(cx + r, cy + r), svgTransform)
       const transformedWidth = 2 * (radiusPoint.x - center.x)
-      this.rc.circle(center.x, center.y, transformedWidth, this.parseStyleConfig(circle, svgTransform))
+      this.rc.circle(
+        center.x,
+        center.y,
+        transformedWidth,
+        this.parseStyleConfig(circle, svgTransform)
+      )
     } else {
       // in other cases we need to construct the path manually.
       const factor = (4 / 3) * (Math.sqrt(2) - 1)
@@ -643,7 +652,8 @@ export default class Svg2Roughjs {
     const dataAttrs = path.getAttribute('d')
     let pathData =
       // Parse path data and convert to absolute coordinates
-      new SVGPathData(dataAttrs).toAbs()
+      new SVGPathData(dataAttrs)
+        .toAbs()
         // Normalize H and V to L commands - those cannot work with how we draw transformed paths otherwise
         .transform(SVGPathDataTransformer.NORMALIZE_HVZ())
         // Normalize S and T to Q and C commands - Rough.js has a bug with T where it expects 4 parameters instead of 2
@@ -652,13 +662,16 @@ export default class Svg2Roughjs {
         .transform(SVGPathDataTransformer.A_TO_C())
     // If there's a transform, transform the whole path accordingly
     if (svgTransform) {
-      pathData = pathData.transform(SVGPathDataTransformer.MATRIX(
-        svgTransform.matrix.a,
-        svgTransform.matrix.b,
-        svgTransform.matrix.c,
-        svgTransform.matrix.d,
-        svgTransform.matrix.e,
-        svgTransform.matrix.f))
+      pathData = pathData.transform(
+        SVGPathDataTransformer.MATRIX(
+          svgTransform.matrix.a,
+          svgTransform.matrix.b,
+          svgTransform.matrix.c,
+          svgTransform.matrix.d,
+          svgTransform.matrix.e,
+          svgTransform.matrix.f
+        )
+      )
     }
     const transformedPathData = encodeSVGPath(pathData.commands)
     if (transformedPathData.indexOf('undefined') !== -1) {
@@ -685,7 +698,13 @@ export default class Svg2Roughjs {
       // Simple case; just a rectangle
       const p1 = this.applyMatrix(new Point(x, y), svgTransform)
       const p2 = this.applyMatrix(new Point(x + width, y + height), svgTransform)
-      this.rc.rectangle(p1.x, p1.y, p2.x - p1.x, p2.y - p1.y, this.parseStyleConfig(rect, svgTransform))
+      this.rc.rectangle(
+        p1.x,
+        p1.y,
+        p2.x - p1.x,
+        p2.y - p1.y,
+        this.parseStyleConfig(rect, svgTransform)
+      )
     } else {
       // Rounded rectangle
       // Negative values are an error and result in the default value
@@ -716,7 +735,7 @@ export default class Svg2Roughjs {
         path += `L ${this.applyMatrix(new Point(x, y + height), svgTransform)}`
         path += `z`
       } else {
-        const factor = 4 / 3 * (Math.sqrt(2) - 1)
+        const factor = (4 / 3) * (Math.sqrt(2) - 1)
 
         // Construct path for the rounded rectangle
         // perform an absolute moveto operation to location (x+rx,y), where x is the value of the ‘rect’ element's ‘x’ attribute converted to user space, rx is the effective value of the ‘rx’ attribute converted to user space and y is the value of the ‘y’ attribute converted to user space
@@ -734,7 +753,10 @@ export default class Svg2Roughjs {
         const p4 = this.applyMatrix(new Point(x + width, y + height - ry), svgTransform)
         path += `L ${p4}`
         // perform an absolute elliptical arc operation to coordinate (x+width-rx,y+height)
-        const p5c1 = this.applyMatrix(new Point(x + width, y + height - ry + factor * ry), svgTransform)
+        const p5c1 = this.applyMatrix(
+          new Point(x + width, y + height - ry + factor * ry),
+          svgTransform
+        )
         const p5c2 = this.applyMatrix(new Point(x + width - factor * rx, y + height), svgTransform)
         const p5 = this.applyMatrix(new Point(x + width - rx, y + height), svgTransform)
         path += `C ${p5c1} ${p5c2} ${p5}`
@@ -753,7 +775,7 @@ export default class Svg2Roughjs {
         const p9c1 = this.applyMatrix(new Point(x, y + factor * ry), svgTransform)
         const p9c2 = this.applyMatrix(new Point(x + factor * rx, y), svgTransform)
         path += `C ${p9c1} ${p9c2} ${p1}`
-        path += "z"
+        path += 'z'
       }
 
       // must use square line cap here so it looks like a rectangle. Default seems to be butt.
@@ -767,16 +789,65 @@ export default class Svg2Roughjs {
   }
 
   /**
+   * @param {SVGImageElement} svgImage
+   * @param {SVGTransform?} svgTransform
+   */
+  drawImage(svgImage, svgTransform) {
+    const href = svgImage.href.baseVal
+    const x = svgImage.x.baseVal.value
+    const y = svgImage.y.baseVal.value
+    let width, height
+    if (svgImage.getAttribute('width') && svgImage.getAttribute('height')) {
+      width = svgImage.width.baseVal.value
+      height = svgImage.height.baseVal.value
+    }
+    if (href.startsWith('data:') && href.indexOf('image/svg+xml') !== -1) {
+      // data:[<media type>][;charset=<character set>][;base64],<data>
+      const dataUrlRegex = /^data:([^,]*),(.*)/
+      const match = dataUrlRegex.exec(href)
+      if (match.length > 2) {
+        const meta = match[1]
+        let svgString = match[2]
+        const isBase64 = meta.indexOf('base64') !== -1
+        const isUtf8 = meta.indexOf('utf8') !== -1
+        if (isBase64) {
+          svgString = btoa(svgString)
+        }
+        if (!isUtf8) {
+          svgString = decodeURIComponent(svgString)
+        }
+        const parser = new DOMParser()
+        const doc = parser.parseFromString(svgString, 'image/svg+xml')
+        const svg = doc.firstElementChild
+
+        let matrix = this.svg.createSVGMatrix().translate(x, y)
+        matrix = svgTransform ? svgTransform.matrix.multiply(matrix) : matrix
+
+        this.drawSvg(svg, this.svg.createSVGTransformFromMatrix(matrix), width, height)
+        return
+      }
+    } else {
+      // we just draw the image 'as is' into the canvas
+      const img = new Image()
+      let matrix = this.svg.createSVGMatrix().translate(x, y)
+      matrix = svgTransform ? svgTransform.matrix.multiply(matrix) : matrix
+      const dx = matrix.e
+      const dy = matrix.f
+      img.onload = () => {
+        this.ctx.drawImage(img, dx, dy)
+      }
+      img.src = href
+    }
+  }
+
+  /**
    * @param {SVGTextElement} text
    * @param {SVGTransform?} svgTransform
    */
   drawText(text, svgTransform) {
     this.ctx.save()
 
-    const textLocation = new Point(
-      this.getLengthInPx(text.x),
-      this.getLengthInPx(text.y)
-    )
+    const textLocation = new Point(this.getLengthInPx(text.x), this.getLengthInPx(text.y))
 
     // text style
     this.ctx.font = this.getCssFont(text, svgTransform)
@@ -801,7 +872,12 @@ export default class Svg2Roughjs {
     this.ctx.translate(dx, dy)
 
     if (text.childElementCount === 0) {
-      this.ctx.fillText(this.getTextContent(text), textLocation.x, textLocation.y, text.getBBox().width)
+      this.ctx.fillText(
+        this.getTextContent(text),
+        textLocation.x,
+        textLocation.y,
+        text.getBBox().width
+      )
     } else {
       for (let i = 0; i < text.childElementCount; i++) {
         const child = text.children[i]
@@ -819,8 +895,8 @@ export default class Svg2Roughjs {
 
   /**
    * Retrieves the text content from a text content element (text, tspan, ...)
-   * 
-   * @param {SVGTextContentElement} element 
+   *
+   * @param {SVGTextContentElement} element
    * @returns {string}
    */
   getTextContent(element) {
