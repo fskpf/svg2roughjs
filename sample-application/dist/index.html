@@ -13,7 +13,7 @@
       position: relative;
     }
     #input {
-      position: absolute;
+      /* position: absolute; */
       top: 0;
       left: 0;
       opacity: 0;
@@ -88,10 +88,9 @@
     <option value="solid">solid</option>
     <option value="zigzag">zigzag</option>
     <option value="cross-hatch">cross-hatch</option>
-    <option value="dots">dots</option>
-    <option value="starburst">starburst</option>
-    <option value="dashed">dashed</option>
-    <option value="zigzag-line">zigzag-line</option>
+    <option value="dots">dots (excruciatingly slow)</option>
+    <option value="dashed">dashed (somewhat slow)</option>
+    <option value="zigzag-line">zigzag-line (slow)</option>
   </select>
 
   <input id="roughness-input" type="range" value="1" min="0" max="4" step="0.5">
