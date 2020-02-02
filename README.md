@@ -46,7 +46,8 @@ These images are taken from the [sample application](https://fskpf.github.io/) w
 ## Credits
 * [Rough.js](https://github.com/pshihn/rough) - Draws the hand-drawn elements
 * [svg-pathdata](https://github.com/nfroidure/svg-pathdata) - Parses SVGPathElements
-* [TinyColor](https://github.com/bgrins/TinyColor) - Help with color manipulation
+* [TinyColor](https://github.com/bgrins/TinyColor) - Color manipulation
+* [units-css](https://github.com/alexdunphy/units) - CSS units parsing
 
 ## License
 [MIT License](https://github.com/fskpf/svg2roughjs/blob/master/LICENSE.md) © Fabian Schwarzkopf and Johannes Rössel

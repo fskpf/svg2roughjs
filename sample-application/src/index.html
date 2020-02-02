@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>Svg2Rough.js Sample</title>
+  <title>Svg2Rough.js Sample Application</title>
   <style>
     body * {
       box-sizing: border-box;
@@ -140,12 +140,12 @@
 <body>
 
   <div class="header">
-    <img class="header-img" src="./svg-logo/svg-logo.svg" alt="W3C SVG Logo">
+    <img class="header-img" src="./static/assets/svg-logo.svg" alt="W3C SVG Logo">
     <div class="title">
       <h1><a href="https://github.com/fskpf/svg2roughjs" target="_blank">Svg2Rough.js</a></h1>
       <a class="subtitle" href="https://github.com/fskpf/svg2roughjs" target="_blank">on GitHub</a>
     </div>
-    <img class="header-img" src="./svg-logo/svg-logo-rough.png" alt="Sketchy W3C SVG Logo">
+    <img class="header-img" src="./static/assets/svg-logo-rough.png" alt="Sketchy W3C SVG Logo">
   </div>
 
   <div class="main">
@@ -221,7 +221,9 @@
       document.getElementById('input').style.opacity = value
     }
   </script>
-  <script src="main.js"></script>
+  
+  <!-- the bundle in injected by the build -->
+
 </body>
 
 </html>

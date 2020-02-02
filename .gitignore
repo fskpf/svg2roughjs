@@ -1,4 +1,4 @@
 node_modules
-sample-application/dist/main.js
+sample-application/dist
 svg2roughjs-*.tgz
 .idea

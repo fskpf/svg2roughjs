@@ -1,6 +1,6 @@
 import tinycolor from 'tinycolor2'
 import { SVGPathData, encodeSVGPath, SVGPathDataTransformer } from 'svg-pathdata'
-import rough from 'roughjs/bundled/rough.esm'
+import rough from 'roughjs/dist/rough.umd'
 
 var units = require('units-css')
 
