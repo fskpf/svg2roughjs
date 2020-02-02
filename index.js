@@ -163,7 +163,7 @@ export default class Svg2Roughjs {
 
       const viewBoxMatrix = this.svg
         .createSVGMatrix()
-        .translate(-viewBoxX, -viewBoxY)
+        .translate(-viewBoxX * (width / viewBoxWidth), -viewBoxY * (height / viewBoxHeight))
         .translate(svgX, svgY)
         .scaleNonUniform(width / viewBoxWidth, height / viewBoxHeight)
       const combinedMatrix = svgTransform
