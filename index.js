@@ -410,11 +410,6 @@ export default class Svg2Roughjs {
       config.stroke = 'none'
     }
 
-    // unstroked but filled shapes look weird, so always apply a stroke if we fill something
-    if (config.fill && config.stroke === 'none') {
-      config.stroke = config.fill
-    }
-
     let strokeWidth = this.getEffectiveAttribute(element, 'stroke-width')
     if (strokeWidth) {
       // Convert to user space units (px)
@@ -428,6 +423,12 @@ export default class Svg2Roughjs {
       config.strokeWidth = strokeWidth
     } else {
       config.strokeWidth = 0
+    }
+
+    // unstroked but filled shapes look weird, so always apply a stroke if we fill something
+    if (config.fill && config.stroke === 'none') {
+      config.stroke = config.fill
+      config.strokeWidth = 1
     }
 
     if (this.randomize) {
@@ -503,7 +504,13 @@ export default class Svg2Roughjs {
       const pt = this.applyMatrix(p, svgTransform)
       return [pt.x, pt.y]
     })
-    this.rc.linearPath(transformed, this.parseStyleConfig(polyline, svgTransform))
+    const style = this.parseStyleConfig(polyline, svgTransform)
+    if (style.fill && style.fill !== 'none') {
+      const fillStyle = Object.assign({}, style)
+      fillStyle.stroke = 'none'
+      this.rc.polygon(transformed, fillStyle)
+    }
+    this.rc.linearPath(transformed, style)
   }
 
   /**
@@ -528,6 +535,12 @@ export default class Svg2Roughjs {
     const cy = ellipse.cy.baseVal.value
     const rx = ellipse.rx.baseVal.value
     const ry = ellipse.ry.baseVal.value
+
+    if (rx === 0 || ry === 0) {
+      // zero-radius ellipse is not rendered
+      return
+    }
+
     if (svgTransform === null) {
       // Simple case, there's no transform and we can use the ellipse command
       const center = this.applyMatrix(new Point(cx, cy), svgTransform)
@@ -567,6 +580,12 @@ export default class Svg2Roughjs {
     const cx = circle.cx.baseVal.value
     const cy = circle.cy.baseVal.value
     const r = circle.r.baseVal.value
+
+    if (r === 0) {
+      // zero-radius circle is not rendered
+      return
+    }
+
     const center = this.applyMatrix(new Point(cx, cy), svgTransform)
 
     if (svgTransform === null) {
@@ -609,6 +628,12 @@ export default class Svg2Roughjs {
       new Point(line.x2.baseVal.value, line.y2.baseVal.value),
       svgTransform
     )
+
+    if (p1.x === p2.x && p1.y === p2.y) {
+      // zero-length line is not rendered
+      return
+    }
+
     this.rc.line(p1.x, p1.y, p2.x, p2.y, this.parseStyleConfig(line, svgTransform))
   }
 
@@ -692,6 +717,12 @@ export default class Svg2Roughjs {
     const y = rect.y.baseVal.value
     const width = rect.width.baseVal.value
     const height = rect.height.baseVal.value
+
+    if (width === 0 || height === 0) {
+      // zero-width or zero-height rect will not be rendered
+      return
+    }
+
     let rx = rect.hasAttribute('rx') ? rect.rx.baseVal.value : null
     let ry = rect.hasAttribute('ry') ? rect.ry.baseVal.value : null
     if (!svgTransform && !rx && !ry) {
@@ -847,7 +878,7 @@ export default class Svg2Roughjs {
   drawText(text, svgTransform) {
     this.ctx.save()
 
-    const textLocation = new Point(this.getLengthInPx(text.x), this.getLengthInPx(text.y))
+    let textLocation = new Point(this.getLengthInPx(text.x), this.getLengthInPx(text.y))
 
     // text style
     this.ctx.font = this.getCssFont(text, svgTransform)
@@ -882,6 +913,7 @@ export default class Svg2Roughjs {
       for (let i = 0; i < text.childElementCount; i++) {
         const child = text.children[i]
         if (child.tagName === 'tspan') {
+          textLocation = new Point(this.getLengthInPx(child.x), this.getLengthInPx(child.y))
           const dx = this.getLengthInPx(child.dx)
           const dy = this.getLengthInPx(child.dy)
           this.ctx.translate(dx, dy)
