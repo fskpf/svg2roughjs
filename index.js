@@ -133,57 +133,61 @@ export default class Svg2Roughjs {
       return
     }
     this.clearCanvas()
-    this.drawSvg(this.svg, undefined, this.width, this.height)
+    this.processRoot(this.svg, null, this.width, this.height)
   }
 
   /**
-   * @param {SVGSVGElement} svg
+   * @param {SVGSVGElement | SVGGElement} root either an SVG- or g-element
    * @param {SVGTransform?} svgTransform
    * @param {number?} width Use elements can overwrite width
    * @param {number?} height Use elements can overwrite height
    */
-  drawSvg(svg, svgTransform, width, height) {
+  processRoot(root, svgTransform, width, height) {
     // traverse svg in DFS
     const stack = []
 
-    if (
-      typeof width !== 'undefined' &&
-      typeof height !== 'undefined' &&
-      svg.getAttribute('viewBox')
-    ) {
-      const {
-        x: viewBoxX,
-        y: viewBoxY,
-        width: viewBoxWidth,
-        height: viewBoxHeight
-      } = svg.viewBox.baseVal
+    if (root.tagName === 'svg') {
+      if (
+        typeof width !== 'undefined' &&
+        typeof height !== 'undefined' &&
+        root.getAttribute('viewBox')
+      ) {
+        const {
+          x: viewBoxX,
+          y: viewBoxY,
+          width: viewBoxWidth,
+          height: viewBoxHeight
+        } = root.viewBox.baseVal
 
-      const svgX = svg.x.baseVal.value
-      const svgY = svg.y.baseVal.value
+        const svgX = root.x.baseVal.value
+        const svgY = root.y.baseVal.value
 
-      const viewBoxMatrix = this.svg
-        .createSVGMatrix()
-        .translate(-viewBoxX * (width / viewBoxWidth), -viewBoxY * (height / viewBoxHeight))
-        .translate(svgX, svgY)
-        .scaleNonUniform(width / viewBoxWidth, height / viewBoxHeight)
-      const combinedMatrix = svgTransform
-        ? svgTransform.matrix.multiply(viewBoxMatrix)
-        : viewBoxMatrix
-      svgTransform = this.svg.createSVGTransformFromMatrix(combinedMatrix)
-    }
-
-    // don't put the SVG itself into the stack, so start with the children of it
-    for (let i = svg.childElementCount - 1; i >= 0; i--) {
-      const child = svg.children[i]
-      let newTransform = svgTransform
-      if (child.transform && child.transform.baseVal.length > 0) {
-        const childTransformMatrix = child.transform.baseVal.consolidate().matrix
-        const combinedMatrix = newTransform
-          ? newTransform.matrix.multiply(childTransformMatrix)
-          : childTransformMatrix
-        newTransform = this.svg.createSVGTransformFromMatrix(combinedMatrix)
+        const viewBoxMatrix = this.svg
+          .createSVGMatrix()
+          .translate(-viewBoxX * (width / viewBoxWidth), -viewBoxY * (height / viewBoxHeight))
+          .translate(svgX, svgY)
+          .scaleNonUniform(width / viewBoxWidth, height / viewBoxHeight)
+        const combinedMatrix = svgTransform
+          ? svgTransform.matrix.multiply(viewBoxMatrix)
+          : viewBoxMatrix
+        svgTransform = this.svg.createSVGTransformFromMatrix(combinedMatrix)
       }
-      stack.push({ element: child, transform: newTransform })
+
+      // don't put the SVG itself into the stack, so start with the children of it
+      for (let i = root.childElementCount - 1; i >= 0; i--) {
+        const child = root.children[i]
+        let newTransform = svgTransform
+        if (child.transform && child.transform.baseVal.length > 0) {
+          const childTransformMatrix = child.transform.baseVal.consolidate().matrix
+          const combinedMatrix = newTransform
+            ? newTransform.matrix.multiply(childTransformMatrix)
+            : childTransformMatrix
+          newTransform = this.svg.createSVGTransformFromMatrix(combinedMatrix)
+        }
+        stack.push({ element: child, transform: newTransform })
+      }
+    } else {
+      stack.push({ element: root, transform: svgTransform })
     }
 
     while (stack.length > 0) {
@@ -446,20 +450,17 @@ export default class Svg2Roughjs {
   /**
    * @param {SVGElement} element
    * @param {SVGTransform} svgTransform
-   * @param {number?} width Use elements can overwrite width
-   * @param {number?} height Use elements can overwrite height
    */
-  drawElement(element, svgTransform, width, height) {
+  drawElement(element, svgTransform) {
     switch (element.tagName) {
       case 'svg':
-        if (!width && !height) {
-          // what if the use-element has a width/height and also the SVG element that is referenced?
-          if (element.getAttribute('width') && element.getAttribute('height')) {
-            width = element.width.baseVal.value
-            height = element.height.baseVal.value
-          }
+        // nested svg
+        let width, height
+        if (element.getAttribute('width') && element.getAttribute('height')) {
+          width = element.width.baseVal.value
+          height = element.height.baseVal.value
         }
-        this.drawSvg(element, svgTransform, width, height)
+        this.processRoot(element, svgTransform, width, height)
         break
       case 'rect':
         this.drawRect(element, svgTransform)
@@ -660,7 +661,7 @@ export default class Svg2Roughjs {
       const y = use.y.baseVal.value
       let matrix = this.svg.createSVGMatrix().translate(x, y)
       matrix = svgTransform ? svgTransform.matrix.multiply(matrix) : matrix
-      this.drawElement(
+      this.processRoot(
         defElement,
         this.svg.createSVGTransformFromMatrix(matrix),
         useWidth,
@@ -854,7 +855,7 @@ export default class Svg2Roughjs {
         let matrix = this.svg.createSVGMatrix().translate(x, y)
         matrix = svgTransform ? svgTransform.matrix.multiply(matrix) : matrix
 
-        this.drawSvg(svg, this.svg.createSVGTransformFromMatrix(matrix), width, height)
+        this.processRoot(svg, this.svg.createSVGTransformFromMatrix(matrix), width, height)
         return
       }
     } else {
