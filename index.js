@@ -410,11 +410,6 @@ export default class Svg2Roughjs {
       config.stroke = 'none'
     }
 
-    // unstroked but filled shapes look weird, so always apply a stroke if we fill something
-    if (config.fill && config.stroke === 'none') {
-      config.stroke = config.fill
-    }
-
     let strokeWidth = this.getEffectiveAttribute(element, 'stroke-width')
     if (strokeWidth) {
       // Convert to user space units (px)
@@ -428,6 +423,12 @@ export default class Svg2Roughjs {
       config.strokeWidth = strokeWidth
     } else {
       config.strokeWidth = 0
+    }
+
+    // unstroked but filled shapes look weird, so always apply a stroke if we fill something
+    if (config.fill && config.stroke === 'none') {
+      config.stroke = config.fill
+      config.strokeWidth = 1
     }
 
     if (this.randomize) {
@@ -503,7 +504,13 @@ export default class Svg2Roughjs {
       const pt = this.applyMatrix(p, svgTransform)
       return [pt.x, pt.y]
     })
-    this.rc.linearPath(transformed, this.parseStyleConfig(polyline, svgTransform))
+    const style = this.parseStyleConfig(polyline, svgTransform)
+    if (style.fill && style.fill !== 'none') {
+      const fillStyle = Object.assign({}, style)
+      fillStyle.stroke = 'none'
+      this.rc.polygon(transformed, fillStyle)
+    }
+    this.rc.linearPath(transformed, style)
   }
 
   /**
