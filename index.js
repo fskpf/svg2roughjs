@@ -40,8 +40,22 @@ export default class Svg2Roughjs {
       /** @type {SVGSVGElement} */
       this.$svg = svg
 
-      this.width = svg.width ? svg.width.baseVal.value : 300
-      this.height = svg.height ? svg.height.baseVal.value : 150
+      if (svg.hasAttribute('width')) {
+        this.width = svg.width.baseVal.value
+      } else if (svg.hasAttribute('viewBox')) {
+        this.width = svg.viewBox.baseVal.width
+      } else {
+        this.width = 300
+      }
+
+      if (svg.hasAttribute('height')) {
+        this.height = svg.height.baseVal.value
+      } else if (svg.hasAttribute('viewBox')) {
+        this.height = svg.viewBox.baseVal.height
+      } else {
+        this.height = 150
+      }
+
       this.canvas.width = this.width
       this.canvas.height = this.height
 
