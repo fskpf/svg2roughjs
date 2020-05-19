@@ -443,6 +443,21 @@ export default class Svg2Roughjs {
       config.strokeWidth = 0
     }
 
+    let strokeDashArray = this.getEffectiveAttribute(element, 'stroke-dasharray')
+    if (strokeDashArray && strokeDashArray !== 'none') {
+      strokeDashArray = strokeDashArray
+        .split(/[\s,]+/)
+        .filter(entry => entry.length > 0)
+        .map(dash => units.convert('px', dash, element.ownerSVGElement))
+      config.strokeLineDash = strokeDashArray
+    }
+
+    let strokeDashOffset = this.getEffectiveAttribute(element, 'stroke-dashoffset')
+    if (strokeDashOffset) {
+      strokeDashOffset = units.convert('px', strokeDashOffset, element.ownerSVGElement)
+      config.strokeLineDashOffset = strokeDashOffset
+    }
+
     // unstroked but filled shapes look weird, so always apply a stroke if we fill something
     if (config.fill && config.stroke === 'none') {
       config.stroke = config.fill
@@ -456,6 +471,10 @@ export default class Svg2Roughjs {
       config.hachureAngle = this.getRandomNumber(-30, -50)
       // roughjs default is 4 * strokeWidth
       config.hachureGap = this.getRandomNumber(3, 5)
+      // randomize double stroke effect if not explicitly set through user config
+      if (typeof config.disableMultiStroke === 'undefined') {
+        config.disableMultiStroke = Math.random() > 0.3
+      }
     }
 
     return config
