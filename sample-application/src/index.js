@@ -44,6 +44,7 @@ function loadSvg(svg2roughjs, fileContent) {
 
 function run() {
   const svg2roughjs = new Svg2Roughjs('#output')
+  svg2roughjs.backgroundColor = 'white'
   const sampleSelect = document.getElementById('sample-select')
   sampleSelect.addEventListener('change', () => {
     let sampleString = ''
@@ -134,23 +135,9 @@ function run() {
 
   const downloadBtn = document.getElementById('download-btn')
   downloadBtn.addEventListener('click', () => {
-    // we add a white background for the download
-    const canvas = document.querySelector('canvas')
-    const canvasClone = canvas.cloneNode()
-
-    canvasClone.width = canvas.width
-    canvasClone.height = canvas.height
-
-    // add white background
-    const ctx = canvasClone.getContext('2d')
-    ctx.fillStyle = 'white'
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
-
-    // transfer content
-    ctx.drawImage(canvas, 0, 0)
-
     // download file
-    const image = canvasClone.toDataURL('image/png', 1.0).replace('image/png', 'image/octet-stream')
+    const canvas = document.querySelector('canvas')
+    const image = canvas.toDataURL('image/png', 1.0).replace('image/png', 'image/octet-stream')
     const link = document.createElement('a')
     link.download = 'svg2roughjs.png'
     link.href = image

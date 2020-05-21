@@ -4,6 +4,9 @@ import rough from 'roughjs/bundled/rough.esm'
 
 var units = require('units-css')
 
+/**
+ * A small helper class that represents a point.
+ */
 class Point {
   /**
    * @return {number}
@@ -31,8 +34,16 @@ class Point {
   }
 }
 
+/**
+ * Svg2Roughjs parses a given SVG and draws it with Rough.js
+ * in a canvas.
+ */
 export default class Svg2Roughjs {
   /**
+   * The SVG that should be converted.
+   * Changing this property triggers drawing of the SVG into
+   * the canvas or container element with which Svg2Roughjs
+   * was initialized.
    * @param {SVGSVGElement} svg
    */
   set svg(svg) {
@@ -73,6 +84,9 @@ export default class Svg2Roughjs {
   }
 
   /**
+   * Rough.js config object that is provided to Rough.js for drawing
+   * any SVG element.
+   * Changing this property triggers a repaint.
    * @param {object}
    */
   set roughConfig(config) {
@@ -92,6 +106,7 @@ export default class Svg2Roughjs {
    * Set a font-family for the rendering of text elements.
    * If set to `null`, then the font-family of the SVGTextElement is used.
    * By default, 'Comic Sans MS, sans-serif' is used.
+   * Changing this property triggers a repaint.
    * @param {string | null}
    */
   set fontFamily(fontFamily) {
@@ -102,55 +117,123 @@ export default class Svg2Roughjs {
   }
 
   /**
-   * The font-family that is used for rendering of text elements.
-   * If set to `null`, then the font-family of the SVGTextElement is used.
+   * @returns {string}
    */
   get fontFamily() {
     return this.$fontFamily
   }
 
+  /**
+   * Whether to randomize Rough.js' fillWeight, hachureAngle and hachureGap.
+   * Also randomizes the disableMultiStroke option of Rough.js.
+   * By default true.
+   * Changing this property triggers a repaint.
+   * @param {boolean}
+   */
   set randomize(randomize) {
     this.$randomize = randomize
     this.redraw()
   }
 
+  /**
+   * @returns {boolean}
+   */
   get randomize() {
     return this.$randomize
   }
 
   /**
-   * @param {string} selector
-   * @param {object?} roughConfig Config object passed to the Rough.js ctor
+   * Optional solid background color with which
+   * the canvas should be initialized.
+   * It is drawn on a transparent canvas by default.
+   * @param {string}
    */
-  constructor(selector, roughConfig = {}) {
-    const container = document.querySelector(selector)
-    const canvas = document.createElement('canvas')
-    this.rc = rough.canvas(canvas, roughConfig)
-    this.width = container.clientWidth
-    this.height = container.clientHeight
+  set backgroundColor(color) {
+    this.$backgroundColor = color
+  }
+
+  /**
+   * @returns {string}
+   */
+  get backgroundColor() {
+    return this.$backgroundColor
+  }
+
+  /**
+   * Creates a new instance of Svg2roughjs.
+   * @param {string | HTMLCanvasElement} target Either a selector for the container to which a canvas should be added
+   * or an `HTMLCanvasElement` into which should be drawn.
+   * @param {object?} roughConfig Config object this passed to the Rough.js ctor and
+   * also used while parsing the styles for `SVGElement`s.
+   */
+  constructor(target, roughConfig = {}) {
+    if (!target) {
+      throw new Error('No target provided')
+    }
+    if (typeof target === 'object' && target.tagName === 'CANVAS') {
+      if (target.tagName === 'CANVAS') {
+        // directly use the given canvas
+        this.canvas = target
+      } else {
+        throw new Error('Target object is not an HMTLCanvaseElement')
+      }
+    } else if (typeof target === 'string') {
+      // create a new HTMLCanvasElement as child of the given element
+      const container = document.querySelector(target)
+      if (!container) {
+        throw new Error(`No element found with ${target}`)
+      }
+      this.canvas = document.createElement('canvas')
+      this.canvas.width = container.clientWidth
+      this.canvas.height = container.clientHeight
+      container.appendChild(this.canvas)
+    }
+
+    // the Rough.js instance to draw the SVG elements
+    this.rc = rough.canvas(this.canvas, roughConfig)
     this.$roughConfig = roughConfig
-    canvas.width = this.width
-    canvas.height = this.height
-    container.appendChild(canvas)
-    this.canvas = canvas
-    this.ctx = canvas.getContext('2d')
+
+    // canvas context for convenient access
+    this.ctx = this.canvas.getContext('2d')
+
+    // size of the canvas
+    this.width = this.canvas.width
+    this.height = this.canvas.height
+
+    // default font family
     this.$fontFamily = 'Comic Sans MS, cursive'
+
+    // we randomize the visualization per element by default
     this.$randomize = true
   }
 
+  /**
+   * Clears the canvas.
+   * @private
+   */
   clearCanvas() {
     this.ctx.clearRect(0, 0, this.width, this.height)
   }
 
+  /**
+   * Triggers an entire redraw of the SVG which also
+   * processes it anew.
+   */
   redraw() {
     if (!this.svg) {
       return
     }
     this.clearCanvas()
+    if (this.backgroundColor) {
+      this.ctx.fillStyle = this.backgroundColor
+      this.ctx.fillRect(0, 0, this.width, this.height)
+    }
     this.processRoot(this.svg, null, this.width, this.height)
   }
 
   /**
+   * Traverses the SVG in DFS and draws each element to the canvas.
+   * @private
    * @param {SVGSVGElement | SVGGElement} root either an SVG- or g-element
    * @param {SVGTransform?} svgTransform
    * @param {number?} width Use elements can overwrite width
@@ -233,6 +316,7 @@ export default class Svg2Roughjs {
 
   /**
    * Stores defs elements with their IDs for later use.
+   * @private
    */
   collectElementsWithID() {
     this.defs = {}
@@ -246,11 +330,13 @@ export default class Svg2Roughjs {
   }
 
   /**
+   * Applies a given `SVGTransform` to the point.
    *
    * [a c e] [x] = (a*x + c*y + e)
    * [b d f] [y] = (b*x + d*y + f)
    * [0 0 1] [1] = (0 + 0 + 1)
    *
+   * @private
    * @param {Point} point
    * @param {SVGTransform?} svgTransform
    * @return {Point}
@@ -266,6 +352,8 @@ export default class Svg2Roughjs {
   }
 
   /**
+   * Returns a random number in the given rande.
+   * @private
    * @param {number} min
    * @param {number} max
    * @return {number}
@@ -275,6 +363,8 @@ export default class Svg2Roughjs {
   }
 
   /**
+   * Returns the `offset` of an `SVGStopElement`.
+   * @private
    * @param {SVGStopElement} stop
    * @return {number} stop percentage
    */
@@ -291,6 +381,8 @@ export default class Svg2Roughjs {
   }
 
   /**
+   * Returns the `stop-color`of an `SVGStopElement`.
+   * @private
    * @param {SVGStopElement} stop
    * @return {tinycolor}
    */
@@ -307,6 +399,9 @@ export default class Svg2Roughjs {
   }
 
   /**
+   * Converts an SVG gradient to a color by mixing all stop colors
+   * with `tinycolor.mix`.
+   * @private
    * @param {SVGLinearGradientElement | SVGRadialGradientElement} gradient
    * @param {number} opacity
    * @return {string}
@@ -332,6 +427,10 @@ export default class Svg2Roughjs {
   }
 
   /**
+   * Parses a `fill` url by looking in the SVG `defs` element.
+   * When a gradient is found, it is converted to a color and stored
+   * in the internal defs store for this url.
+   * @private
    * @param {string} url
    * @param {number} opacity
    * @return {string}
@@ -360,7 +459,8 @@ export default class Svg2Roughjs {
   }
 
   /**
-   *
+   * Converts SVG opacity attributes to a [0, 1] range.
+   * @private
    * @param {SVGElement} element
    * @param {string} attribute
    */
@@ -376,6 +476,9 @@ export default class Svg2Roughjs {
   }
 
   /**
+   * Returns the attribute value of an element under consideration
+   * of inherited attributes from the `parentElement`.
+   * @private
    * @param {SVGElement} element
    * @param {string} attributeName Name of the attribute to look up
    * @return {string|null} attribute value if it exists
@@ -391,6 +494,10 @@ export default class Svg2Roughjs {
   }
 
   /**
+   * Converts the effective style attributes of the given `SVGElement`
+   * to a Rough.js config object that is used to draw the element with
+   * Rough.js.
+   * @private
    * @param {SVGElement} element
    * @param {SVGTransform?} svgTransform
    * @return {object} config for Rough.js drawing
@@ -465,11 +572,11 @@ export default class Svg2Roughjs {
     }
 
     if (this.randomize) {
-      // roughjs default is 0.5 * strokeWidth
+      // Rough.js default is 0.5 * strokeWidth
       config.fillWeight = this.getRandomNumber(0.5, 3)
-      // roughjs default is -41deg
+      // Rough.js default is -41deg
       config.hachureAngle = this.getRandomNumber(-30, -50)
-      // roughjs default is 4 * strokeWidth
+      // Rough.js default is 4 * strokeWidth
       config.hachureGap = this.getRandomNumber(3, 5)
       // randomize double stroke effect if not explicitly set through user config
       if (typeof config.disableMultiStroke === 'undefined') {
@@ -481,6 +588,9 @@ export default class Svg2Roughjs {
   }
 
   /**
+   * The main switch to delegate drawing of `SVGElement`s
+   * to different subroutines.
+   * @private
    * @param {SVGElement} element
    * @param {SVGTransform} svgTransform
    */
@@ -529,6 +639,7 @@ export default class Svg2Roughjs {
   }
 
   /**
+   * @private
    * @param {SVGPolylineElement} polyline
    * @param {SVGTransform?} svgTransform
    */
@@ -548,6 +659,7 @@ export default class Svg2Roughjs {
   }
 
   /**
+   * @private
    * @param {SVGPolygonElement} polygon
    * @param {SVGTransform?} svgTransform
    */
@@ -561,6 +673,7 @@ export default class Svg2Roughjs {
   }
 
   /**
+   * @private
    * @param {SVGEllipseElement} ellipse
    * @param {SVGTransform?} svgTransform
    */
@@ -607,6 +720,7 @@ export default class Svg2Roughjs {
   }
 
   /**
+   * @private
    * @param {SVGCircleElement} circle
    * @param {SVGTransform?} svgTransform
    */
@@ -650,6 +764,7 @@ export default class Svg2Roughjs {
   }
 
   /**
+   * @private
    * @param {SVGLineElement} line
    * @param {SVGTransform?} svgTransform
    */
@@ -672,6 +787,7 @@ export default class Svg2Roughjs {
   }
 
   /**
+   * @private
    * @param {SVGUseElement} use
    * @param {SVGTransform?} svgTransform
    */
@@ -704,6 +820,7 @@ export default class Svg2Roughjs {
   }
 
   /**
+   * @private
    * @param {SVGPathElement} path
    * @param {SVGTransform?} svgTransform
    */
@@ -743,6 +860,7 @@ export default class Svg2Roughjs {
   }
 
   /**
+   * @private
    * @param {SVGRectElement} rect
    * @param {SVGTransform?} svgTransform
    */
@@ -854,6 +972,7 @@ export default class Svg2Roughjs {
   }
 
   /**
+   * @private
    * @param {SVGImageElement} svgImage
    * @param {SVGTransform?} svgTransform
    */
@@ -906,6 +1025,7 @@ export default class Svg2Roughjs {
   }
 
   /**
+   * @private
    * @param {SVGTextElement} text
    * @param {SVGTransform?} svgTransform
    */
@@ -961,7 +1081,7 @@ export default class Svg2Roughjs {
 
   /**
    * Retrieves the text content from a text content element (text, tspan, ...)
-   *
+   * @private
    * @param {SVGTextContentElement} element
    * @returns {string}
    */
@@ -978,6 +1098,7 @@ export default class Svg2Roughjs {
   /**
    * Determines whether the given element has default white-space handling, i.e. normalization.
    * Returns false if the element (or an ancestor) has xml:space='preserve'
+   * @private
    * @param {SVGElement} element
    * @returns {boolean}
    */
@@ -993,6 +1114,7 @@ export default class Svg2Roughjs {
   }
 
   /**
+   * @private
    * @param {SVGAnimatedLengthList} svgLengthList
    * @return {number} length in pixels
    */
@@ -1004,6 +1126,7 @@ export default class Svg2Roughjs {
   }
 
   /**
+   * @private
    * @param {SVGTextElement} text
    * @param {SVGTransform?} svgTransform
    * @return {string}
