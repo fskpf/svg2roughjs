@@ -1,3 +1,5 @@
+import 'core-js/stable'
+
 import SAMPLE_BPMN from '../public/bpmn1.svg'
 import SAMPLE_COMPUTER_NETWORK from '../public/computer-network.svg'
 import SAMPLE_FLOWCHART from '../public/flowchart4.svg'
@@ -20,10 +22,10 @@ function loadSvg(svg2roughjs, fileContent) {
 
   const parser = new DOMParser()
   const doc = parser.parseFromString(fileContent, 'image/svg+xml')
-  const svg = doc.firstElementChild
+  const svg = doc.firstChild
 
   while (inputElement.childElementCount > 0) {
-    inputElement.removeChild(inputElement.firstElementChild)
+    inputElement.removeChild(inputElement.firstChild)
   }
   inputElement.appendChild(svg)
 
@@ -42,57 +44,61 @@ function loadSvg(svg2roughjs, fileContent) {
   }
 }
 
+function loadSample(svg2roughjs, sample) {
+  let sampleString = ''
+  switch (sample) {
+    case 'bpmn1':
+      sampleString = SAMPLE_BPMN
+      break
+    case 'computer-network':
+      sampleString = SAMPLE_COMPUTER_NETWORK
+      break
+    case 'flowchart4':
+      sampleString = SAMPLE_FLOWCHART
+      break
+    case 'hierarchical1':
+      sampleString = SAMPLE_HIERARCHICAL1
+      break
+    case 'hierarchical2':
+      sampleString = SAMPLE_HIERARCHICAL2
+      break
+    case 'mindmap':
+      sampleString = SAMPLE_MINDMAP
+      break
+    case 'movies':
+      sampleString = SAMPLE_MOVIES
+      break
+    case 'organic1':
+      sampleString = SAMPLE_ORGANIC1
+      break
+    case 'organic2':
+      sampleString = SAMPLE_ORGANIC2
+      break
+    case 'tree1':
+      sampleString = SAMPLE_TREE
+      break
+    case 'venn':
+      sampleString = SAMPLE_VENN
+      break
+    case 'singlemovie':
+      sampleString = SAMPLE_SINGLE_MOVIE
+      break
+  }
+
+  loadSvg(svg2roughjs, sampleString)
+}
+
 function run() {
   const svg2roughjs = new Svg2Roughjs('#output')
   svg2roughjs.backgroundColor = 'white'
   const sampleSelect = document.getElementById('sample-select')
   sampleSelect.addEventListener('change', () => {
-    let sampleString = ''
-    switch (sampleSelect.value) {
-      case 'bpmn1':
-        sampleString = SAMPLE_BPMN
-        break
-      case 'computer-network':
-        sampleString = SAMPLE_COMPUTER_NETWORK
-        break
-      case 'flowchart4':
-        sampleString = SAMPLE_FLOWCHART
-        break
-      case 'hierarchical1':
-        sampleString = SAMPLE_HIERARCHICAL1
-        break
-      case 'hierarchical2':
-        sampleString = SAMPLE_HIERARCHICAL2
-        break
-      case 'mindmap':
-        sampleString = SAMPLE_MINDMAP
-        break
-      case 'movies':
-        sampleString = SAMPLE_MOVIES
-        break
-      case 'organic1':
-        sampleString = SAMPLE_ORGANIC1
-        break
-      case 'organic2':
-        sampleString = SAMPLE_ORGANIC2
-        break
-      case 'tree1':
-        sampleString = SAMPLE_TREE
-        break
-      case 'venn':
-        sampleString = SAMPLE_VENN
-        break
-      case 'singlemovie':
-        sampleString = SAMPLE_SINGLE_MOVIE
-        break
-    }
-
-    loadSvg(svg2roughjs, sampleString)
+    loadSample(svg2roughjs, sampleSelect.value)
   })
 
   // pre-select a sample
   sampleSelect.selectedIndex = 0
-  sampleSelect.dispatchEvent(new Event('change'))
+  loadSample(svg2roughjs, sampleSelect.value)
 
   const fillStyleSelect = document.getElementById('fill-style')
   const roughnessInput = document.getElementById('roughness-input')

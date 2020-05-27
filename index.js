@@ -4,6 +4,25 @@ import rough from 'roughjs/bundled/rough.esm'
 
 var units = require('units-css')
 
+// polyfill Node.children
+// https://developer.mozilla.org/en-US/docs/Web/API/ParentNode/children
+if (window.Node && window.Node.prototype && window.Node.prototype.children == null) {
+  Object.defineProperty(window.Node.prototype, 'children', {
+    get: function() {
+      let i = 0,
+        node,
+        nodes = this.childNodes,
+        children = []
+      while ((node = nodes[i++])) {
+        if (node.nodeType === 1) {
+          children.push(node)
+        }
+      }
+      return children
+    }
+  })
+}
+
 /**
  * A small helper class that represents a point.
  */
@@ -39,6 +58,16 @@ class Point {
  * in a canvas.
  */
 export default class Svg2Roughjs {
+  /**
+   * A simple regexp which is used to test whether a given string value
+   * contains unit identifiers, e.g. "1px", "1em", "1%", ...
+   * @private
+   * @returns {RegExp}
+   */
+  static CONTAINS_UNIT_REGEXP() {
+    return /[a-z%]/
+  }
+
   /**
    * The SVG that should be converted.
    * Changing this property triggers drawing of the SVG into
@@ -274,7 +303,7 @@ export default class Svg2Roughjs {
       for (let i = root.childElementCount - 1; i >= 0; i--) {
         const child = root.children[i]
         let newTransform = svgTransform
-        if (child.transform && child.transform.baseVal.length > 0) {
+        if (child.transform && child.transform.baseVal.numberOfItems > 0) {
           const childTransformMatrix = child.transform.baseVal.consolidate().matrix
           const combinedMatrix = newTransform
             ? newTransform.matrix.multiply(childTransformMatrix)
@@ -302,7 +331,7 @@ export default class Svg2Roughjs {
       for (let i = element.childElementCount - 1; i >= 0; i--) {
         const childElement = element.children[i]
         let newTransform = transform
-        if (childElement.transform && childElement.transform.baseVal.length > 0) {
+        if (childElement.transform && childElement.transform.baseVal.numberOfItems > 0) {
           const childTransformMatrix = childElement.transform.baseVal.consolidate().matrix
           const combinedMatrix = transform
             ? transform.matrix.multiply(childTransformMatrix)
@@ -320,7 +349,7 @@ export default class Svg2Roughjs {
    */
   collectElementsWithID() {
     this.defs = {}
-    const elementsWithID = [...this.svg.querySelectorAll('*[id]')]
+    const elementsWithID = Array.prototype.slice.apply(this.svg.querySelectorAll('*[id]'))
     for (const elt of elementsWithID) {
       const id = elt.getAttribute('id')
       if (id) {
@@ -407,7 +436,7 @@ export default class Svg2Roughjs {
    * @return {string}
    */
   gradientToColor(gradient, opacity) {
-    const stops = [...gradient.querySelectorAll('stop')]
+    const stops = Array.prototype.slice.apply(gradient.querySelectorAll('stop'))
     if (stops.length === 0) {
       return 'transparent'
     } else if (stops.length === 1) {
@@ -436,7 +465,6 @@ export default class Svg2Roughjs {
    * @return {string}
    */
   parseFillUrl(url, opacity) {
-    // TODO: The URL might also be escaped, we might need to normalize it somehow
     const result =
       /url\('#?(.*?)'\)/.exec(url) || /url\("#?(.*?)"\)/.exec(url) || /url\(#?(.*?)\)/.exec(url)
     if (result && result.length > 1) {
@@ -494,6 +522,24 @@ export default class Svg2Roughjs {
   }
 
   /**
+   * Converts the given string to px unit. May be either a <length>
+   * (https://developer.mozilla.org/de/docs/Web/SVG/Content_type#Length)
+   * or a <percentage>
+   * (https://developer.mozilla.org/de/docs/Web/SVG/Content_type#Percentage).
+   * @private
+   * @param {string} value
+   * @returns {number} THe value in px unit
+   */
+  convertToPixelUnit(value) {
+    // css-units fails for converting from unit-less to 'px' in IE11,
+    // thus we only apply it to non-px values
+    if (value.match(Svg2Roughjs.CONTAINS_UNIT_REGEXP) !== null) {
+      return units.convert('px', value, this.$svg)
+    }
+    return parseFloat(value)
+  }
+
+  /**
    * Converts the effective style attributes of the given `SVGElement`
    * to a Rough.js config object that is used to draw the element with
    * Rough.js.
@@ -538,7 +584,7 @@ export default class Svg2Roughjs {
     let strokeWidth = this.getEffectiveAttribute(element, 'stroke-width')
     if (strokeWidth) {
       // Convert to user space units (px)
-      strokeWidth = units.convert('px', strokeWidth, element.ownerSVGElement)
+      strokeWidth = this.convertToPixelUnit(strokeWidth)
       // If we have a transform and an explicit stroke, include the scaling factor
       if (svgTransform && stroke !== 'none') {
         // For lack of a better option here, just use the mean of x and y scaling factors
@@ -555,13 +601,13 @@ export default class Svg2Roughjs {
       strokeDashArray = strokeDashArray
         .split(/[\s,]+/)
         .filter(entry => entry.length > 0)
-        .map(dash => units.convert('px', dash, element.ownerSVGElement))
+        .map(dash => this.convertToPixelUnit(dash))
       config.strokeLineDash = strokeDashArray
     }
 
     let strokeDashOffset = this.getEffectiveAttribute(element, 'stroke-dashoffset')
     if (strokeDashOffset) {
-      strokeDashOffset = units.convert('px', strokeDashOffset, element.ownerSVGElement)
+      strokeDashOffset = this.convertToPixelUnit(strokeDashOffset)
       config.strokeLineDashOffset = strokeDashOffset
     }
 
@@ -644,7 +690,7 @@ export default class Svg2Roughjs {
    * @param {SVGTransform?} svgTransform
    */
   drawPolyline(polyline, svgTransform) {
-    const points = polyline.points ? [...polyline.points] : []
+    const points = this.getPointsArray(polyline)
     const transformed = points.map(p => {
       const pt = this.applyMatrix(p, svgTransform)
       return [pt.x, pt.y]
@@ -660,11 +706,32 @@ export default class Svg2Roughjs {
 
   /**
    * @private
+   * @param {SVGPolygonElement | SVGPolylineElement} element
+   * @returns {Array<Point>}
+   */
+  getPointsArray(element) {
+    const pointsAttr = element.getAttribute('points')
+    if (!pointsAttr) {
+      return []
+    }
+    const pointList = pointsAttr.split(' ')
+    const points = []
+    pointList.forEach(pt => {
+      const coordinates = pt.split(',')
+      if (coordinates.length === 2) {
+        points.push(new Point(parseFloat(coordinates[0]), parseFloat(coordinates[1])))
+      }
+    })
+    return points
+  }
+
+  /**
+   * @private
    * @param {SVGPolygonElement} polygon
    * @param {SVGTransform?} svgTransform
    */
   drawPolygon(polygon, svgTransform) {
-    const points = polygon.points ? [...polygon.points] : []
+    const points = this.getPointsArray(polygon)
     const transformed = points.map(p => {
       const pt = this.applyMatrix(p, svgTransform)
       return [pt.x, pt.y]
@@ -877,7 +944,7 @@ export default class Svg2Roughjs {
 
     let rx = rect.hasAttribute('rx') ? rect.rx.baseVal.value : null
     let ry = rect.hasAttribute('ry') ? rect.ry.baseVal.value : null
-    if (!svgTransform && !rx && !ry) {
+    if (!rx && !ry) {
       // Simple case; just a rectangle
       const p1 = this.applyMatrix(new Point(x, y), svgTransform)
       const p2 = this.applyMatrix(new Point(x + width, y + height), svgTransform)
@@ -1048,7 +1115,9 @@ export default class Svg2Roughjs {
 
     // apply the global transform
     if (svgTransform) {
-      this.ctx.setTransform(svgTransform.matrix)
+      const matrix = svgTransform.matrix
+      // IE11 doesn't support SVGMatrix as parameter for setTransform
+      this.ctx.setTransform(matrix.a, matrix.b, matrix.c, matrix.d, matrix.e, matrix.f)
     }
 
     // consider dx/dy of the text element
@@ -1104,10 +1173,10 @@ export default class Svg2Roughjs {
    */
   shouldNormalizeWhitespace(element) {
     let xmlSpaceAttribute = null
-    while (element !== null && xmlSpaceAttribute === null) {
+    while (element !== null && element !== window.document && xmlSpaceAttribute === null) {
       xmlSpaceAttribute = element.getAttribute('xml:space')
       if (xmlSpaceAttribute === null) {
-        element = element.parentElement
+        element = element.parentNode
       }
     }
     return xmlSpaceAttribute !== 'preserve' // no attribute is also default handling
@@ -1119,8 +1188,8 @@ export default class Svg2Roughjs {
    * @return {number} length in pixels
    */
   getLengthInPx(svgLengthList) {
-    if (svgLengthList && svgLengthList.baseVal.length > 0) {
-      return svgLengthList.baseVal[0].value
+    if (svgLengthList && svgLengthList.baseVal.numberOfItems > 0) {
+      return svgLengthList.baseVal.getItem(0).value
     }
     return 0
   }
