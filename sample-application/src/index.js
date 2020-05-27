@@ -111,14 +111,14 @@ function run() {
       fillStyle: fillStyleSelect.value
     }
   })
-  roughnessInput.addEventListener('input', () => {
+  roughnessInput.addEventListener('change', () => {
     svg2roughjs.roughConfig = {
       bowing: parseInt(bowingInput.value),
       roughness: parseInt(roughnessInput.value),
       fillStyle: fillStyleSelect.value
     }
   })
-  bowingInput.addEventListener('input', () => {
+  bowingInput.addEventListener('change', () => {
     svg2roughjs.roughConfig = {
       bowing: parseInt(bowingInput.value),
       roughness: parseInt(roughnessInput.value),
