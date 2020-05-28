@@ -4,25 +4,6 @@ import rough from 'roughjs/bundled/rough.esm'
 
 var units = require('units-css')
 
-// polyfill Node.children
-// https://developer.mozilla.org/en-US/docs/Web/API/ParentNode/children
-if (window.Node && window.Node.prototype && window.Node.prototype.children == null) {
-  Object.defineProperty(window.Node.prototype, 'children', {
-    get: function() {
-      let i = 0,
-        node,
-        nodes = this.childNodes,
-        children = []
-      while ((node = nodes[i++])) {
-        if (node.nodeType === 1) {
-          children.push(node)
-        }
-      }
-      return children
-    }
-  })
-}
-
 /**
  * A small helper class that represents a point.
  */
@@ -300,8 +281,9 @@ export default class Svg2Roughjs {
       }
 
       // don't put the SVG itself into the stack, so start with the children of it
-      for (let i = root.childElementCount - 1; i >= 0; i--) {
-        const child = root.children[i]
+      const children = this.getNodeChildren(root)
+      for (let i = children.length - 1; i >= 0; i--) {
+        const child = children[i]
         let newTransform = svgTransform
         if (child.transform && child.transform.baseVal.numberOfItems > 0) {
           const childTransformMatrix = child.transform.baseVal.consolidate().matrix
@@ -328,8 +310,9 @@ export default class Svg2Roughjs {
         continue
       }
       // process childs
-      for (let i = element.childElementCount - 1; i >= 0; i--) {
-        const childElement = element.children[i]
+      const children = this.getNodeChildren(element)
+      for (let i = children.length - 1; i >= 0; i--) {
+        const childElement = children[i]
         let newTransform = transform
         if (childElement.transform && childElement.transform.baseVal.numberOfItems > 0) {
           const childTransformMatrix = childElement.transform.baseVal.consolidate().matrix
@@ -1133,8 +1116,9 @@ export default class Svg2Roughjs {
         text.getBBox().width
       )
     } else {
-      for (let i = 0; i < text.childElementCount; i++) {
-        const child = text.children[i]
+      const children = this.getNodeChildren(text)
+      for (let i = 0; i < children.length; i++) {
+        const child = children[i]
         if (child.tagName === 'tspan') {
           textLocation = new Point(this.getLengthInPx(child.x), this.getLengthInPx(child.y))
           const dx = this.getLengthInPx(child.dx)
@@ -1225,5 +1209,28 @@ export default class Svg2Roughjs {
 
     cssFont = cssFont.trim()
     return cssFont
+  }
+
+  /**
+   * Returns the Node's children, since Node.prototype.children is not available on all browsers.
+   * https://developer.mozilla.org/en-US/docs/Web/API/ParentNode/children
+   * @private
+   * @param {Node} element
+   * @returns {Array}
+   */
+  getNodeChildren(element) {
+    if (typeof element.children !== 'undefined') {
+      return element.children
+    }
+    let i = 0
+    let node
+    const nodes = element.childNodes
+    const children = []
+    while ((node = nodes[i++])) {
+      if (node.nodeType === 1) {
+        children.push(node)
+      }
+    }
+    return children
   }
 }
