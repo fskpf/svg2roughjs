@@ -22,26 +22,35 @@ function loadSvg(svg2roughjs, fileContent) {
 
   const parser = new DOMParser()
   const doc = parser.parseFromString(fileContent, 'image/svg+xml')
-  const svg = doc.firstChild
+  const svg = doc.querySelector('svg')
 
   while (inputElement.childElementCount > 0) {
     inputElement.removeChild(inputElement.firstChild)
   }
+
+  if (!svg) {
+    console.error('Could not load SVG file')
+    return
+  }
   inputElement.appendChild(svg)
 
-  if (svg.tagName === 'HTML') {
-    console.error('Error parsing XML')
-    inputElement.style.opacity = 1
-    if (canvas) {
-      canvas.style.opacity = 0
+  // make sure the SVG is part of the DOM and rendered, before it is converted by
+  // Svg2Rough.js. Otherwise, CSS percentaged width/height might not be applied yet
+  setTimeout(() => {
+    if (svg.tagName === 'HTML') {
+      console.error('Error parsing XML')
+      inputElement.style.opacity = 1
+      if (canvas) {
+        canvas.style.opacity = 0
+      }
+    } else {
+      inputElement.style.opacity = document.getElementById('opacity').value
+      if (canvas) {
+        canvas.style.opacity = 1
+      }
+      svg2roughjs.svg = svg
     }
-  } else {
-    inputElement.style.opacity = document.getElementById('opacity').value
-    if (canvas) {
-      canvas.style.opacity = 1
-    }
-    svg2roughjs.svg = svg
-  }
+  }, 0)
 }
 
 function loadSample(svg2roughjs, sample) {

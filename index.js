@@ -487,6 +487,30 @@ export default class Svg2Roughjs {
   }
 
   /**
+   * Traverses the given elements hierarchy bottom-up to determine its effective
+   * opacity attribute.
+   * @private
+   * @param {SVGElement} element
+   * @param {number} currentOpacity
+   */
+  getEffectiveElementOpacity(element, currentOpacity) {
+    const attr = element.getAttribute('opacity')
+    if (attr) {
+      let elementOpacity = 1
+      if (attr.indexOf('%') !== -1) {
+        elementOpacity = parseFloat(attr.substring(0, attr.length - 1)) / 100
+      } else {
+        elementOpacity = parseFloat(attr)
+      }
+      // combine opacities
+      currentOpacity *= elementOpacity
+    }
+    // traverse upwards to combine parent opacities as well
+    const parent = element.parentElement
+    return parent ? this.getEffectiveElementOpacity(parent, currentOpacity) : currentOpacity
+  }
+
+  /**
    * Returns the attribute value of an element under consideration
    * of inherited attributes from the `parentElement`.
    * @private
@@ -534,8 +558,11 @@ export default class Svg2Roughjs {
   parseStyleConfig(element, svgTransform) {
     const config = Object.assign({}, this.$roughConfig)
 
+    // incorporate the elements base opacity
+    const elementOpacity = this.getEffectiveElementOpacity(element, 1)
+
     const fill = this.getEffectiveAttribute(element, 'fill') || 'black'
-    const fillOpacity = this.getOpacity(element, 'fill-opacity')
+    const fillOpacity = elementOpacity * this.getOpacity(element, 'fill-opacity')
     if (fill) {
       if (fill.indexOf('url') !== -1) {
         config.fill = this.parseFillUrl(fill, fillOpacity)
@@ -549,7 +576,7 @@ export default class Svg2Roughjs {
     }
 
     const stroke = this.getEffectiveAttribute(element, 'stroke')
-    const strokeOpacity = this.getOpacity(element, 'stroke-opacity')
+    const strokeOpacity = elementOpacity * this.getOpacity(element, 'stroke-opacity')
     if (stroke) {
       if (stroke.indexOf('url') !== -1) {
         config.stroke = this.parseFillUrl(fill, strokeOpacity)
@@ -697,14 +724,23 @@ export default class Svg2Roughjs {
     if (!pointsAttr) {
       return []
     }
-    const pointList = pointsAttr.split(' ')
+    const pointList = pointsAttr.split(/\s+/g)
     const points = []
-    pointList.forEach(pt => {
-      const coordinates = pt.split(',')
+    for (let i = 0; i < pointList.length; i++) {
+      const currentEntry = pointList[i]
+      const coordinates = currentEntry.split(',')
       if (coordinates.length === 2) {
         points.push(new Point(parseFloat(coordinates[0]), parseFloat(coordinates[1])))
+      } else {
+        // space as separators, take next entry as y coordinate
+        const next = i + 1
+        if (next < pointList.length) {
+          points.push(new Point(parseFloat(currentEntry), parseFloat(pointList[next])))
+          // skip the next entry
+          i = next
+        }
       }
-    })
+    }
     return points
   }
 
