@@ -14,7 +14,7 @@
   "license": "MIT",
   "dependencies": {
     "core-js": "^3.6.5",
-    "svg2roughjs": "file:../svg2roughjs-1.6.3.tgz"
+    "svg2roughjs": "file:../svg2roughjs-1.6.4.tgz"
   },
   "devDependencies": {
     "@babel/core": "^7.9.6",

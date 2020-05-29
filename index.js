@@ -304,9 +304,14 @@ export default class Svg2Roughjs {
       // maybe draw the element
       this.drawElement(element, transform)
 
-      if (element.tagName === 'defs' || element.tagName === 'svg') {
+      if (
+        element.tagName === 'defs' ||
+        element.tagName === 'svg' ||
+        element.tagName === 'clipPath'
+      ) {
         // Defs are prepocessed separately.
         // Don't traverse the SVG element itself. This is done by drawElement -> drawSvg.
+        // clipPaths are not supported.
         continue
       }
       // process childs
