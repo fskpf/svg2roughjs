@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width='590' height='615' version="1.1">
+<g stroke='#000' stroke-linejoin='miter' stroke-linecap='round' stroke-width='3'>
+<path d='M0,0l350,175v425l-350,-175z' fill='#cff' stroke-linejoin="round" transform='translate(230,10)'/>
+<g>
+<g transform='translate(330,190)'>
+<path d='M0,0v80l120,60l120,-60v-80l-120,-60l-30,15v35l-30,15v-5l-30,-15z' fill='#fc9'/>
+<path d='M0,0l30,15l30,-15m-30,15v35l90,45v45m0,-45l90,-45v-35l30,-15m-30,15l-120,-60m0,35l120,60' stroke-linejoin='bevel' fill='none'/>
+<path d='M60,5v30l-30,15' stroke-linejoin='bevel' fill='none'/>
+</g>
+<path stroke='#00c' stroke-dasharray='6,9' fill='none' stroke-width='1' d='M150,360L330,270'/>
+<g transform='translate(10,25)'>
+<path d='M20,315v80l120,60l120,-60v-45l-90,-45v-35l-30,-15l-30,15v35l-25,12.5l-35,-17.5z' fill='#f90'/>
+<path d='M20,315l120,60v80 m0,-80l30,-15 m90,-10l-90,45v-35l-90,-45' stroke-linejoin='miter' fill='none'/>
+<path d='M110,305l30,15l30,-15 m-30,15v-35l30,-15 m-30,15l-30,-15' stroke-linejoin='miter' fill='none'/>
+</g>
+<g stroke='#00c' stroke-dasharray='6,9' fill='none' stroke-width='1'>
+<path d='M0,0v80l120,60v-80z M30,15v35l90,45' stroke-width='3' transform='translate(240,235)'/>
+<path d='M60,325L420,145  M180,295L360,205  M180,330L360,240  M180,385L540,205  M270,375L450,285  M270,420L450,330'/>
+</g>
+</g>
+</g>
+</svg>

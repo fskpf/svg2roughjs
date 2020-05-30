@@ -36,12 +36,29 @@ svg2roughjs.svg = svg // or maybe use the DOMParser to load an SVG file instead
 ```
 The `roughConfig` property may be used to pass additional Rough.js style properties, e.g. to change the fill-style, roughness or bowing, as shown in the `sample-application`.
 
+`fontFamily` can be used to define a custom font with which text elements should be drawn. By default, 'Comic Sans MS, cursive' is used. If set to `null`, the text element's original font-family is used.
+
+`backgroundColor` can be used to set a base color for the canvas on which the sketch is created. By default, it is drawn on a transparent canvas.
+
+`randomize` can be used to randomize Rough.js' fillWeight, hachureAngle and hachureGap. Enabled by default.
+
 ## Sample Images
-These images are taken from the [sample application](https://fskpf.github.io/) which contains the original input SVG files (created with [yEd Live](https://www.yworks.com/yed-live)).
-<img src="./sample-images/hierarchical-sample.png" width="600">
-<img src="./sample-images/bpmn-sample.png" width="600">
-<img src="./sample-images/movies-sample.png" width="600">
-<img src="./sample-images/organic-sample.png" width="600">
+
+Some sample images with different Svg2rough.js settings. Try it yourself [here](https://fskpf.github.io/).
+
+SVG | Sketch
+--- | ---
+<img src="./sample-images/bpmn1.svg" width="400px"><br>(created with [yEd Live](https://www.yworks.com/yed-live)) | <img src="./sample-images/bpmn1_sketch.png" width="400px"><br>&nbsp;
+&nbsp; | &nbsp;
+<img src="./sample-images/hierarchic_diagram.svg" width="400px"><br>(created with [yEd Live](https://www.yworks.com/yed-live)) | <img src="./sample-images/hierarchic_diagram_sketch.png" width="400px"><br>&nbsp;
+&nbsp; | &nbsp;
+<img src="./sample-images/flowchart.svg" width="400px"><br>(created with [yEd Live](https://www.yworks.com/yed-live)) | <img src="./sample-images/flowchart_sketch.png" width="400px"><br>&nbsp;
+&nbsp; | &nbsp;
+<img src="./sample-images/chirality.svg" width="400px"> | <img src="./sample-images/chirality_sketch.png" width="400px">
+&nbsp; | &nbsp;
+<img src="./sample-images/comic_boy.svg" width="400px"> | <img src="./sample-images/comic_boy_sketch.png" width="400px">
+&nbsp; | &nbsp;
+<img src="./sample-images/mars_rover_blueprint.svg" width="400px"> | <img src="./sample-images/mars_rover_sketch.png" width="400px">
 
 ## Credits
 * [Rough.js](https://github.com/pshihn/rough) - Draws the hand-drawn elements

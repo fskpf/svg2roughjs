@@ -115,7 +115,7 @@ export default class Svg2Roughjs {
   /**
    * Set a font-family for the rendering of text elements.
    * If set to `null`, then the font-family of the SVGTextElement is used.
-   * By default, 'Comic Sans MS, sans-serif' is used.
+   * By default, 'Comic Sans MS, cursive' is used.
    * Changing this property triggers a repaint.
    * @param {string | null}
    */
