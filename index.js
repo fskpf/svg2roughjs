@@ -284,8 +284,10 @@ export default class Svg2Roughjs {
       const children = this.getNodeChildren(root)
       for (let i = children.length - 1; i >= 0; i--) {
         const child = children[i]
-        const newTransform = this.getCombinedTransform(child, svgTransform)
-        stack.push({ element: child, transform: newTransform })
+        const childTransform = svgTransform
+          ? this.getCombinedTransform(child, svgTransform)
+          : this.getSvgTransform(child)
+        stack.push({ element: child, transform: childTransform })
       }
     } else {
       stack.push({ element: root, transform: svgTransform })
@@ -304,14 +306,16 @@ export default class Svg2Roughjs {
       ) {
         // Defs are prepocessed separately.
         // Don't traverse the SVG element itself. This is done by drawElement -> drawSvg.
-        // clipPaths are not supported.
+        // ClipPaths are not drawn and processed separately.
         continue
       }
       // process childs
       const children = this.getNodeChildren(element)
       for (let i = children.length - 1; i >= 0; i--) {
         const childElement = children[i]
-        const newTransform = this.getCombinedTransform(childElement, transform)
+        const newTransform = transform
+          ? this.getCombinedTransform(childElement, transform)
+          : this.getSvgTransform(childElement)
         stack.push({ element: childElement, transform: newTransform })
       }
     }
@@ -320,32 +324,62 @@ export default class Svg2Roughjs {
   /**
    * Combines the given transform with the element's transform.
    * @param {SVGElement} element
-   * @param {SVGTransform?} transform
-   * @returns {SVGTransform|null}
+   * @param {SVGTransform} transform
+   * @returns {SVGTransform}
    */
   getCombinedTransform(element, transform) {
-    let newTransform = transform || null
-    if (element.transform && element.transform.baseVal.numberOfItems > 0) {
-      const elementTransformMatrix = element.transform.baseVal.consolidate().matrix
-      const combinedMatrix = transform
-        ? transform.matrix.multiply(elementTransformMatrix)
-        : elementTransformMatrix
-      newTransform = this.svg.createSVGTransformFromMatrix(combinedMatrix)
+    const elementTransform = this.getSvgTransform(element)
+    if (elementTransform) {
+      const elementTransformMatrix = elementTransform.matrix
+      const combinedMatrix = transform.matrix.multiply(elementTransformMatrix)
+      return this.svg.createSVGTransformFromMatrix(combinedMatrix)
     }
-    return newTransform
+    return transform
   }
 
   /**
-   * Stores defs elements with their IDs for later use.
+   * Returns the consolidated of the given element.
+   * @private
+   * @param {SVGElement} element
+   * @returns {SVGTransform|null}
+   */
+  getSvgTransform(element) {
+    if (element.transform && element.transform.baseVal.numberOfItems > 0) {
+      return element.transform.baseVal.consolidate()
+    }
+    return null
+  }
+
+  /**
+   * Whether the given matrix is the identity matrix.
+   * @private
+   * @param {SVGMatrix?} matrix
+   * @returns {boolean} Whether the matrix is the identity matrix.
+   *  Returns also true if matrix is undefined.
+   */
+  isIdentityMatrix(matrix) {
+    return (
+      !matrix ||
+      (matrix.a === 1 &&
+        matrix.b === 0 &&
+        matrix.c === 0 &&
+        matrix.d === 1 &&
+        matrix.e === 0 &&
+        matrix.f === 0)
+    )
+  }
+
+  /**
+   * Stores elements with IDs for later use.
    * @private
    */
   collectElementsWithID() {
-    this.defs = {}
+    this.idElements = {}
     const elementsWithID = Array.prototype.slice.apply(this.svg.querySelectorAll('*[id]'))
     for (const elt of elementsWithID) {
       const id = elt.getAttribute('id')
       if (id) {
-        this.defs[id] = elt
+        this.idElements[id] = elt
       }
     }
   }
@@ -461,7 +495,7 @@ export default class Svg2Roughjs {
       /url\('#?(.*?)'\)/.exec(url) || /url\("#?(.*?)"\)/.exec(url) || /url\(#?(.*?)\)/.exec(url)
     if (result && result.length > 1) {
       const id = result[1]
-      const fill = this.defs[id]
+      const fill = this.idElements[id]
       if (fill) {
         if (typeof fill === 'string') {
           // maybe it was already parsed and replaced with a color
@@ -469,7 +503,7 @@ export default class Svg2Roughjs {
         } else {
           if (fill.tagName === 'linearGradient' || fill.tagName === 'radialGradient') {
             const color = this.gradientToColor(fill, opacity)
-            this.defs[id] = color
+            this.idElements[id] = color
             return color
           }
         }
@@ -653,6 +687,86 @@ export default class Svg2Roughjs {
   }
 
   /**
+   * Applies the clip-path to the CanvasContext.
+   * @private
+   * @param {string} clipPathAttr
+   */
+  applyClipPath(clipPathAttr, svgTransform) {
+    const result =
+      /url\('#?(.*?)'\)/.exec(clipPathAttr) ||
+      /url\("#?(.*?)"\)/.exec(clipPathAttr) ||
+      /url\(#?(.*?)\)/.exec(clipPathAttr)
+    if (result && result.length > 1) {
+      const id = result[1]
+      const clipPath = this.idElements[id]
+      if (clipPath) {
+        // TODO clipPath: consider clipPathUnits
+
+        this.ctx.beginPath()
+
+        // traverse clip-path elements in DFS
+        const stack = []
+        const children = this.getNodeChildren(clipPath)
+        for (let i = children.length - 1; i >= 0; i--) {
+          const childElement = children[i]
+          const childTransform = svgTransform
+            ? this.getCombinedTransform(childElement, svgTransform)
+            : this.getSvgTransform(childElement)
+          stack.push({ element: childElement, transform: childTransform })
+        }
+
+        while (stack.length > 0) {
+          const { element, transform } = stack.pop()
+
+          this.applyElementClip(element, transform)
+
+          if (
+            element.tagName === 'defs' ||
+            element.tagName === 'svg' ||
+            element.tagName === 'clipPath' ||
+            element.tagName === 'text'
+          ) {
+            // some elements are ignored on clippaths
+            continue
+          }
+          // process childs
+          const children = this.getNodeChildren(element)
+          for (let i = children.length - 1; i >= 0; i--) {
+            const childElement = children[i]
+            const childTransform = transform
+              ? this.getCombinedTransform(childElement, transform)
+              : this.getSvgTransform(childElement)
+            stack.push({ element: childElement, transform: childTransform })
+          }
+        }
+
+        this.ctx.clip()
+      }
+    }
+  }
+
+  /**
+   * Applies the element as clip to the CanvasContext.
+   * @private
+   * @param {SVGElement} element
+   * @param {SVGTransform} svgTransform
+   */
+  applyElementClip(element, svgTransform) {
+    switch (element.tagName) {
+      case 'rect':
+        this.drawRect(element, svgTransform, true)
+        break
+      case 'circle':
+        this.drawCircle(element, svgTransform, true)
+        break
+      case 'polygon':
+        this.drawPolygon(element, svgTransform, true)
+        break
+      // TODO clipPath: more elements
+    }
+  }
+
+  /**
    * The main switch to delegate drawing of `SVGElement`s
    * to different subroutines.
    * @private
@@ -660,6 +774,12 @@ export default class Svg2Roughjs {
    * @param {SVGTransform} svgTransform
    */
   drawElement(element, svgTransform) {
+    const clipPath = element.getAttribute('clip-path')
+    if (clipPath) {
+      this.ctx.save()
+      this.applyClipPath(clipPath, svgTransform)
+    }
+
     switch (element.tagName) {
       case 'svg':
         // nested svg
@@ -700,6 +820,10 @@ export default class Svg2Roughjs {
       case 'image':
         this.drawImage(element, svgTransform)
         break
+    }
+
+    if (clipPath) {
+      this.ctx.restore()
     }
   }
 
@@ -757,14 +881,26 @@ export default class Svg2Roughjs {
    * @private
    * @param {SVGPolygonElement} polygon
    * @param {SVGTransform?} svgTransform
+   * @param {boolean?} applyAsClip
    */
-  drawPolygon(polygon, svgTransform) {
+  drawPolygon(polygon, svgTransform, applyAsClip) {
     const points = this.getPointsArray(polygon)
     const transformed = points.map(p => {
       const pt = this.applyMatrix(p, svgTransform)
       return [pt.x, pt.y]
     })
-    this.rc.polygon(transformed, this.parseStyleConfig(polygon, svgTransform))
+    if (applyAsClip) {
+      if (transformed.length > 0) {
+        this.ctx.moveTo(transformed[0].x, transformed[0].y)
+        for (let i = 1; i < transformed.length; i++) {
+          const pt = transformed[i]
+          this.ctx.lineTo(pt.x, pt.y)
+        }
+        this.ctx.closePath()
+      }
+    } else {
+      this.rc.polygon(transformed, this.parseStyleConfig(polygon, svgTransform))
+    }
   }
 
   /**
@@ -818,8 +954,9 @@ export default class Svg2Roughjs {
    * @private
    * @param {SVGCircleElement} circle
    * @param {SVGTransform?} svgTransform
+   * @param {boolean?} applyAsClip
    */
-  drawCircle(circle, svgTransform) {
+  drawCircle(circle, svgTransform, applyAsClip) {
     const cx = circle.cx.baseVal.value
     const cy = circle.cy.baseVal.value
     const r = circle.r.baseVal.value
@@ -831,16 +968,28 @@ export default class Svg2Roughjs {
 
     const center = this.applyMatrix(new Point(cx, cy), svgTransform)
 
-    if (svgTransform === null) {
+    if (this.isIdentityMatrix(svgTransform.matrix)) {
       // transform a point on the ellipse to get the transformed radius
       const radiusPoint = this.applyMatrix(new Point(cx + r, cy + r), svgTransform)
       const transformedWidth = 2 * (radiusPoint.x - center.x)
-      this.rc.circle(
-        center.x,
-        center.y,
-        transformedWidth,
-        this.parseStyleConfig(circle, svgTransform)
-      )
+      if (applyAsClip) {
+        this.ctx.ellipse(
+          center.x,
+          center.y,
+          transformedWidth / 2,
+          transformedWidth / 2,
+          0,
+          0,
+          2 * Math.PI
+        )
+      } else {
+        this.rc.circle(
+          center.x,
+          center.y,
+          transformedWidth,
+          this.parseStyleConfig(circle, svgTransform)
+        )
+      }
     } else {
       // in other cases we need to construct the path manually.
       const factor = (4 / 3) * (Math.sqrt(2) - 1)
@@ -854,7 +1003,11 @@ export default class Svg2Roughjs {
       const c6 = this.applyMatrix(new Point(cx - factor * r, cy - r), svgTransform)
       const c8 = this.applyMatrix(new Point(cx + r, cy - factor * r), svgTransform)
       const path = `M ${p1} C ${c1} ${c2} ${p2} S ${c4} ${p3} S ${c6} ${p4} S ${c8} ${p1}z`
-      this.rc.path(path, this.parseStyleConfig(circle, svgTransform))
+      if (applyAsClip) {
+        // TODO clipPath: apply as Path2D to this.ctx (https://developer.mozilla.org/en-US/docs/Web/API/Path2D)
+      } else {
+        this.rc.path(path, this.parseStyleConfig(circle, svgTransform))
+      }
     }
   }
 
@@ -891,7 +1044,7 @@ export default class Svg2Roughjs {
     if (href.startsWith('#')) {
       href = href.substring(1)
     }
-    const defElement = this.defs[href]
+    const defElement = this.idElements[href]
     if (defElement) {
       let useWidth, useHeight
       if (use.getAttribute('width') && use.getAttribute('height')) {
@@ -962,8 +1115,9 @@ export default class Svg2Roughjs {
    * @private
    * @param {SVGRectElement} rect
    * @param {SVGTransform?} svgTransform
+   * @param {boolean?} applyAsClip
    */
-  drawRect(rect, svgTransform) {
+  drawRect(rect, svgTransform, applyAsClip) {
     const x = rect.x.baseVal.value
     const y = rect.y.baseVal.value
     const width = rect.width.baseVal.value
@@ -976,17 +1130,23 @@ export default class Svg2Roughjs {
 
     let rx = rect.hasAttribute('rx') ? rect.rx.baseVal.value : null
     let ry = rect.hasAttribute('ry') ? rect.ry.baseVal.value : null
-    if (!rx && !ry) {
+    if (this.isIdentityMatrix(svgTransform.matrix) && !rx && !ry) {
       // Simple case; just a rectangle
       const p1 = this.applyMatrix(new Point(x, y), svgTransform)
       const p2 = this.applyMatrix(new Point(x + width, y + height), svgTransform)
-      this.rc.rectangle(
-        p1.x,
-        p1.y,
-        p2.x - p1.x,
-        p2.y - p1.y,
-        this.parseStyleConfig(rect, svgTransform)
-      )
+      const transformedWidth = p2.x - p1.x
+      const transformedHeight = p2.y - p1.y
+      if (applyAsClip) {
+        this.ctx.rect(p1.x, p1.y, transformedWidth, transformedHeight)
+      } else {
+        this.rc.rectangle(
+          p1.x,
+          p1.y,
+          transformedWidth,
+          transformedHeight,
+          this.parseStyleConfig(rect, svgTransform)
+        )
+      }
     } else {
       // Rounded rectangle
       // Negative values are an error and result in the default value
@@ -1010,12 +1170,25 @@ export default class Svg2Roughjs {
       let path = ''
 
       if (!rx && !ry) {
-        // No rounding, so just construct the respective path as a simple polygon
-        path += `M ${this.applyMatrix(new Point(x, y), svgTransform)}`
-        path += `L ${this.applyMatrix(new Point(x + width, y), svgTransform)}`
-        path += `L ${this.applyMatrix(new Point(x + width, y + height), svgTransform)}`
-        path += `L ${this.applyMatrix(new Point(x, y + height), svgTransform)}`
-        path += `z`
+        const p1 = this.applyMatrix(new Point(x, y), svgTransform)
+        const p2 = this.applyMatrix(new Point(x + width, y), svgTransform)
+        const p3 = this.applyMatrix(new Point(x + width, y + height), svgTransform)
+        const p4 = this.applyMatrix(new Point(x, y + height), svgTransform)
+        if (applyAsClip) {
+          // TODO clipPath: consolidate with other case (rounded corners)
+          this.ctx.moveTo(p1.x, p1.y)
+          this.ctx.lineTo(p2.x, p2.y)
+          this.ctx.lineTo(p3.x, p3.y)
+          this.ctx.lineTo(p4.x, p4.y)
+          this.ctx.closePath()
+        } else {
+          // No rounding, so just construct the respective path as a simple polygon
+          path += `M ${p1}`
+          path += `L ${p2}`
+          path += `L ${p3}`
+          path += `L ${p4}`
+          path += `z`
+        }
       } else {
         const factor = (4 / 3) * (Math.sqrt(2) - 1)
 
@@ -1060,13 +1233,19 @@ export default class Svg2Roughjs {
         path += 'z'
       }
 
-      // must use square line cap here so it looks like a rectangle. Default seems to be butt.
-      this.ctx.save()
-      this.ctx.lineCap = 'square'
+      if (applyAsClip) {
+        // TODO clipPath: apply as Path2D to this.ctx (https://developer.mozilla.org/en-US/docs/Web/API/Path2D)
+        // Maybe instead of building a string above, we should use some kind of path command lists that
+        // could be easier applied to the CanvasContext as clip.
+      } else {
+        // must use square line cap here so it looks like a rectangle. Default seems to be butt.
+        this.ctx.save()
+        this.ctx.lineCap = 'square'
 
-      this.rc.path(path, this.parseStyleConfig(rect, svgTransform))
+        this.rc.path(path, this.parseStyleConfig(rect, svgTransform))
 
-      this.ctx.restore()
+        this.ctx.restore()
+      }
     }
   }
 
