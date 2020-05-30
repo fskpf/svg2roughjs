@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="745px" height="189px" viewBox="0 0 745 189" 
+  xmlns:xlink="http://www.w3.org/1999/xlink" style="overflow: hidden; display: block; width: 745px; height: 189px;">
+  <rect width="745px" height="189px" fill="white"/>
+  <defs>
+    <style xmlns="http://www.w3.org/1999/xhtml" type="text/css">@font-face{font-family:'Roboto'; src: url(data:application/font-ttf;charset=utf-8;base64,undefined) format('truetype');}</style>
+  </defs>
+  <g style="pointer-events:visiblePainted" transform="translate(61.5 217)" image-rendering="auto" shape-rendering="auto">
+    <rect fill="rgb(255,140,0)" stroke="rgb(255,140,0)" stroke-opacity="1" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10" fill-opacity="1" height="113" y="-174" x="-26.5" width="136"/>
+    <g transform="translate(-26.5 -174)">
+      <text font-family="'Arial'" font-size="12px" font-style="normal" font-weight="normal" text-anchor="start" fill="rgb(0,0,0)" fill-opacity="1" dy="0.93359375em" transform="translate(0 49.6953125)" clip-path="url(#ygc1025_0)">Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.</text>
+      <clipPath id="ygc1025_0">
+        <rect height="113" y="-49.6953" x="0" width="136"/>
+      </clipPath>
+    </g>
+  </g>
+</svg>
