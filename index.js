@@ -284,14 +284,7 @@ export default class Svg2Roughjs {
       const children = this.getNodeChildren(root)
       for (let i = children.length - 1; i >= 0; i--) {
         const child = children[i]
-        let newTransform = svgTransform
-        if (child.transform && child.transform.baseVal.numberOfItems > 0) {
-          const childTransformMatrix = child.transform.baseVal.consolidate().matrix
-          const combinedMatrix = newTransform
-            ? newTransform.matrix.multiply(childTransformMatrix)
-            : childTransformMatrix
-          newTransform = this.svg.createSVGTransformFromMatrix(combinedMatrix)
-        }
+        const newTransform = this.getCombinedTransform(child, svgTransform)
         stack.push({ element: child, transform: newTransform })
       }
     } else {
@@ -318,17 +311,28 @@ export default class Svg2Roughjs {
       const children = this.getNodeChildren(element)
       for (let i = children.length - 1; i >= 0; i--) {
         const childElement = children[i]
-        let newTransform = transform
-        if (childElement.transform && childElement.transform.baseVal.numberOfItems > 0) {
-          const childTransformMatrix = childElement.transform.baseVal.consolidate().matrix
-          const combinedMatrix = transform
-            ? transform.matrix.multiply(childTransformMatrix)
-            : childTransformMatrix
-          newTransform = this.svg.createSVGTransformFromMatrix(combinedMatrix)
-        }
+        const newTransform = this.getCombinedTransform(childElement, transform)
         stack.push({ element: childElement, transform: newTransform })
       }
     }
+  }
+
+  /**
+   * Combines the given transform with the element's transform.
+   * @param {SVGElement} element
+   * @param {SVGTransform?} transform
+   * @returns {SVGTransform|null}
+   */
+  getCombinedTransform(element, transform) {
+    let newTransform = transform || null
+    if (element.transform && element.transform.baseVal.numberOfItems > 0) {
+      const elementTransformMatrix = element.transform.baseVal.consolidate().matrix
+      const combinedMatrix = transform
+        ? transform.matrix.multiply(elementTransformMatrix)
+        : elementTransformMatrix
+      newTransform = this.svg.createSVGTransformFromMatrix(combinedMatrix)
+    }
+    return newTransform
   }
 
   /**
@@ -901,9 +905,13 @@ export default class Svg2Roughjs {
       const y = use.y.baseVal.value
       let matrix = this.svg.createSVGMatrix().translate(x, y)
       matrix = svgTransform ? svgTransform.matrix.multiply(matrix) : matrix
+
+      // the defsElement itself might have a transform that needs to be incorporated
+      const elementTransform = this.svg.createSVGTransformFromMatrix(matrix)
+
       this.processRoot(
         defElement,
-        this.svg.createSVGTransformFromMatrix(matrix),
+        this.getCombinedTransform(defElement, elementTransform),
         useWidth,
         useHeight
       )
