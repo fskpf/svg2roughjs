@@ -351,6 +351,20 @@ export default class Svg2Roughjs {
   }
 
   /**
+   * Applies the given svgTransform the the canvas context.
+   * @private
+   * @param {CanvasRenderingContext2D} ctx
+   * @param {SVGTransform?} svgTransform
+   */
+  applyTransform(ctx, svgTransform) {
+    if (svgTransform && svgTransform.matrix) {
+      const matrix = svgTransform.matrix
+      // IE11 doesn't support SVGMatrix as parameter for setTransform
+      this.ctx.setTransform(matrix.a, matrix.b, matrix.c, matrix.d, matrix.e, matrix.f)
+    }
+  }
+
+  /**
    * Whether the given SVGTransform resembles an the identity transform.
    * @private
    * @param {SVGTransform?} svgTransform
@@ -892,23 +906,30 @@ export default class Svg2Roughjs {
    */
   drawPolygon(polygon, svgTransform, applyAsClip) {
     const points = this.getPointsArray(polygon)
+
+    if (applyAsClip) {
+      // in the clip case, we can actually transform the entire
+      // canvas without distorting the hand-drawn style
+      if (points.length > 0) {
+        this.ctx.save()
+        this.applyTransform(this.ctx, svgTransform)
+        const startPt = points[0]
+        this.ctx.moveTo(startPt.x, startPt.y)
+        for (let i = 1; i < points.length; i++) {
+          const pt = points[i]
+          this.ctx.lineTo(pt.x, pt.y)
+        }
+        this.ctx.closePath()
+        this.ctx.restore()
+      }
+      return
+    }
+
     const transformed = points.map(p => {
       const pt = this.applyMatrix(p, svgTransform)
       return [pt.x, pt.y]
     })
-    if (applyAsClip) {
-      if (transformed.length > 0) {
-        const startPt = transformed[0]
-        this.ctx.moveTo(startPt[0], startPt[1])
-        for (let i = 1; i < transformed.length; i++) {
-          const pt = transformed[i]
-          this.ctx.lineTo(pt[0], pt[1])
-        }
-        this.ctx.closePath()
-      }
-    } else {
-      this.rc.polygon(transformed, this.parseStyleConfig(polygon, svgTransform))
-    }
+    this.rc.polygon(transformed, this.parseStyleConfig(polygon, svgTransform))
   }
 
   /**
@@ -928,6 +949,16 @@ export default class Svg2Roughjs {
       return
     }
 
+    if (applyAsClip) {
+      // in the clip case, we can actually transform the entire
+      // canvas without distorting the hand-drawn style
+      this.ctx.save()
+      this.applyTransform(this.ctx, svgTransform)
+      this.ctx.ellipse(cx, cy, rx, ry, 0, 0, 2 * Math.PI)
+      this.ctx.restore()
+      return
+    }
+
     if (this.isIdentityTransform(svgTransform)) {
       // Simple case, there's no transform and we can use the ellipse command
       const center = this.applyMatrix(new Point(cx, cy), svgTransform)
@@ -935,25 +966,13 @@ export default class Svg2Roughjs {
       const radiusPoint = this.applyMatrix(new Point(cx + rx, cy + ry), svgTransform)
       const transformedWidth = 2 * (radiusPoint.x - center.x)
       const transformedHeight = 2 * (radiusPoint.y - center.y)
-      if (applyAsClip) {
-        this.ctx.ellipse(
-          center.x,
-          center.y,
-          transformedWidth / 2,
-          transformedHeight / 2,
-          0,
-          0,
-          2 * Math.PI
-        )
-      } else {
-        this.rc.ellipse(
-          center.x,
-          center.y,
-          transformedWidth,
-          transformedHeight,
-          this.parseStyleConfig(ellipse, svgTransform)
-        )
-      }
+      this.rc.ellipse(
+        center.x,
+        center.y,
+        transformedWidth,
+        transformedHeight,
+        this.parseStyleConfig(ellipse, svgTransform)
+      )
     } else {
       // in other cases we need to construct the path manually.
       const factor = (4 / 3) * (Math.sqrt(2) - 1)
@@ -967,11 +986,7 @@ export default class Svg2Roughjs {
       const c6 = this.applyMatrix(new Point(cx - factor * rx, cy - ry), svgTransform)
       const c8 = this.applyMatrix(new Point(cx + rx, cy - factor * ry), svgTransform)
       const path = `M ${p1} C ${c1} ${c2} ${p2} S ${c4} ${p3} S ${c6} ${p4} S ${c8} ${p1}z`
-      if (applyAsClip) {
-        // TODO clippath, see also drawCircle
-      } else {
-        this.rc.path(path, this.parseStyleConfig(ellipse, svgTransform))
-      }
+      this.rc.path(path, this.parseStyleConfig(ellipse, svgTransform))
     }
   }
 
@@ -991,30 +1006,28 @@ export default class Svg2Roughjs {
       return
     }
 
+    if (applyAsClip) {
+      // in the clip case, we can actually transform the entire
+      // canvas without distorting the hand-drawn style
+      this.ctx.save()
+      this.applyTransform(this.ctx, svgTransform)
+      this.ctx.ellipse(cx, cy, r, r, 0, 0, 2 * Math.PI)
+      this.ctx.restore()
+      return
+    }
+
     const center = this.applyMatrix(new Point(cx, cy), svgTransform)
 
     if (this.isIdentityTransform(svgTransform)) {
       // transform a point on the ellipse to get the transformed radius
       const radiusPoint = this.applyMatrix(new Point(cx + r, cy + r), svgTransform)
       const transformedWidth = 2 * (radiusPoint.x - center.x)
-      if (applyAsClip) {
-        this.ctx.ellipse(
-          center.x,
-          center.y,
-          transformedWidth / 2,
-          transformedWidth / 2,
-          0,
-          0,
-          2 * Math.PI
-        )
-      } else {
-        this.rc.circle(
-          center.x,
-          center.y,
-          transformedWidth,
-          this.parseStyleConfig(circle, svgTransform)
-        )
-      }
+      this.rc.circle(
+        center.x,
+        center.y,
+        transformedWidth,
+        this.parseStyleConfig(circle, svgTransform)
+      )
     } else {
       // in other cases we need to construct the path manually.
       const factor = (4 / 3) * (Math.sqrt(2) - 1)
@@ -1028,11 +1041,7 @@ export default class Svg2Roughjs {
       const c6 = this.applyMatrix(new Point(cx - factor * r, cy - r), svgTransform)
       const c8 = this.applyMatrix(new Point(cx + r, cy - factor * r), svgTransform)
       const path = `M ${p1} C ${c1} ${c2} ${p2} S ${c4} ${p3} S ${c6} ${p4} S ${c8} ${p1}z`
-      if (applyAsClip) {
-        // TODO clipPath: apply as Path2D to this.ctx (https://developer.mozilla.org/en-US/docs/Web/API/Path2D)
-      } else {
-        this.rc.path(path, this.parseStyleConfig(circle, svgTransform))
-      }
+      this.rc.path(path, this.parseStyleConfig(circle, svgTransform))
     }
   }
 
@@ -1155,23 +1164,35 @@ export default class Svg2Roughjs {
 
     let rx = rect.hasAttribute('rx') ? rect.rx.baseVal.value : null
     let ry = rect.hasAttribute('ry') ? rect.ry.baseVal.value : null
+
+    if (applyAsClip) {
+      // in the clip case, we can actually transform the entire
+      // canvas without distorting the hand-drawn style
+      this.ctx.save()
+      this.applyTransform(this.ctx, svgTransform)
+      if (!rx && !ry) {
+        this.ctx.rect(x, y, width, height)
+      } else {
+        // construct a rounded rect
+        // TODO clipPath: construct a rounded rect (https://developer.mozilla.org/en-US/docs/Web/API/Path2D)
+      }
+      this.ctx.restore()
+      return
+    }
+
     if (this.isIdentityTransform(svgTransform) && !rx && !ry) {
       // Simple case; just a rectangle
       const p1 = this.applyMatrix(new Point(x, y), svgTransform)
       const p2 = this.applyMatrix(new Point(x + width, y + height), svgTransform)
       const transformedWidth = p2.x - p1.x
       const transformedHeight = p2.y - p1.y
-      if (applyAsClip) {
-        this.ctx.rect(p1.x, p1.y, transformedWidth, transformedHeight)
-      } else {
-        this.rc.rectangle(
-          p1.x,
-          p1.y,
-          transformedWidth,
-          transformedHeight,
-          this.parseStyleConfig(rect, svgTransform)
-        )
-      }
+      this.rc.rectangle(
+        p1.x,
+        p1.y,
+        transformedWidth,
+        transformedHeight,
+        this.parseStyleConfig(rect, svgTransform)
+      )
     } else {
       // Rounded rectangle
       // Negative values are an error and result in the default value
@@ -1199,21 +1220,12 @@ export default class Svg2Roughjs {
         const p2 = this.applyMatrix(new Point(x + width, y), svgTransform)
         const p3 = this.applyMatrix(new Point(x + width, y + height), svgTransform)
         const p4 = this.applyMatrix(new Point(x, y + height), svgTransform)
-        if (applyAsClip) {
-          // TODO clipPath: consolidate with other case (rounded corners)
-          this.ctx.moveTo(p1.x, p1.y)
-          this.ctx.lineTo(p2.x, p2.y)
-          this.ctx.lineTo(p3.x, p3.y)
-          this.ctx.lineTo(p4.x, p4.y)
-          this.ctx.closePath()
-        } else {
-          // No rounding, so just construct the respective path as a simple polygon
-          path += `M ${p1}`
-          path += `L ${p2}`
-          path += `L ${p3}`
-          path += `L ${p4}`
-          path += `z`
-        }
+        // No rounding, so just construct the respective path as a simple polygon
+        path += `M ${p1}`
+        path += `L ${p2}`
+        path += `L ${p3}`
+        path += `L ${p4}`
+        path += `z`
       } else {
         const factor = (4 / 3) * (Math.sqrt(2) - 1)
 
@@ -1258,19 +1270,13 @@ export default class Svg2Roughjs {
         path += 'z'
       }
 
-      if (applyAsClip) {
-        // TODO clipPath: apply as Path2D to this.ctx (https://developer.mozilla.org/en-US/docs/Web/API/Path2D)
-        // Maybe instead of building a string above, we should use some kind of path command lists that
-        // could be easier applied to the CanvasContext as clip.
-      } else {
-        // must use square line cap here so it looks like a rectangle. Default seems to be butt.
-        this.ctx.save()
-        this.ctx.lineCap = 'square'
+      // must use square line cap here so it looks like a rectangle. Default seems to be butt.
+      this.ctx.save()
+      this.ctx.lineCap = 'square'
 
-        this.rc.path(path, this.parseStyleConfig(rect, svgTransform))
+      this.rc.path(path, this.parseStyleConfig(rect, svgTransform))
 
-        this.ctx.restore()
-      }
+      this.ctx.restore()
     }
   }
 
@@ -1350,11 +1356,7 @@ export default class Svg2Roughjs {
     }
 
     // apply the global transform
-    if (svgTransform) {
-      const matrix = svgTransform.matrix
-      // IE11 doesn't support SVGMatrix as parameter for setTransform
-      this.ctx.setTransform(matrix.a, matrix.b, matrix.c, matrix.d, matrix.e, matrix.f)
-    }
+    this.applyTransform(this.ctx, svgTransform)
 
     // consider dx/dy of the text element
     const dx = this.getLengthInPx(text.dx)
