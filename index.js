@@ -898,10 +898,11 @@ export default class Svg2Roughjs {
     })
     if (applyAsClip) {
       if (transformed.length > 0) {
-        this.ctx.moveTo(transformed[0].x, transformed[0].y)
+        const startPt = transformed[0]
+        this.ctx.moveTo(startPt[0], startPt[1])
         for (let i = 1; i < transformed.length; i++) {
           const pt = transformed[i]
-          this.ctx.lineTo(pt.x, pt.y)
+          this.ctx.lineTo(pt[0], pt[1])
         }
         this.ctx.closePath()
       }
