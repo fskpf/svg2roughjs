@@ -351,13 +351,17 @@ export default class Svg2Roughjs {
   }
 
   /**
-   * Whether the given matrix is the identity matrix.
+   * Whether the given SVGTransform resembles an the identity transform.
    * @private
-   * @param {SVGMatrix?} matrix
-   * @returns {boolean} Whether the matrix is the identity matrix.
-   *  Returns also true if matrix is undefined.
+   * @param {SVGTransform?} svgTransform
+   * @returns {boolean} Whether the transform is an identity transform.
+   *  Returns true if transform is undefined.
    */
-  isIdentityMatrix(matrix) {
+  isIdentityTransform(svgTransform) {
+    if (!svgTransform) {
+      return true
+    }
+    const matrix = svgTransform.matrix
     return (
       !matrix ||
       (matrix.a === 1 &&
@@ -759,6 +763,9 @@ export default class Svg2Roughjs {
       case 'circle':
         this.drawCircle(element, svgTransform, true)
         break
+      case 'ellipse':
+        this.drawEllipse(element, svgTransform, true)
+        break
       case 'polygon':
         this.drawPolygon(element, svgTransform, true)
         break
@@ -907,8 +914,9 @@ export default class Svg2Roughjs {
    * @private
    * @param {SVGEllipseElement} ellipse
    * @param {SVGTransform?} svgTransform
+   * @param {boolean?} applyAsClip
    */
-  drawEllipse(ellipse, svgTransform) {
+  drawEllipse(ellipse, svgTransform, applyAsClip) {
     const cx = ellipse.cx.baseVal.value
     const cy = ellipse.cy.baseVal.value
     const rx = ellipse.rx.baseVal.value
@@ -919,20 +927,32 @@ export default class Svg2Roughjs {
       return
     }
 
-    if (svgTransform === null) {
+    if (this.isIdentityTransform(svgTransform)) {
       // Simple case, there's no transform and we can use the ellipse command
       const center = this.applyMatrix(new Point(cx, cy), svgTransform)
       // transform a point on the ellipse to get the transformed radius
       const radiusPoint = this.applyMatrix(new Point(cx + rx, cy + ry), svgTransform)
       const transformedWidth = 2 * (radiusPoint.x - center.x)
       const transformedHeight = 2 * (radiusPoint.y - center.y)
-      this.rc.ellipse(
-        center.x,
-        center.y,
-        transformedWidth,
-        transformedHeight,
-        this.parseStyleConfig(ellipse, svgTransform)
-      )
+      if (applyAsClip) {
+        this.ctx.ellipse(
+          center.x,
+          center.y,
+          transformedWidth / 2,
+          transformedHeight / 2,
+          0,
+          0,
+          2 * Math.PI
+        )
+      } else {
+        this.rc.ellipse(
+          center.x,
+          center.y,
+          transformedWidth,
+          transformedHeight,
+          this.parseStyleConfig(ellipse, svgTransform)
+        )
+      }
     } else {
       // in other cases we need to construct the path manually.
       const factor = (4 / 3) * (Math.sqrt(2) - 1)
@@ -946,7 +966,11 @@ export default class Svg2Roughjs {
       const c6 = this.applyMatrix(new Point(cx - factor * rx, cy - ry), svgTransform)
       const c8 = this.applyMatrix(new Point(cx + rx, cy - factor * ry), svgTransform)
       const path = `M ${p1} C ${c1} ${c2} ${p2} S ${c4} ${p3} S ${c6} ${p4} S ${c8} ${p1}z`
-      this.rc.path(path, this.parseStyleConfig(ellipse, svgTransform))
+      if (applyAsClip) {
+        // TODO clippath, see also drawCircle
+      } else {
+        this.rc.path(path, this.parseStyleConfig(ellipse, svgTransform))
+      }
     }
   }
 
@@ -968,7 +992,7 @@ export default class Svg2Roughjs {
 
     const center = this.applyMatrix(new Point(cx, cy), svgTransform)
 
-    if (this.isIdentityMatrix(svgTransform.matrix)) {
+    if (this.isIdentityTransform(svgTransform)) {
       // transform a point on the ellipse to get the transformed radius
       const radiusPoint = this.applyMatrix(new Point(cx + r, cy + r), svgTransform)
       const transformedWidth = 2 * (radiusPoint.x - center.x)
@@ -1130,7 +1154,7 @@ export default class Svg2Roughjs {
 
     let rx = rect.hasAttribute('rx') ? rect.rx.baseVal.value : null
     let ry = rect.hasAttribute('ry') ? rect.ry.baseVal.value : null
-    if (this.isIdentityMatrix(svgTransform.matrix) && !rx && !ry) {
+    if (this.isIdentityTransform(svgTransform) && !rx && !ry) {
       // Simple case; just a rectangle
       const p1 = this.applyMatrix(new Point(x, y), svgTransform)
       const p2 = this.applyMatrix(new Point(x + width, y + height), svgTransform)
