@@ -351,12 +351,11 @@ export default class Svg2Roughjs {
   }
 
   /**
-   * Applies the given svgTransform the the canvas context.
+   * Applies the given svgTransform to the canvas context.
    * @private
-   * @param {CanvasRenderingContext2D} ctx
    * @param {SVGTransform?} svgTransform
    */
-  applyTransform(ctx, svgTransform) {
+  applyGlobalTransform(svgTransform) {
     if (svgTransform && svgTransform.matrix) {
       const matrix = svgTransform.matrix
       // IE11 doesn't support SVGMatrix as parameter for setTransform
@@ -912,7 +911,7 @@ export default class Svg2Roughjs {
       // canvas without distorting the hand-drawn style
       if (points.length > 0) {
         this.ctx.save()
-        this.applyTransform(this.ctx, svgTransform)
+        this.applyGlobalTransform(svgTransform)
         const startPt = points[0]
         this.ctx.moveTo(startPt.x, startPt.y)
         for (let i = 1; i < points.length; i++) {
@@ -953,7 +952,7 @@ export default class Svg2Roughjs {
       // in the clip case, we can actually transform the entire
       // canvas without distorting the hand-drawn style
       this.ctx.save()
-      this.applyTransform(this.ctx, svgTransform)
+      this.applyGlobalTransform(svgTransform)
       this.ctx.ellipse(cx, cy, rx, ry, 0, 0, 2 * Math.PI)
       this.ctx.restore()
       return
@@ -1010,7 +1009,7 @@ export default class Svg2Roughjs {
       // in the clip case, we can actually transform the entire
       // canvas without distorting the hand-drawn style
       this.ctx.save()
-      this.applyTransform(this.ctx, svgTransform)
+      this.applyGlobalTransform(svgTransform)
       this.ctx.ellipse(cx, cy, r, r, 0, 0, 2 * Math.PI)
       this.ctx.restore()
       return
@@ -1169,7 +1168,7 @@ export default class Svg2Roughjs {
       // in the clip case, we can actually transform the entire
       // canvas without distorting the hand-drawn style
       this.ctx.save()
-      this.applyTransform(this.ctx, svgTransform)
+      this.applyGlobalTransform(svgTransform)
       if (!rx && !ry) {
         this.ctx.rect(x, y, width, height)
       } else {
@@ -1356,7 +1355,7 @@ export default class Svg2Roughjs {
     }
 
     // apply the global transform
-    this.applyTransform(this.ctx, svgTransform)
+    this.applyGlobalTransform(svgTransform)
 
     // consider dx/dy of the text element
     const dx = this.getLengthInPx(text.dx)
