@@ -1163,6 +1163,17 @@ export default class Svg2Roughjs {
 
     let rx = rect.hasAttribute('rx') ? rect.rx.baseVal.value : null
     let ry = rect.hasAttribute('ry') ? rect.ry.baseVal.value : null
+    if (rx || ry) {
+      // Negative values are an error and result in the default value
+      rx = rx < 0 ? 0 : rx
+      ry = ry < 0 ? 0 : ry
+      // If only one of the two values is specified, the other has the same value
+      rx = rx === null ? ry : rx
+      ry = ry === null ? rx : ry
+      // Clamp both values to half their sides' lengths
+      rx = Math.min(rx, width / 2)
+      ry = Math.min(ry, height / 2)
+    }
 
     if (applyAsClip) {
       // in the clip case, we can actually transform the entire
@@ -1172,8 +1183,39 @@ export default class Svg2Roughjs {
       if (!rx && !ry) {
         this.ctx.rect(x, y, width, height)
       } else {
-        // construct a rounded rect
-        // TODO clipPath: construct a rounded rect (https://developer.mozilla.org/en-US/docs/Web/API/Path2D)
+        // Construct path for the rounded rectangle
+        const factor = (4 / 3) * (Math.sqrt(2) - 1)
+        this.ctx.moveTo(x + rx, y)
+        this.ctx.lineTo(x + width - rx, y)
+        this.ctx.bezierCurveTo(
+          x + width - rx + factor * rx,
+          y,
+          x + width,
+          y + factor * ry,
+          x + width,
+          y + ry
+        )
+        this.ctx.lineTo(x + width, y + height - ry)
+        this.ctx.bezierCurveTo(
+          x + width,
+          y + height - ry + factor * ry,
+          x + width - factor * rx,
+          y + height,
+          x + width - rx,
+          y + height
+        )
+        this.ctx.lineTo(x + rx, y + height)
+        this.ctx.bezierCurveTo(
+          x + rx - factor * rx,
+          y + height,
+          x,
+          y + height - factor * ry,
+          x,
+          y + height - ry
+        )
+        this.ctx.lineTo(x, y + ry)
+        this.ctx.bezierCurveTo(x, y + factor * ry, x + factor * rx, y, x + rx, y)
+        this.ctx.closePath()
       }
       this.ctx.restore()
       return
@@ -1194,24 +1236,6 @@ export default class Svg2Roughjs {
       )
     } else {
       // Rounded rectangle
-      // Negative values are an error and result in the default value
-      if (rx < 0) {
-        rx = 0
-      }
-      if (ry < 0) {
-        ry = 0
-      }
-      // If only one of the two values is specified, the other has the same value
-      if (rx === null) {
-        rx = ry
-      }
-      if (ry === null) {
-        ry = rx
-      }
-      // Clamp both values to half their sides' lengths
-      rx = Math.min(rx, width / 2)
-      ry = Math.min(ry, height / 2)
-
       let path = ''
 
       if (!rx && !ry) {
