@@ -554,7 +554,7 @@ export default class Svg2Roughjs {
    * @param {number} currentOpacity
    */
   getEffectiveElementOpacity(element, currentOpacity) {
-    const attr = element.getAttribute('opacity')
+    const attr = getComputedStyle(element)['opacity'] || element.getAttribute('opacity')
     if (attr) {
       let elementOpacity = 1
       if (attr.indexOf('%') !== -1) {
@@ -567,7 +567,12 @@ export default class Svg2Roughjs {
     }
     // traverse upwards to combine parent opacities as well
     const parent = element.parentElement
-    return parent ? this.getEffectiveElementOpacity(parent, currentOpacity) : currentOpacity
+
+    if (!parent || parent === this.$svg) {
+      return currentOpacity
+    }
+
+    return this.getEffectiveElementOpacity(parent, currentOpacity)
   }
 
   /**
@@ -583,7 +588,10 @@ export default class Svg2Roughjs {
     const attr = getComputedStyle(element)[attributeName] || element.getAttribute(attributeName)
     if (!attr) {
       const parent = element.parentElement
-      return parent ? this.getEffectiveAttribute(parent, attributeName) : null
+      if (!parent || parent === this.$svg) {
+        return null
+      }
+      return this.getEffectiveAttribute(parent, attributeName)
     }
     return attr
   }
@@ -787,6 +795,18 @@ export default class Svg2Roughjs {
   }
 
   /**
+   * @private
+   * @param {SVGElement} element
+   */
+  isHidden(element) {
+    const style = element.style
+    if (!style) {
+      return false
+    }
+    return style.display === 'none' || style.visibility === 'hidden'
+  }
+
+  /**
    * The main switch to delegate drawing of `SVGElement`s
    * to different subroutines.
    * @private
@@ -794,6 +814,11 @@ export default class Svg2Roughjs {
    * @param {SVGTransform} svgTransform
    */
   drawElement(element, svgTransform) {
+    if (this.isHidden(element)) {
+      // just skip hidden elements
+      return
+    }
+
     const clipPath = element.getAttribute('clip-path')
     if (clipPath) {
       this.ctx.save()
@@ -1435,7 +1460,7 @@ export default class Svg2Roughjs {
    */
   shouldNormalizeWhitespace(element) {
     let xmlSpaceAttribute = null
-    while (element !== null && element !== window.document && xmlSpaceAttribute === null) {
+    while (element !== null && element !== this.$svg && xmlSpaceAttribute === null) {
       xmlSpaceAttribute = element.getAttribute('xml:space')
       if (xmlSpaceAttribute === null) {
         element = element.parentNode
