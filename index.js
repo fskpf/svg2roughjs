@@ -557,7 +557,7 @@ export default class Svg2Roughjs {
    */
   getEffectiveElementOpacity(element, currentOpacity, currentUseCtx) {
     let attr
-    if (this.$useElementContext === null) {
+    if (!currentUseCtx) {
       attr = getComputedStyle(element)['opacity'] || element.getAttribute('opacity')
     } else {
       // use elements traverse a different parent-hierarchy, thus we cannot use getComputedStyle here
@@ -576,7 +576,7 @@ export default class Svg2Roughjs {
     // traverse upwards to combine parent opacities as well
     let parent = element.parentElement
 
-    const useCtx = currentUseCtx || this.$useElementContext
+    const useCtx = currentUseCtx
     let nextCtx = useCtx
 
     if (useCtx && useCtx.referenced === element) {
@@ -604,7 +604,7 @@ export default class Svg2Roughjs {
   getEffectiveAttribute(element, attributeName, currentUseCtx) {
     // getComputedStyle doesn't work for, e.g. <svg fill='rgba(...)'>
     let attr
-    if (this.$useElementContext === null) {
+    if (!currentUseCtx) {
       attr = getComputedStyle(element)[attributeName] || element.getAttribute(attributeName)
     } else {
       // use elements traverse a different parent-hierarchy, thus we cannot use getComputedStyle here
@@ -614,7 +614,7 @@ export default class Svg2Roughjs {
     if (!attr) {
       let parent = element.parentElement
 
-      const useCtx = currentUseCtx || this.$useElementContext
+      const useCtx = currentUseCtx
       let nextCtx = useCtx
 
       if (useCtx && useCtx.referenced === element) {
@@ -662,9 +662,9 @@ export default class Svg2Roughjs {
     const config = Object.assign({}, this.$roughConfig)
 
     // incorporate the elements base opacity
-    const elementOpacity = this.getEffectiveElementOpacity(element, 1)
+    const elementOpacity = this.getEffectiveElementOpacity(element, 1, this.$useElementContext)
 
-    const fill = this.getEffectiveAttribute(element, 'fill') || 'black'
+    const fill = this.getEffectiveAttribute(element, 'fill', this.$useElementContext) || 'black'
     const fillOpacity = elementOpacity * this.getOpacity(element, 'fill-opacity')
     if (fill) {
       if (fill.indexOf('url') !== -1) {
@@ -678,7 +678,7 @@ export default class Svg2Roughjs {
       }
     }
 
-    const stroke = this.getEffectiveAttribute(element, 'stroke')
+    const stroke = this.getEffectiveAttribute(element, 'stroke', this.$useElementContext)
     const strokeOpacity = elementOpacity * this.getOpacity(element, 'stroke-opacity')
     if (stroke) {
       if (stroke.indexOf('url') !== -1) {
@@ -694,7 +694,7 @@ export default class Svg2Roughjs {
       config.stroke = 'none'
     }
 
-    let strokeWidth = this.getEffectiveAttribute(element, 'stroke-width')
+    let strokeWidth = this.getEffectiveAttribute(element, 'stroke-width', this.$useElementContext)
     if (strokeWidth) {
       // Convert to user space units (px)
       strokeWidth = this.convertToPixelUnit(strokeWidth)
@@ -711,7 +711,11 @@ export default class Svg2Roughjs {
       config.strokeWidth = 0
     }
 
-    let strokeDashArray = this.getEffectiveAttribute(element, 'stroke-dasharray')
+    let strokeDashArray = this.getEffectiveAttribute(
+      element,
+      'stroke-dasharray',
+      this.$useElementContext
+    )
     if (strokeDashArray && strokeDashArray !== 'none') {
       strokeDashArray = strokeDashArray
         .split(/[\s,]+/)
@@ -720,7 +724,11 @@ export default class Svg2Roughjs {
       config.strokeLineDash = strokeDashArray
     }
 
-    let strokeDashOffset = this.getEffectiveAttribute(element, 'stroke-dashoffset')
+    let strokeDashOffset = this.getEffectiveAttribute(
+      element,
+      'stroke-dashoffset',
+      this.$useElementContext
+    )
     if (strokeDashOffset) {
       strokeDashOffset = this.convertToPixelUnit(strokeDashOffset)
       config.strokeLineDashOffset = strokeDashOffset
@@ -1159,8 +1167,6 @@ export default class Svg2Roughjs {
 
       // use elements must be processed in their context, particularly regarding
       // the styling of them
-      // TODO deal with nested use elements
-      //this.$useElementContext = { root: use, referenced: defElement }
       if (!this.$useElementContext) {
         this.$useElementContext = { root: use, referenced: defElement }
       } else {
@@ -1458,7 +1464,7 @@ export default class Svg2Roughjs {
       this.ctx.fillStyle = style.fill
     }
 
-    const textAnchor = this.getEffectiveAttribute(text, 'text-anchor')
+    const textAnchor = this.getEffectiveAttribute(text, 'text-anchor', this.$useElementContext)
     if (textAnchor) {
       this.ctx.textAlign = textAnchor !== 'middle' ? textAnchor : 'center'
     }
@@ -1549,22 +1555,22 @@ export default class Svg2Roughjs {
    */
   getCssFont(text, svgTransform) {
     let cssFont = ''
-    const fontStyle = this.getEffectiveAttribute(text, 'font-style')
+    const fontStyle = this.getEffectiveAttribute(text, 'font-style', this.$useElementContext)
     if (fontStyle) {
       cssFont += fontStyle
     }
-    const fontWeight = this.getEffectiveAttribute(text, 'font-weight')
+    const fontWeight = this.getEffectiveAttribute(text, 'font-weight', this.$useElementContext)
     if (fontWeight) {
       cssFont += ` ${fontWeight}`
     }
-    let fontSize = this.getEffectiveAttribute(text, 'font-size')
+    let fontSize = this.getEffectiveAttribute(text, 'font-size', this.$useElementContext)
     if (fontSize) {
       cssFont += ` ${fontSize}`
     }
     if (this.fontFamily) {
       cssFont += ` ${this.fontFamily}`
     } else {
-      const fontFamily = this.getEffectiveAttribute(text, 'font-family')
+      const fontFamily = this.getEffectiveAttribute(text, 'font-family', this.$useElementContext)
       if (fontFamily) {
         cssFont += ` ${fontFamily}`
       }
