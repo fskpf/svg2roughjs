@@ -665,8 +665,10 @@ export default class Svg2Roughjs {
       strokeWidth = this.convertToPixelUnit(strokeWidth)
       // If we have a transform and an explicit stroke, include the scaling factor
       if (svgTransform && stroke !== 'none') {
-        // For lack of a better option here, just use the mean of x and y scaling factors
-        const factor = (svgTransform.matrix.a + svgTransform.matrix.d) / 2
+        // For lack of a better option here, use the determinant
+        const m = svgTransform.matrix
+        const det = m.a * m.d - m.c * m.b
+        const factor = Math.sqrt(det)
         strokeWidth *= factor
       }
       config.strokeWidth = strokeWidth
