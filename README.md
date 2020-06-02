@@ -48,17 +48,17 @@ Some sample images with different Svg2rough.js settings. Try it yourself [here](
 
 SVG | Sketch
 --- | ---
-<img src="./sample-images/bpmn1.svg" width="400px"><br>(created with [yEd Live](https://www.yworks.com/yed-live)) | <img src="./sample-images/bpmn1_sketch.png" width="400px"><br>&nbsp;
+<img src="https://fskpf.github.io/static/sample-images/bpmn1.svg" width="400px"><br>(created with [yEd Live](https://www.yworks.com/yed-live)) | <img src="https://fskpf.github.io/static/sample-images/bpmn1_sketch.png" width="400px"><br>&nbsp;
 &nbsp; | &nbsp;
-<img src="./sample-images/hierarchic_diagram.svg" width="400px"><br>(created with [yEd Live](https://www.yworks.com/yed-live)) | <img src="./sample-images/hierarchic_diagram_sketch.png" width="400px"><br>&nbsp;
+<img src="https://fskpf.github.io/static/sample-images/hierarchic_diagram.svg" width="400px"><br>(created with [yEd Live](https://www.yworks.com/yed-live)) | <img src="https://fskpf.github.io/static/sample-images/hierarchic_diagram_sketch.png" width="400px"><br>&nbsp;
 &nbsp; | &nbsp;
-<img src="./sample-images/flowchart.svg" width="400px"><br>(created with [yEd Live](https://www.yworks.com/yed-live)) | <img src="./sample-images/flowchart_sketch.png" width="400px"><br>&nbsp;
+<img src="https://fskpf.github.io/static/sample-images/flowchart.svg" width="400px"><br>(created with [yEd Live](https://www.yworks.com/yed-live)) | <img src="https://fskpf.github.io/static/sample-images/flowchart_sketch.png" width="400px"><br>&nbsp;
 &nbsp; | &nbsp;
-<img src="./sample-images/chirality.svg" width="400px"> | <img src="./sample-images/chirality_sketch.png" width="400px">
+<img src="https://fskpf.github.io/static/sample-images/chirality.svg" width="400px"> | <img src="https://fskpf.github.io/static/sample-images/chirality_sketch.png" width="400px">
 &nbsp; | &nbsp;
-<img src="./sample-images/comic_boy.svg" width="400px"> | <img src="./sample-images/comic_boy_sketch.png" width="400px">
+<img src="https://fskpf.github.io/static/sample-images/comic_boy.svg" width="400px"> | <img src="https://fskpf.github.io/static/sample-images/comic_boy_sketch.png" width="400px">
 &nbsp; | &nbsp;
-<img src="./sample-images/mars_rover_blueprint.svg" width="400px"> | <img src="./sample-images/mars_rover_sketch.png" width="400px">
+<img src="https://fskpf.github.io/static/sample-images/mars_rover_blueprint.svg" width="400px"> | <img src="https://fskpf.github.io/static/sample-images/mars_rover_sketch.png" width="400px">
 
 ## Credits
 * [Rough.js](https://github.com/pshihn/rough) - Draws the hand-drawn elements
