@@ -552,9 +552,17 @@ export default class Svg2Roughjs {
    * @private
    * @param {SVGElement} element
    * @param {number} currentOpacity
+   * @param {object?} currentUseCtx Consider different DOM hierarchy for use elements
+   * @returns {number}
    */
-  getEffectiveElementOpacity(element, currentOpacity) {
-    const attr = getComputedStyle(element)['opacity'] || element.getAttribute('opacity')
+  getEffectiveElementOpacity(element, currentOpacity, currentUseCtx) {
+    let attr
+    if (this.$useElementContext === null) {
+      attr = getComputedStyle(element)['opacity'] || element.getAttribute('opacity')
+    } else {
+      // use elements traverse a different parent-hierarchy, thus we cannot use getComputedStyle here
+      attr = element.getAttribute('opacity')
+    }
     if (attr) {
       let elementOpacity = 1
       if (attr.indexOf('%') !== -1) {
@@ -566,13 +574,22 @@ export default class Svg2Roughjs {
       currentOpacity *= elementOpacity
     }
     // traverse upwards to combine parent opacities as well
-    const parent = element.parentElement
+    let parent = element.parentElement
+
+    const useCtx = currentUseCtx || this.$useElementContext
+    let nextCtx = useCtx
+
+    if (useCtx && useCtx.referenced === element) {
+      // switch context and traverse the use-element parent now
+      parent = useCtx.root.parentElement
+      nextCtx = useCtx.parentContext
+    }
 
     if (!parent || parent === this.$svg) {
       return currentOpacity
     }
 
-    return this.getEffectiveElementOpacity(parent, currentOpacity)
+    return this.getEffectiveElementOpacity(parent, currentOpacity, nextCtx)
   }
 
   /**
@@ -581,17 +598,35 @@ export default class Svg2Roughjs {
    * @private
    * @param {SVGElement} element
    * @param {string} attributeName Name of the attribute to look up
+   * @param {object?} currentUseCtx Consider different DOM hierarchy for use elements
    * @return {string|null} attribute value if it exists
    */
-  getEffectiveAttribute(element, attributeName) {
+  getEffectiveAttribute(element, attributeName, currentUseCtx) {
     // getComputedStyle doesn't work for, e.g. <svg fill='rgba(...)'>
-    const attr = getComputedStyle(element)[attributeName] || element.getAttribute(attributeName)
+    let attr
+    if (this.$useElementContext === null) {
+      attr = getComputedStyle(element)[attributeName] || element.getAttribute(attributeName)
+    } else {
+      // use elements traverse a different parent-hierarchy, thus we cannot use getComputedStyle here
+      attr = element.getAttribute(attributeName)
+    }
+
     if (!attr) {
-      const parent = element.parentElement
+      let parent = element.parentElement
+
+      const useCtx = currentUseCtx || this.$useElementContext
+      let nextCtx = useCtx
+
+      if (useCtx && useCtx.referenced === element) {
+        // switch context and traverse the use-element parent now
+        parent = useCtx.root.parentElement
+        nextCtx = useCtx.parentContext
+      }
+
       if (!parent || parent === this.$svg) {
         return null
       }
-      return this.getEffectiveAttribute(parent, attributeName)
+      return this.getEffectiveAttribute(parent, attributeName, nextCtx)
     }
     return attr
   }
@@ -1122,12 +1157,35 @@ export default class Svg2Roughjs {
       // the defsElement itself might have a transform that needs to be incorporated
       const elementTransform = this.svg.createSVGTransformFromMatrix(matrix)
 
+      // use elements must be processed in their context, particularly regarding
+      // the styling of them
+      // TODO deal with nested use elements
+      //this.$useElementContext = { root: use, referenced: defElement }
+      if (!this.$useElementContext) {
+        this.$useElementContext = { root: use, referenced: defElement }
+      } else {
+        const newContext = {
+          root: use,
+          referenced: defElement,
+          parentContext: Object.assign({}, this.$useElementContext)
+        }
+        this.$useElementContext = newContext
+      }
+
+      // draw the referenced element
       this.processRoot(
         defElement,
         this.getCombinedTransform(defElement, elementTransform),
         useWidth,
         useHeight
       )
+
+      // restore default context
+      if (this.$useElementContext.parentContext) {
+        this.$useElementContext = this.$useElementContext.parentContext
+      } else {
+        this.$useElementContext = null
+      }
     }
   }
 
