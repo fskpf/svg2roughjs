@@ -202,7 +202,9 @@ function run() {
     const reader = new FileReader()
     reader.readAsText(file)
     reader.addEventListener('load', () => {
-      loadSvg(svg2roughjs, reader.result)
+      const fileContent = reader.result
+      codeMirrorInstance.setValue(fileContent)
+      loadSvgString(svg2roughjs, fileContent)
     })
   }
 
