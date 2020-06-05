@@ -1,5 +1,9 @@
 import 'core-js/stable'
 
+import CodeMirror from 'codemirror'
+import 'codemirror/lib/codemirror.css'
+import 'codemirror/mode/xml/xml.js'
+
 import SAMPLE_BPMN from '../public/bpmn1.svg'
 import SAMPLE_COMPUTER_NETWORK from '../public/computer-network.svg'
 import SAMPLE_FLOWCHART from '../public/flowchart4.svg'
@@ -11,11 +15,21 @@ import SAMPLE_ORGANIC1 from '../public/organic1.svg'
 import SAMPLE_ORGANIC2 from '../public/organic2.svg'
 import SAMPLE_TREE from '../public/tree1.svg'
 import SAMPLE_VENN from '../public/venn.svg'
-import SAMPLE_SINGLE_MOVIE from '../public/singlemovie.svg'
 
 import Svg2Roughjs from 'svg2roughjs'
 
-function loadSvg(svg2roughjs, fileContent) {
+let loadingSvg = false
+let scheduledLoad
+
+function loadSvgString(svg2roughjs, fileContent) {
+  if (loadingSvg) {
+    scheduledLoad = fileContent
+    return
+  }
+
+  document.getElementById('sample-select').disabled = true
+  loadingSvg = true
+
   const inputElement = document.getElementById('input')
   const outputElement = document.getElementById('output')
   const canvas = outputElement.querySelector('canvas')
@@ -48,7 +62,21 @@ function loadSvg(svg2roughjs, fileContent) {
       if (canvas) {
         canvas.style.opacity = 1
       }
-      svg2roughjs.svg = svg
+      try {
+        svg2roughjs.svg = svg
+      } catch (e) {
+        console.error("Couldn't sketch content")
+      } finally {
+        document.getElementById('sample-select').disabled = false
+        loadingSvg = false
+      }
+
+      // maybe there was a load during the rendering.. so load this instead
+      if (scheduledLoad) {
+        console.log('loaded scheduled')
+        loadSvgString(svg2roughjs, scheduledLoad)
+        scheduledLoad = null
+      }
     }
   }, 0)
 }
@@ -89,13 +117,14 @@ function loadSample(svg2roughjs, sample) {
     case 'venn':
       sampleString = SAMPLE_VENN
       break
-    case 'singlemovie':
-      sampleString = SAMPLE_SINGLE_MOVIE
-      break
   }
 
-  loadSvg(svg2roughjs, sampleString)
+  codeMirrorInstance.setValue(sampleString)
+
+  loadSvgString(svg2roughjs, sampleString)
 }
+
+let codeMirrorInstance
 
 function run() {
   const svg2roughjs = new Svg2Roughjs('#output')
@@ -103,6 +132,40 @@ function run() {
   const sampleSelect = document.getElementById('sample-select')
   sampleSelect.addEventListener('change', () => {
     loadSample(svg2roughjs, sampleSelect.value)
+  })
+
+  const toggleSourceBtn = document.getElementById('source-toggle')
+  toggleSourceBtn.addEventListener('change', () => {
+    if (toggleSourceBtn.checked) {
+      codeContainer.classList.remove('hidden')
+      setTimeout(() => {
+        codeMirrorInstance.refresh()
+        codeMirrorInstance.focus()
+      }, 10)
+    } else {
+      codeContainer.classList.add('hidden')
+    }
+  })
+
+  const codeContainer = document.querySelector('.raw-svg-container')
+  codeMirrorInstance = CodeMirror(codeContainer, {
+    mode: 'xml',
+    lineNumbers: 'true'
+  })
+
+  let debouncedTimer = null
+  codeMirrorInstance.on('inputRead', () => {
+    if (debouncedTimer) {
+      clearTimeout(debouncedTimer)
+    }
+    debouncedTimer = setTimeout(() => {
+      debouncedTimer = null
+      try {
+        loadSvgString(svg2roughjs, codeMirrorInstance.getValue())
+      } catch (e) {
+        console.log('broen')
+      }
+    }, 500)
   })
 
   // pre-select a sample
@@ -143,7 +206,9 @@ function run() {
       const reader = new FileReader()
       reader.readAsText(file)
       reader.addEventListener('load', () => {
-        loadSvg(svg2roughjs, reader.result)
+        const fileContent = reader.result
+        codeMirrorInstance.setValue(fileContent)
+        loadSvgString(svg2roughjs, fileContent)
       })
     }
   })

@@ -3,12 +3,13 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="description" content="Convert your SVG file to a hand drawn sketch with Svg2Rough.js, a small open-source library.">
+  <meta name="description"
+    content="Convert your SVG file to a hand drawn sketch with Svg2Rough.js, a small open-source library.">
   <meta name="keywords" content="svg, conversion, hand drawn, sketch, open source">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>Svg2Rough.js - Convert Your SVG to a Hand Drawn Image</title>
-  
+
   <style>
     body * {
       box-sizing: border-box;
@@ -98,12 +99,40 @@
     .toolbar {
       display: flex;
       justify-items: center;
+      align-items: center;
       flex-wrap: wrap;
-      padding: 10px;
+      padding: 5px 10px;
     }
 
     .toolbar>* {
       margin: 2px 5px;
+    }
+
+    .toolbar input.toggle-btn:checked:hover+label {
+      background-color: #b2b2b2;
+    }
+
+    .toolbar label.toggle-btn:hover, .toolbar input.toggle-btn:checked+label {
+      background-color: #dedede;
+    }
+
+    label.icon {
+      width: 32px;
+      height: 32px;
+      background-repeat: no-repeat;
+      background-position: center;
+      border: none;
+      cursor: pointer;
+      background-size: 24px;
+      border-radius: 5px;
+    }
+
+    .icon-raw {
+      background: url('./static/raw-source.svg');
+    }
+
+    .toggle-btn {
+      display: none;
     }
 
     .main {
@@ -116,9 +145,31 @@
       display: flex;
     }
 
-    .image-container {
-      overflow: auto;
+    .content-container {
+      overflow: hidden;
       height: 100%;
+      position: relative;
+      display: flex;
+    }
+
+    .raw-svg-container {
+      flex: 0 0 40%;
+      overflow: auto;
+      border-right: 1px solid rgba(0, 0, 0, 0.14);
+      transition: flex-basis 0.2s ease-in-out;
+    }
+
+    .raw-svg-container.hidden {
+      flex-basis: 0;
+    }
+
+    .raw-svg-container .CodeMirror {
+      height: 100%;
+    }
+
+    .image-container {
+      flex: 1 1 auto;
+      overflow: auto;
       position: relative;
     }
 
@@ -191,6 +242,10 @@
     <div id="preview">
 
       <div class="toolbar">
+
+        <input type="checkbox" id="source-toggle" class="toggle-btn">
+        <label for="source-toggle" class="icon icon-raw" title="Toggle code editor"></label>
+
         <input type="file" id="file-chooser" accept="image/svg+xml">
         <select id="sample-select">
           <option value="bpmn1">bpmn1.svg</option>
@@ -199,7 +254,6 @@
           <option value="hierarchical1">hierarchical1.svg</option>
           <option value="hierarchical2">hierarchical2.svg</option>
           <option value="mindmap">mindmap.svg</option>
-          <option value="singlemovie">singlemovie.svg</option>
           <option value="movies">movies.svg</option>
           <option value="organic1">organic1.svg</option>
           <option value="organic2">organic2.svg</option>
@@ -211,11 +265,14 @@
         <button id="download-btn">Download Sketch (PNG)</button>
       </div>
 
-      <div class="separator" style="margin: 0 35px 5px 35px;"></div>
+      <div class="separator" style="margin: 0;"></div>
 
-      <div class="image-container">
-        <div id="output"></div>
-        <div id="input"></div>
+      <div class="content-container">
+        <div class="raw-svg-container hidden"></div>
+        <div class="image-container">
+          <div id="output"></div>
+          <div id="input"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -226,7 +283,7 @@
       document.getElementById('input').style.opacity = value
     }
   </script>
-  
+
   <!-- the bundle in injected by the build -->
 
 </body>
