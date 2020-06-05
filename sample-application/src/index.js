@@ -198,18 +198,42 @@ function run() {
     }
   })
 
+  function loadFile(file) {
+    const reader = new FileReader()
+    reader.readAsText(file)
+    reader.addEventListener('load', () => {
+      loadSvg(svg2roughjs, reader.result)
+    })
+  }
+
   const fileInput = document.getElementById('file-chooser')
   fileInput.addEventListener('change', e => {
     const files = fileInput.files
     if (files.length > 0) {
-      const file = files[0]
-      const reader = new FileReader()
-      reader.readAsText(file)
-      reader.addEventListener('load', () => {
-        const fileContent = reader.result
-        codeMirrorInstance.setValue(fileContent)
-        loadSvgString(svg2roughjs, fileContent)
-      })
+      loadFile(files[0])
+    }
+  })
+
+  const body = document.getElementsByTagName('body')[0]
+  body.addEventListener('dragover', e => {
+    e.preventDefault()
+  })
+  body.addEventListener('drop', e => {
+    e.preventDefault()
+    if (e.dataTransfer.items) {
+      for (var i = 0; i < e.dataTransfer.items.length; i++) {
+        if (e.dataTransfer.items[i].kind === 'file') {
+          const file = e.dataTransfer.items[i].getAsFile()
+          loadFile(file)
+          return
+        }
+      }
+    } else {
+      // Use DataTransfer interface to access the file(s)
+      for (var i = 0; i < ev.dataTransfer.files.length; i++) {
+        loadFile(e.dataTransfer.files[i])
+        return
+      }
     }
   })
 
