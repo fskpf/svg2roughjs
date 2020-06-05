@@ -1482,7 +1482,7 @@ export default class Svg2Roughjs {
         this.getTextContent(text),
         textLocation.x,
         textLocation.y,
-        text.getBBox().width
+        text.getComputedTextLength()
       )
     } else {
       const children = this.getNodeChildren(text)
