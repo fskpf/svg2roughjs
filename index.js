@@ -950,7 +950,17 @@ export default class Svg2Roughjs {
     if (!pointsAttr) {
       return []
     }
-    const pointList = pointsAttr.split(/\s+/g)
+
+    let coordinateRegexp
+    if (pointsAttr.indexOf(' ') > 0) {
+      // just assume that the coordinates (or pairs) are separated with space
+      coordinateRegexp = /\s+/g
+    } else {
+      // there are no spaces, so assume comma separators
+      coordinateRegexp = /,/g
+    }
+
+    const pointList = pointsAttr.split(coordinateRegexp)
     const points = []
     for (let i = 0; i < pointList.length; i++) {
       const currentEntry = pointList[i]
