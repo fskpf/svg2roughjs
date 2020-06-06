@@ -168,6 +168,14 @@ function run() {
     }, 500)
   })
 
+  // make sure codemirror is rendered when the expand animation has finished
+  codeContainer.addEventListener('transitionend', () => {
+    if (toggleSourceBtn.checked) {
+      codeMirrorInstance.refresh()
+      codeMirrorInstance.focus()
+    }
+  })
+
   // pre-select a sample
   sampleSelect.selectedIndex = 0
   loadSample(svg2roughjs, sampleSelect.value)
