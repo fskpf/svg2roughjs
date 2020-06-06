@@ -566,7 +566,10 @@ export default class Svg2Roughjs {
     if (attr) {
       let elementOpacity = 1
       if (attr.indexOf('%') !== -1) {
-        elementOpacity = Math.min(1, Math.max(0, parseFloat(attr.substring(0, attr.length - 1)) / 100))
+        elementOpacity = Math.min(
+          1,
+          Math.max(0, parseFloat(attr.substring(0, attr.length - 1)) / 100)
+        )
       } else {
         elementOpacity = Math.min(1, Math.max(0, parseFloat(attr)))
       }
@@ -581,7 +584,7 @@ export default class Svg2Roughjs {
 
     if (useCtx && useCtx.referenced === element) {
       // switch context and traverse the use-element parent now
-      parent = useCtx.root.parentElement
+      parent = useCtx.root
       nextCtx = useCtx.parentContext
     }
 
@@ -619,7 +622,7 @@ export default class Svg2Roughjs {
 
       if (useCtx && useCtx.referenced === element) {
         // switch context and traverse the use-element parent now
-        parent = useCtx.root.parentElement
+        parent = useCtx.root
         nextCtx = useCtx.parentContext
       }
 
