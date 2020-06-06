@@ -539,9 +539,9 @@ export default class Svg2Roughjs {
     const attr = element.getAttribute(attribute)
     if (attr) {
       if (attr.indexOf('%') !== -1) {
-        return parseFloat(attr.substring(0, attr.length - 1)) / 100
+        return Math.min(1, Math.max(0, parseFloat(attr.substring(0, attr.length - 1)) / 100))
       }
-      return parseFloat(attr)
+      return Math.min(1, Math.max(0, parseFloat(attr)))
     }
     return 1
   }
@@ -566,9 +566,9 @@ export default class Svg2Roughjs {
     if (attr) {
       let elementOpacity = 1
       if (attr.indexOf('%') !== -1) {
-        elementOpacity = parseFloat(attr.substring(0, attr.length - 1)) / 100
+        elementOpacity = Math.min(1, Math.max(0, parseFloat(attr.substring(0, attr.length - 1)) / 100))
       } else {
-        elementOpacity = parseFloat(attr)
+        elementOpacity = Math.min(1, Math.max(0, parseFloat(attr)))
       }
       // combine opacities
       currentOpacity *= elementOpacity
