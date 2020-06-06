@@ -1,0 +1,18 @@
+<?xml version="1.0" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.0" width="900" height="900">
+	<defs>
+		<symbol id="s" x="50" y="25" viewBox="0 0 3 3">
+			<rect fill="#000" width="1" height="1" x="1" y="1"/>
+		</symbol>
+	</defs>
+	<rect width="900" height="900" fill="#fff"/>
+	<use xlink:href="#s" x="0" y="0" width="900" height="900"/>
+	<use xlink:href="#s" x="0" y="0" width="300" height="300"/>
+	<use xlink:href="#s" x="300" y="0" width="300" height="300"/>
+	<use xlink:href="#s" x="600" y="0" width="300" height="300"/>
+	<use xlink:href="#s" x="0" y="300" width="300" height="300"/>
+	<use xlink:href="#s" x="600" y="300" width="300" height="300"/>
+	<use xlink:href="#s" x="0" y="600" width="300" height="300"/>
+	<use xlink:href="#s" x="300" y="600" width="300" height="300"/>
+	<use xlink:href="#s" x="600" y="600" width="300" height="300"/>
+</svg>

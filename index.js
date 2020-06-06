@@ -253,9 +253,18 @@ export default class Svg2Roughjs {
     // traverse svg in DFS
     const stack = []
 
-    if (root.tagName === 'svg') {
-      const svgX = root.x.baseVal.value
-      const svgY = root.y.baseVal.value
+    if (root.tagName === 'svg' || root.tagName === 'symbol') {
+      let svgX, svgY
+      if (root.tagName === 'symbol') {
+        svgX = parseFloat(root.getAttribute('x')) || 0
+        svgY = parseFloat(root.getAttribute('y')) || 0
+        width = width || parseFloat(root.getAttribute('width')) || void 0
+        height = height || parseFloat(root.getAttribute('height')) || void 0
+      } else {
+        // use JS api
+        svgX = root.x.baseVal.value
+        svgY = root.y.baseVal.value
+      }
 
       let rootTransform = this.svg.createSVGMatrix()
 
@@ -289,6 +298,10 @@ export default class Svg2Roughjs {
       const children = this.getNodeChildren(root)
       for (let i = children.length - 1; i >= 0; i--) {
         const child = children[i]
+        if (child.tagName === 'symbol') {
+          // symbols can only be instantiated by use elements
+          continue
+        }
         const childTransform = svgTransform
           ? this.getCombinedTransform(child, svgTransform)
           : this.getSvgTransform(child)
@@ -306,11 +319,13 @@ export default class Svg2Roughjs {
 
       if (
         element.tagName === 'defs' ||
+        element.tagName === 'symbol' ||
         element.tagName === 'svg' ||
         element.tagName === 'clipPath'
       ) {
         // Defs are prepocessed separately.
-        // Don't traverse the SVG element itself. This is done by drawElement -> drawSvg.
+        // Symbols can only be instantiated by use elements.
+        // Don't traverse the SVG element itself. This is done by drawElement -> processRoot.
         // ClipPaths are not drawn and processed separately.
         continue
       }
@@ -872,6 +887,7 @@ export default class Svg2Roughjs {
       return
     }
 
+    // possibly apply a clip on the canvas before drawing on it
     const clipPath = element.getAttribute('clip-path')
     if (clipPath) {
       this.ctx.save()
@@ -880,13 +896,8 @@ export default class Svg2Roughjs {
 
     switch (element.tagName) {
       case 'svg':
-        // nested svg
-        let width, height
-        if (element.getAttribute('width') && element.getAttribute('height')) {
-          width = element.width.baseVal.value
-          height = element.height.baseVal.value
-        }
-        this.processRoot(element, svgTransform, width, height)
+      case 'symbol':
+        this.drawRoot(element, svgTransform)
         break
       case 'rect':
         this.drawRect(element, svgTransform)
@@ -920,6 +931,7 @@ export default class Svg2Roughjs {
         break
     }
 
+    // re-set the clip for the next element
     if (clipPath) {
       this.ctx.restore()
     }
@@ -1153,6 +1165,21 @@ export default class Svg2Roughjs {
     }
 
     this.rc.line(p1.x, p1.y, p2.x, p2.y, this.parseStyleConfig(line, svgTransform))
+  }
+
+  /**
+   * @private
+   * @param {SVGSVGElement | SVGSymbolElement} element
+   * @param {SVGTransform?} svgTransform
+   */
+  drawRoot(element, svgTransform) {
+    let width = parseFloat(element.getAttribute('width'))
+    let height = parseFloat(element.getAttribute('height'))
+    if (isNaN(width) || isNaN(height)) {
+      // use only if both are set
+      width = height = null
+    }
+    this.processRoot(element, svgTransform, width, height)
   }
 
   /**

@@ -21,6 +21,20 @@ import Svg2Roughjs from 'svg2roughjs'
 let loadingSvg = false
 let scheduledLoad
 
+/**
+ * @param {SVGSVGElement} svg
+ * @returns {{width:number, height:number} | null}
+ */
+function getSvgSize(svg) {
+  let width = parseInt(svg.getAttribute('width'))
+  let height = parseInt(svg.getAttribute('height'))
+  let viewBox = svg.getAttribute('viewBox')
+  if (isNaN(width) || isNaN(height)) {
+    return viewBox ? { width: svg.viewBox.baseVal.width, height: svg.viewBox.baseVal.height } : null
+  }
+  return { width, height }
+}
+
 function loadSvgString(svg2roughjs, fileContent) {
   if (loadingSvg) {
     scheduledLoad = fileContent
@@ -46,6 +60,12 @@ function loadSvgString(svg2roughjs, fileContent) {
     console.error('Could not load SVG file')
     return
   }
+
+  const svgSize = getSvgSize(svg)
+  if (svgSize) {
+    inputElement.style.width = `${svgSize.width}px`
+    inputElement.style.height = `${svgSize.height}px`
+  }
   inputElement.appendChild(svg)
 
   // make sure the SVG is part of the DOM and rendered, before it is converted by
@@ -54,6 +74,8 @@ function loadSvgString(svg2roughjs, fileContent) {
     if (svg.tagName === 'HTML') {
       console.error('Error parsing XML')
       inputElement.style.opacity = 1
+      inputElement.style.width = '100%'
+      inputElement.style.height = '100%'
       if (canvas) {
         canvas.style.opacity = 0
       }
@@ -66,6 +88,7 @@ function loadSvgString(svg2roughjs, fileContent) {
         svg2roughjs.svg = svg
       } catch (e) {
         console.error("Couldn't sketch content")
+        throw e // re-throw to show error on console
       } finally {
         document.getElementById('sample-select').disabled = false
         loadingSvg = false
@@ -73,7 +96,6 @@ function loadSvgString(svg2roughjs, fileContent) {
 
       // maybe there was a load during the rendering.. so load this instead
       if (scheduledLoad) {
-        console.log('loaded scheduled')
         loadSvgString(svg2roughjs, scheduledLoad)
         scheduledLoad = null
       }
