@@ -1228,8 +1228,7 @@ export default class Svg2Roughjs {
         .transform(SVGPathDataTransformer.NORMALIZE_HVZ())
         // Normalize S and T to Q and C commands - Rough.js has a bug with T where it expects 4 parameters instead of 2
         .transform(SVGPathDataTransformer.NORMALIZE_ST())
-        // Convert elliptical arcs to cubic béziers - those are easier to transform
-        .transform(SVGPathDataTransformer.A_TO_C())
+
     // If there's a transform, transform the whole path accordingly
     if (svgTransform) {
       pathData = pathData.transform(
