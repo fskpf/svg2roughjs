@@ -536,7 +536,7 @@ export default class Svg2Roughjs {
    * @param {string} attribute
    */
   getOpacity(element, attribute) {
-    const attr = element.getAttribute(attribute)
+    const attr = getComputedStyle(element)[attribute] || element.getAttribute(attribute)
     if (attr) {
       if (attr.indexOf('%') !== -1) {
         return Math.min(1, Math.max(0, parseFloat(attr.substring(0, attr.length - 1)) / 100))
