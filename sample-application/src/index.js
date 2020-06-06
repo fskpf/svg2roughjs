@@ -162,9 +162,7 @@ function run() {
       debouncedTimer = null
       try {
         loadSvgString(svg2roughjs, codeMirrorInstance.getValue())
-      } catch (e) {
-        console.log('broen')
-      }
+      } catch (e) {}
     }, 500)
   })
 

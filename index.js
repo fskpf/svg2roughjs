@@ -254,6 +254,11 @@ export default class Svg2Roughjs {
     const stack = []
 
     if (root.tagName === 'svg') {
+      const svgX = root.x.baseVal.value
+      const svgY = root.y.baseVal.value
+
+      let rootTransform = this.svg.createSVGMatrix()
+
       if (
         typeof width !== 'undefined' &&
         typeof height !== 'undefined' &&
@@ -266,19 +271,19 @@ export default class Svg2Roughjs {
           height: viewBoxHeight
         } = root.viewBox.baseVal
 
-        const svgX = root.x.baseVal.value
-        const svgY = root.y.baseVal.value
-
-        const viewBoxMatrix = this.svg
-          .createSVGMatrix()
+        // viewBox values might scale the SVGs content
+        rootTransform = rootTransform
           .translate(-viewBoxX * (width / viewBoxWidth), -viewBoxY * (height / viewBoxHeight))
           .translate(svgX, svgY)
           .scaleNonUniform(width / viewBoxWidth, height / viewBoxHeight)
-        const combinedMatrix = svgTransform
-          ? svgTransform.matrix.multiply(viewBoxMatrix)
-          : viewBoxMatrix
-        svgTransform = this.svg.createSVGTransformFromMatrix(combinedMatrix)
+      } else {
+        rootTransform = rootTransform.translate(svgX, svgY)
       }
+
+      const combinedMatrix = svgTransform
+        ? svgTransform.matrix.multiply(rootTransform)
+        : rootTransform
+      svgTransform = this.svg.createSVGTransformFromMatrix(combinedMatrix)
 
       // don't put the SVG itself into the stack, so start with the children of it
       const children = this.getNodeChildren(root)
