@@ -141,7 +141,7 @@ function run() {
       setTimeout(() => {
         codeMirrorInstance.refresh()
         codeMirrorInstance.focus()
-      }, 10)
+      }, 20)
     } else {
       codeContainer.classList.add('hidden')
     }

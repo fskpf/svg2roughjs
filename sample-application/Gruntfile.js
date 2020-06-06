@@ -1,5 +1,6 @@
 module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-copy')
+  grunt.loadNpmTasks('grunt-contrib-watch')
 
   grunt.registerTask(
     'update-svg2roughjs',
@@ -16,6 +17,12 @@ module.exports = function(grunt) {
           { src: '../README.md', dest: './node_modules/svg2roughjs/README.md' },
           { src: '../LICENSE.md', dest: './node_modules/svg2roughjs/LICENSE.md' }
         ]
+      }
+    },
+    watch: {
+      scripts: {
+        files: ['../index.js'],
+        tasks: ['update-svg2roughjs']
       }
     }
   })

@@ -6,7 +6,8 @@
   "scripts": {
     "preinstall": "cd ../ && npm pack",
     "update-svg2roughjs": "grunt update-svg2roughjs",
-    "start": "npm run update-svg2roughjs && webpack-dev-server --open",
+    "watch-svg2roughjs": "grunt watch",
+    "start": "concurrently --kill-others \"npm run update-svg2roughjs && npm run watch-svg2roughjs\" \"webpack-dev-server --open\"",
     "build": "npm run update-svg2roughjs && webpack",
     "deploy": "npm run update-svg2roughjs && webpack --mode production"
   },
@@ -22,10 +23,12 @@
     "@babel/preset-env": "^7.9.6",
     "babel-loader": "^8.1.0",
     "clean-webpack-plugin": "^3.0.0",
+    "concurrently": "^5.2.0",
     "copy-webpack-plugin": "^5.1.1",
     "css-loader": "^3.5.3",
     "grunt": "^1.1.0",
     "grunt-contrib-copy": "^1.0.0",
+    "grunt-contrib-watch": "^1.1.0",
     "html-webpack-plugin": "^3.2.0",
     "prettier": "^1.19.1",
     "raw-loader": "^4.0.0",
