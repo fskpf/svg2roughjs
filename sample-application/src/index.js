@@ -58,6 +58,8 @@ function loadSvgString(svg2roughjs, fileContent) {
 
   if (!svg) {
     console.error('Could not load SVG file')
+    document.getElementById('sample-select').disabled = false
+    loadingSvg = false
     return
   }
 
@@ -176,7 +178,7 @@ function run() {
   })
 
   let debouncedTimer = null
-  codeMirrorInstance.on('change', () => {
+  codeMirrorInstance.on('inputRead', () => {
     if (debouncedTimer) {
       clearTimeout(debouncedTimer)
     }
