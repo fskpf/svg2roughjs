@@ -253,17 +253,22 @@ export default class Svg2Roughjs {
     // traverse svg in DFS
     const stack = []
 
-    if (root.tagName === 'svg' || root.tagName === 'symbol') {
-      let svgX, svgY
+    if (root.tagName === 'svg' || root.tagName === 'symbol' || root.tagName === 'marker') {
+      let rootX = 0
+      let rootY = 0
       if (root.tagName === 'symbol') {
-        svgX = parseFloat(root.getAttribute('x')) || 0
-        svgY = parseFloat(root.getAttribute('y')) || 0
+        rootX = parseFloat(root.getAttribute('x')) || 0
+        rootY = parseFloat(root.getAttribute('y')) || 0
         width = width || parseFloat(root.getAttribute('width')) || void 0
         height = height || parseFloat(root.getAttribute('height')) || void 0
+      } else if (root.tagName === 'marker') {
+        rootX = -root.refX.baseVal.value
+        rootY = -root.refY.baseVal.value
+        width = width || parseFloat(root.getAttribute('markerWidth')) || void 0
+        height = height || parseFloat(root.getAttribute('markerHeight')) || void 0
       } else {
-        // use JS api
-        svgX = root.x.baseVal.value
-        svgY = root.y.baseVal.value
+        rootX = root.x.baseVal.value
+        rootY = root.y.baseVal.value
       }
 
       let rootTransform = this.svg.createSVGMatrix()
@@ -281,12 +286,20 @@ export default class Svg2Roughjs {
         } = root.viewBox.baseVal
 
         // viewBox values might scale the SVGs content
-        rootTransform = rootTransform
-          .translate(-viewBoxX * (width / viewBoxWidth), -viewBoxY * (height / viewBoxHeight))
-          .translate(svgX, svgY)
-          .scaleNonUniform(width / viewBoxWidth, height / viewBoxHeight)
+        if (root.tagName === 'marker') {
+          // refX / refY works differently on markers than the x / y attribute
+          rootTransform = rootTransform
+            .translate(-viewBoxX * (width / viewBoxWidth), -viewBoxY * (height / viewBoxHeight))
+            .scaleNonUniform(width / viewBoxWidth, height / viewBoxHeight)
+            .translate(rootX, rootY)
+        } else {
+          rootTransform = rootTransform
+            .translate(-viewBoxX * (width / viewBoxWidth), -viewBoxY * (height / viewBoxHeight))
+            .translate(rootX, rootY)
+            .scaleNonUniform(width / viewBoxWidth, height / viewBoxHeight)
+        }
       } else {
-        rootTransform = rootTransform.translate(svgX, svgY)
+        rootTransform = rootTransform.translate(rootX, rootY)
       }
 
       const combinedMatrix = svgTransform
@@ -298,8 +311,8 @@ export default class Svg2Roughjs {
       const children = this.getNodeChildren(root)
       for (let i = children.length - 1; i >= 0; i--) {
         const child = children[i]
-        if (child.tagName === 'symbol') {
-          // symbols can only be instantiated by use elements
+        if (child.tagName === 'symbol' || child.tagName === 'marker') {
+          // symbols and marker can only be instantiated by specific elements
           continue
         }
         const childTransform = svgTransform
@@ -320,11 +333,12 @@ export default class Svg2Roughjs {
       if (
         element.tagName === 'defs' ||
         element.tagName === 'symbol' ||
+        element.tagName === 'marker' ||
         element.tagName === 'svg' ||
         element.tagName === 'clipPath'
       ) {
         // Defs are prepocessed separately.
-        // Symbols can only be instantiated by use elements.
+        // Symbols and marker can only be instantiated by specific elements.
         // Don't traverse the SVG element itself. This is done by drawElement -> processRoot.
         // ClipPaths are not drawn and processed separately.
         continue
@@ -519,6 +533,21 @@ export default class Svg2Roughjs {
   }
 
   /**
+   * Returns the id from the url string
+   * @private
+   * @param {string} url
+   * @returns {string}
+   */
+  getIdFromUrl(url) {
+    const result =
+      /url\('#?(.*?)'\)/.exec(url) || /url\("#?(.*?)"\)/.exec(url) || /url\(#?(.*?)\)/.exec(url)
+    if (result && result.length > 1) {
+      return result[1]
+    }
+    return null
+  }
+
+  /**
    * Parses a `fill` url by looking in the SVG `defs` element.
    * When a gradient is found, it is converted to a color and stored
    * in the internal defs store for this url.
@@ -528,25 +557,23 @@ export default class Svg2Roughjs {
    * @return {string}
    */
   parseFillUrl(url, opacity) {
-    const result =
-      /url\('#?(.*?)'\)/.exec(url) || /url\("#?(.*?)"\)/.exec(url) || /url\(#?(.*?)\)/.exec(url)
-    if (result && result.length > 1) {
-      const id = result[1]
-      const fill = this.idElements[id]
-      if (fill) {
-        if (typeof fill === 'string') {
-          // maybe it was already parsed and replaced with a color
-          return fill
-        } else {
-          if (fill.tagName === 'linearGradient' || fill.tagName === 'radialGradient') {
-            const color = this.gradientToColor(fill, opacity)
-            this.idElements[id] = color
-            return color
-          }
+    const id = this.getIdFromUrl(url)
+    if (!id) {
+      return 'transparent'
+    }
+    const fill = this.idElements[id]
+    if (fill) {
+      if (typeof fill === 'string') {
+        // maybe it was already parsed and replaced with a color
+        return fill
+      } else {
+        if (fill.tagName === 'linearGradient' || fill.tagName === 'radialGradient') {
+          const color = this.gradientToColor(fill, opacity)
+          this.idElements[id] = color
+          return color
         }
       }
     }
-    return 'transparent'
   }
 
   /**
@@ -785,56 +812,54 @@ export default class Svg2Roughjs {
    * @param {string} clipPathAttr
    */
   applyClipPath(clipPathAttr, svgTransform) {
-    const result =
-      /url\('#?(.*?)'\)/.exec(clipPathAttr) ||
-      /url\("#?(.*?)"\)/.exec(clipPathAttr) ||
-      /url\(#?(.*?)\)/.exec(clipPathAttr)
-    if (result && result.length > 1) {
-      const id = result[1]
-      const clipPath = this.idElements[id]
-      if (clipPath) {
-        // TODO clipPath: consider clipPathUnits
+    const id = this.getIdFromUrl(clipPathAttr)
+    if (!id) {
+      return
+    }
 
-        this.ctx.beginPath()
+    const clipPath = this.idElements[id]
+    if (clipPath) {
+      // TODO clipPath: consider clipPathUnits
 
-        // traverse clip-path elements in DFS
-        const stack = []
-        const children = this.getNodeChildren(clipPath)
+      this.ctx.beginPath()
+
+      // traverse clip-path elements in DFS
+      const stack = []
+      const children = this.getNodeChildren(clipPath)
+      for (let i = children.length - 1; i >= 0; i--) {
+        const childElement = children[i]
+        const childTransform = svgTransform
+          ? this.getCombinedTransform(childElement, svgTransform)
+          : this.getSvgTransform(childElement)
+        stack.push({ element: childElement, transform: childTransform })
+      }
+
+      while (stack.length > 0) {
+        const { element, transform } = stack.pop()
+
+        this.applyElementClip(element, transform)
+
+        if (
+          element.tagName === 'defs' ||
+          element.tagName === 'svg' ||
+          element.tagName === 'clipPath' ||
+          element.tagName === 'text'
+        ) {
+          // some elements are ignored on clippaths
+          continue
+        }
+        // process childs
+        const children = this.getNodeChildren(element)
         for (let i = children.length - 1; i >= 0; i--) {
           const childElement = children[i]
-          const childTransform = svgTransform
-            ? this.getCombinedTransform(childElement, svgTransform)
+          const childTransform = transform
+            ? this.getCombinedTransform(childElement, transform)
             : this.getSvgTransform(childElement)
           stack.push({ element: childElement, transform: childTransform })
         }
-
-        while (stack.length > 0) {
-          const { element, transform } = stack.pop()
-
-          this.applyElementClip(element, transform)
-
-          if (
-            element.tagName === 'defs' ||
-            element.tagName === 'svg' ||
-            element.tagName === 'clipPath' ||
-            element.tagName === 'text'
-          ) {
-            // some elements are ignored on clippaths
-            continue
-          }
-          // process childs
-          const children = this.getNodeChildren(element)
-          for (let i = children.length - 1; i >= 0; i--) {
-            const childElement = children[i]
-            const childTransform = transform
-              ? this.getCombinedTransform(childElement, transform)
-              : this.getSvgTransform(childElement)
-            stack.push({ element: childElement, transform: childTransform })
-          }
-        }
-
-        this.ctx.clip()
       }
+
+      this.ctx.clip()
     }
   }
 
@@ -939,6 +964,52 @@ export default class Svg2Roughjs {
 
   /**
    * @private
+   * @param {SVGPathElement|SVGLineElement|SVGPolylineElement|SVGPolygonElement} element
+   * @param {number[][]} transformedPoints Array of transformed coordinates
+   */
+  drawMarkers(element, transformedPoints) {
+    if (transformedPoints.length === 0) {
+      return
+    }
+
+    // start marker
+    const markerStartId = this.getIdFromUrl(element.getAttribute('marker-start'))
+    const markerStartElement = markerStartId ? this.idElements[markerStartId] : null
+    if (markerStartElement) {
+      const location = transformedPoints[0]
+      const markerTransform = this.svg.createSVGTransformFromMatrix(
+        this.svg.createSVGMatrix().translate(location[0], location[1])
+      )
+      this.processRoot(markerStartElement, markerTransform)
+    }
+
+    // end marker
+    const markerEndId = this.getIdFromUrl(element.getAttribute('marker-end'))
+    const markerEndElement = markerEndId ? this.idElements[markerEndId] : null
+    if (markerEndElement) {
+      const location = transformedPoints[transformedPoints.length - 1]
+      const markerTransform = this.svg.createSVGTransformFromMatrix(
+        this.svg.createSVGMatrix().translate(location[0], location[1])
+      )
+      this.processRoot(markerEndElement, markerTransform)
+    }
+
+    // mid marker(s)
+    const markerMidId = this.getIdFromUrl(element.getAttribute('marker-mid'))
+    const markerMidElement = markerMidId ? this.idElements[markerMidId] : null
+    if (markerMidElement && transformedPoints.length > 2) {
+      const locations = transformedPoints.slice(1, transformedPoints.length - 1)
+      locations.forEach(loc => {
+        const markerTransform = this.svg.createSVGTransformFromMatrix(
+          this.svg.createSVGMatrix().translate(loc[0], loc[1])
+        )
+        this.processRoot(markerMidElement, markerTransform)
+      })
+    }
+  }
+
+  /**
+   * @private
    * @param {SVGPolylineElement} polyline
    * @param {SVGTransform?} svgTransform
    */
@@ -955,6 +1026,8 @@ export default class Svg2Roughjs {
       this.rc.polygon(transformed, fillStyle)
     }
     this.rc.linearPath(transformed, style)
+
+    this.drawMarkers(polyline, transformed)
   }
 
   /**
@@ -1029,6 +1102,8 @@ export default class Svg2Roughjs {
       return [pt.x, pt.y]
     })
     this.rc.polygon(transformed, this.parseStyleConfig(polygon, svgTransform))
+
+    this.drawMarkers(polygon, transformed)
   }
 
   /**
@@ -1165,6 +1240,11 @@ export default class Svg2Roughjs {
     }
 
     this.rc.line(p1.x, p1.y, p2.x, p2.y, this.parseStyleConfig(line, svgTransform))
+
+    this.drawMarkers(line, [
+      [p1.x, p1.y],
+      [p2.x, p2.y]
+    ])
   }
 
   /**
@@ -1277,6 +1357,8 @@ export default class Svg2Roughjs {
       return
     }
     this.rc.path(transformedPathData, this.parseStyleConfig(path, svgTransform))
+
+    // TODO markers: drawMarkers
   }
 
   /**
