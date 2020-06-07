@@ -176,7 +176,7 @@ function run() {
   })
 
   let debouncedTimer = null
-  codeMirrorInstance.on('inputRead', () => {
+  codeMirrorInstance.on('change', () => {
     if (debouncedTimer) {
       clearTimeout(debouncedTimer)
     }
