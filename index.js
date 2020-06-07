@@ -976,9 +976,21 @@ export default class Svg2Roughjs {
     const markerStartId = this.getIdFromUrl(element.getAttribute('marker-start'))
     const markerStartElement = markerStartId ? this.idElements[markerStartId] : null
     if (markerStartElement) {
+      let angle = markerStartElement.orientAngle.baseVal.value
+      if (transformedPoints.length > 1) {
+        const orientAttr = markerStartElement.getAttribute('orient')
+        if (orientAttr === 'auto' || orientAttr === 'auto-start-reverse') {
+          const autoAngle = this.getAngle(transformedPoints[0], transformedPoints[1])
+          angle = orientAttr === 'auto' ? autoAngle : autoAngle + 180
+        }
+      }
+
       const location = transformedPoints[0]
       const markerTransform = this.svg.createSVGTransformFromMatrix(
-        this.svg.createSVGMatrix().translate(location[0], location[1])
+        this.svg
+          .createSVGMatrix()
+          .translate(location[0], location[1])
+          .rotate(angle)
       )
       this.processRoot(markerStartElement, markerTransform)
     }
@@ -987,9 +999,23 @@ export default class Svg2Roughjs {
     const markerEndId = this.getIdFromUrl(element.getAttribute('marker-end'))
     const markerEndElement = markerEndId ? this.idElements[markerEndId] : null
     if (markerEndElement) {
+      let angle = markerStartElement.orientAngle.baseVal.value
+      if (transformedPoints.length > 1) {
+        const orientAttr = markerStartElement.getAttribute('orient')
+        if (orientAttr === 'auto' || orientAttr === 'auto-start-reverse') {
+          angle = this.getAngle(
+            transformedPoints[transformedPoints.length - 2],
+            transformedPoints[transformedPoints.length - 1]
+          )
+        }
+      }
+
       const location = transformedPoints[transformedPoints.length - 1]
       const markerTransform = this.svg.createSVGTransformFromMatrix(
-        this.svg.createSVGMatrix().translate(location[0], location[1])
+        this.svg
+          .createSVGMatrix()
+          .translate(location[0], location[1])
+          .rotate(angle)
       )
       this.processRoot(markerEndElement, markerTransform)
     }
@@ -998,14 +1024,44 @@ export default class Svg2Roughjs {
     const markerMidId = this.getIdFromUrl(element.getAttribute('marker-mid'))
     const markerMidElement = markerMidId ? this.idElements[markerMidId] : null
     if (markerMidElement && transformedPoints.length > 2) {
-      const locations = transformedPoints.slice(1, transformedPoints.length - 1)
-      locations.forEach(loc => {
+      for (let i = 0; i < transformedPoints.length; i++) {
+        const loc = transformedPoints[i]
+        if (i === 0 || i === transformedPoints.length - 1) {
+          // mid markers are not drawn on first or last point
+          continue
+        }
+
+        let angle = markerMidElement.orientAngle.baseVal.value
+        const orientAttr = markerMidElement.getAttribute('orient')
+        if (orientAttr === 'auto' || orientAttr === 'auto-start-reverse') {
+          // https://www.w3.org/TR/SVG11/painting.html#OrientAttribute
+          // use angle bisector of incoming and outgoing angle
+          const inAngle = this.getAngle(transformedPoints[i - 1], loc)
+          const outAngle = this.getAngle(loc, transformedPoints[i + 1])
+          angle = (inAngle + outAngle) / 2
+        }
+
         const markerTransform = this.svg.createSVGTransformFromMatrix(
-          this.svg.createSVGMatrix().translate(loc[0], loc[1])
+          this.svg
+            .createSVGMatrix()
+            .translate(loc[0], loc[1])
+            .rotate(angle)
         )
         this.processRoot(markerMidElement, markerTransform)
-      })
+      }
     }
+  }
+
+  /**
+   * The angle in degree of the line defined by the given points.
+   * @private
+   * @param {number[]} p0
+   * @param {number[]} p1
+   * @returns {number}
+   */
+  getAngle(p0, p1) {
+    const m = (p1[1] - p0[1]) / (p1[0] - p0[0])
+    return Math.atan(m) * (180 / Math.PI)
   }
 
   /**
