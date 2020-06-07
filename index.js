@@ -1507,6 +1507,10 @@ export default class Svg2Roughjs {
     if (style.fill) {
       this.ctx.fillStyle = style.fill
     }
+    if (style.stroke) {
+      this.ctx.strokeStyle = style.stroke
+      this.ctx.lineWidth = style.strokeWidth
+    }
 
     const textAnchor = this.getEffectiveAttribute(text, 'text-anchor', this.$useElementContext)
     if (textAnchor) {
@@ -1528,6 +1532,12 @@ export default class Svg2Roughjs {
         textLocation.y,
         text.getComputedTextLength()
       )
+      this.ctx.strokeText(
+        this.getTextContent(text),
+        textLocation.x,
+        textLocation.y,
+        text.getComputedTextLength()
+      )
     } else {
       const children = this.getNodeChildren(text)
       for (let i = 0; i < children.length; i++) {
@@ -1538,6 +1548,7 @@ export default class Svg2Roughjs {
           const dy = this.getLengthInPx(child.dy)
           this.ctx.translate(dx, dy)
           this.ctx.fillText(this.getTextContent(child), textLocation.x, textLocation.y)
+          this.ctx.strokeText(this.getTextContent(child), textLocation.x, textLocation.y)
         }
       }
     }
