@@ -965,10 +965,11 @@ export default class Svg2Roughjs {
   /**
    * @private
    * @param {SVGPathElement|SVGLineElement|SVGPolylineElement|SVGPolygonElement} element
-   * @param {number[][]} transformedPoints Array of transformed coordinates
+   * @param {Point[]} points Array of coordinates
+   * @param {SVGTransform?}
    */
-  drawMarkers(element, transformedPoints) {
-    if (transformedPoints.length === 0) {
+  drawMarkers(element, points, svgTransform) {
+    if (points.length === 0) {
       return
     }
 
@@ -977,21 +978,22 @@ export default class Svg2Roughjs {
     const markerStartElement = markerStartId ? this.idElements[markerStartId] : null
     if (markerStartElement) {
       let angle = markerStartElement.orientAngle.baseVal.value
-      if (transformedPoints.length > 1) {
+      if (points.length > 1) {
         const orientAttr = markerStartElement.getAttribute('orient')
         if (orientAttr === 'auto' || orientAttr === 'auto-start-reverse') {
-          const autoAngle = this.getAngle(transformedPoints[0], transformedPoints[1])
+          const autoAngle = this.getAngle(points[0], points[1])
           angle = orientAttr === 'auto' ? autoAngle : autoAngle + 180
         }
       }
 
-      const location = transformedPoints[0]
-      const markerTransform = this.svg.createSVGTransformFromMatrix(
-        this.svg
-          .createSVGMatrix()
-          .translate(location[0], location[1])
-          .rotate(angle)
-      )
+      const location = points[0]
+      const matrix = this.svg
+        .createSVGMatrix()
+        .translate(location.x, location.y)
+        .rotate(angle)
+      const combinedMatrix = svgTransform ? svgTransform.matrix.multiply(matrix) : matrix
+      const markerTransform = this.svg.createSVGTransformFromMatrix(combinedMatrix)
+
       this.processRoot(markerStartElement, markerTransform)
     }
 
@@ -1000,33 +1002,31 @@ export default class Svg2Roughjs {
     const markerEndElement = markerEndId ? this.idElements[markerEndId] : null
     if (markerEndElement) {
       let angle = markerStartElement.orientAngle.baseVal.value
-      if (transformedPoints.length > 1) {
+      if (points.length > 1) {
         const orientAttr = markerStartElement.getAttribute('orient')
         if (orientAttr === 'auto' || orientAttr === 'auto-start-reverse') {
-          angle = this.getAngle(
-            transformedPoints[transformedPoints.length - 2],
-            transformedPoints[transformedPoints.length - 1]
-          )
+          angle = this.getAngle(points[points.length - 2], points[points.length - 1])
         }
       }
 
-      const location = transformedPoints[transformedPoints.length - 1]
-      const markerTransform = this.svg.createSVGTransformFromMatrix(
-        this.svg
-          .createSVGMatrix()
-          .translate(location[0], location[1])
-          .rotate(angle)
-      )
+      const location = points[points.length - 1]
+      const matrix = this.svg
+        .createSVGMatrix()
+        .translate(location.x, location.y)
+        .rotate(angle)
+      const combinedMatrix = svgTransform ? svgTransform.matrix.multiply(matrix) : matrix
+      const markerTransform = this.svg.createSVGTransformFromMatrix(combinedMatrix)
+
       this.processRoot(markerEndElement, markerTransform)
     }
 
     // mid marker(s)
     const markerMidId = this.getIdFromUrl(element.getAttribute('marker-mid'))
     const markerMidElement = markerMidId ? this.idElements[markerMidId] : null
-    if (markerMidElement && transformedPoints.length > 2) {
-      for (let i = 0; i < transformedPoints.length; i++) {
-        const loc = transformedPoints[i]
-        if (i === 0 || i === transformedPoints.length - 1) {
+    if (markerMidElement && points.length > 2) {
+      for (let i = 0; i < points.length; i++) {
+        const loc = points[i]
+        if (i === 0 || i === points.length - 1) {
           // mid markers are not drawn on first or last point
           continue
         }
@@ -1036,17 +1036,18 @@ export default class Svg2Roughjs {
         if (orientAttr === 'auto' || orientAttr === 'auto-start-reverse') {
           // https://www.w3.org/TR/SVG11/painting.html#OrientAttribute
           // use angle bisector of incoming and outgoing angle
-          const inAngle = this.getAngle(transformedPoints[i - 1], loc)
-          const outAngle = this.getAngle(loc, transformedPoints[i + 1])
+          const inAngle = this.getAngle(points[i - 1], loc)
+          const outAngle = this.getAngle(loc, points[i + 1])
           angle = (inAngle + outAngle) / 2
         }
 
-        const markerTransform = this.svg.createSVGTransformFromMatrix(
-          this.svg
-            .createSVGMatrix()
-            .translate(loc[0], loc[1])
-            .rotate(angle)
-        )
+        const matrix = this.svg
+          .createSVGMatrix()
+          .translate(loc.x, loc.y)
+          .rotate(angle)
+        const combinedMatrix = svgTransform ? svgTransform.matrix.multiply(matrix) : matrix
+        const markerTransform = this.svg.createSVGTransformFromMatrix(combinedMatrix)
+
         this.processRoot(markerMidElement, markerTransform)
       }
     }
@@ -1055,12 +1056,12 @@ export default class Svg2Roughjs {
   /**
    * The angle in degree of the line defined by the given points.
    * @private
-   * @param {number[]} p0
-   * @param {number[]} p1
+   * @param {Point} p0
+   * @param {Point} p1
    * @returns {number}
    */
   getAngle(p0, p1) {
-    const m = (p1[1] - p0[1]) / (p1[0] - p0[0])
+    const m = (p1.y - p0.y) / (p1.x - p0.x)
     return Math.atan(m) * (180 / Math.PI)
   }
 
@@ -1083,7 +1084,7 @@ export default class Svg2Roughjs {
     }
     this.rc.linearPath(transformed, style)
 
-    this.drawMarkers(polyline, transformed)
+    this.drawMarkers(polyline, points, svgTransform)
   }
 
   /**
@@ -1159,7 +1160,7 @@ export default class Svg2Roughjs {
     })
     this.rc.polygon(transformed, this.parseStyleConfig(polygon, svgTransform))
 
-    this.drawMarkers(polygon, transformed)
+    this.drawMarkers(polygon, points, svgTransform)
   }
 
   /**
@@ -1281,26 +1282,19 @@ export default class Svg2Roughjs {
    * @param {SVGTransform?} svgTransform
    */
   drawLine(line, svgTransform) {
-    const p1 = this.applyMatrix(
-      new Point(line.x1.baseVal.value, line.y1.baseVal.value),
-      svgTransform
-    )
-    const p2 = this.applyMatrix(
-      new Point(line.x2.baseVal.value, line.y2.baseVal.value),
-      svgTransform
-    )
+    const p1 = new Point(line.x1.baseVal.value, line.y1.baseVal.value)
+    const tp1 = this.applyMatrix(p1, svgTransform)
+    const p2 = new Point(line.x2.baseVal.value, line.y2.baseVal.value)
+    const tp2 = this.applyMatrix(p2, svgTransform)
 
-    if (p1.x === p2.x && p1.y === p2.y) {
+    if (tp1.x === tp2.x && tp1.y === tp2.y) {
       // zero-length line is not rendered
       return
     }
 
-    this.rc.line(p1.x, p1.y, p2.x, p2.y, this.parseStyleConfig(line, svgTransform))
+    this.rc.line(tp1.x, tp1.y, tp2.x, tp2.y, this.parseStyleConfig(line, svgTransform))
 
-    this.drawMarkers(line, [
-      [p1.x, p1.y],
-      [p2.x, p2.y]
-    ])
+    this.drawMarkers(line, [p1, p2], svgTransform)
   }
 
   /**
