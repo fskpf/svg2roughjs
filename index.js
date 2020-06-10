@@ -1016,9 +1016,9 @@ export default class Svg2Roughjs {
     const markerEndId = this.getIdFromUrl(element.getAttribute('marker-end'))
     const markerEndElement = markerEndId ? this.idElements[markerEndId] : null
     if (markerEndElement) {
-      let angle = markerStartElement.orientAngle.baseVal.value
+      let angle = markerEndElement.orientAngle.baseVal.value
       if (points.length > 1) {
-        const orientAttr = markerStartElement.getAttribute('orient')
+        const orientAttr = markerEndElement.getAttribute('orient')
         if (orientAttr === 'auto' || orientAttr === 'auto-start-reverse') {
           angle = this.getAngle(points[points.length - 2], points[points.length - 1])
         }
@@ -1049,11 +1049,14 @@ export default class Svg2Roughjs {
         let angle = markerMidElement.orientAngle.baseVal.value
         const orientAttr = markerMidElement.getAttribute('orient')
         if (orientAttr === 'auto' || orientAttr === 'auto-start-reverse') {
+          const prevPt = points[i - 1]
+          const nextPt = points[i + 1]
           // https://www.w3.org/TR/SVG11/painting.html#OrientAttribute
           // use angle bisector of incoming and outgoing angle
-          const inAngle = this.getAngle(points[i - 1], loc)
-          const outAngle = this.getAngle(loc, points[i + 1])
-          angle = (inAngle + outAngle) / 2
+          const inAngle = this.getAngle(prevPt, loc)
+          const outAngle = this.getAngle(loc, nextPt)
+          const reverse = nextPt.x < loc.x ? 180 : 0
+          angle = (inAngle + outAngle + reverse) / 2
         }
 
         const matrix = this.svg
@@ -1399,7 +1402,7 @@ export default class Svg2Roughjs {
    */
   drawPath(path, svgTransform) {
     const dataAttrs = path.getAttribute('d')
-    let pathData =
+    const pathData =
       // Parse path data and convert to absolute coordinates
       new SVGPathData(dataAttrs)
         .toAbs()
@@ -1409,8 +1412,9 @@ export default class Svg2Roughjs {
         .transform(SVGPathDataTransformer.NORMALIZE_ST())
 
     // If there's a transform, transform the whole path accordingly
+    let transformedPathData = pathData
     if (svgTransform) {
-      pathData = pathData.transform(
+      transformedPathData = pathData.transform(
         SVGPathDataTransformer.MATRIX(
           svgTransform.matrix.a,
           svgTransform.matrix.b,
@@ -1421,20 +1425,91 @@ export default class Svg2Roughjs {
         )
       )
     }
-    const transformedPathData = encodeSVGPath(pathData.commands)
-    if (transformedPathData.indexOf('undefined') !== -1) {
+
+    const encodedPathData = encodeSVGPath(pathData.commands)
+    if (encodedPathData.indexOf('undefined') !== -1) {
       // DEBUG STUFF
       console.error('broken path data')
       debugger
       return
     }
-    this.rc.path(transformedPathData, this.parseStyleConfig(path, svgTransform))
+
+    this.rc.path(encodedPathData, this.parseStyleConfig(path, svgTransform))
 
     // https://www.w3.org/TR/SVG11/painting.html#MarkerProperties
     // Note that for a ‘path’ element which ends with a closed sub-path,
     // the last vertex is the same as the initial vertex on the given
     // sub-path (same applies to polygon).
-    // this.drawMarkers(polygon, points, svgTransform) // TODO drawMarkers: path
+
+    // [SVGPathData.MOVE_TO]: 2,
+    // [SVGPathData.LINE_TO]: 2,
+    // [SVGPathData.HORIZ_LINE_TO]: 1,
+    // [SVGPathData.VERT_LINE_TO]: 1,
+    // [SVGPathData.CLOSE_PATH]: 0,
+    // [SVGPathData.QUAD_TO]: 4,
+    // [SVGPathData.SMOOTH_QUAD_TO]: 2,
+    // [SVGPathData.CURVE_TO]: 6,
+    // [SVGPathData.SMOOTH_CURVE_TO]: 4,
+    // [SVGPathData.ARC]: 7,
+
+    const points = []
+    let currentSubPathBegin
+    // for (let i = 0; i < pathData.commands.length; i++) {
+    //   const cmd = pathData.commands[i]
+
+    //   if (cmd.type === SVGPathData.MOVE_TO) {
+    //     const p = new Point(cmd.x, cmd.y)
+    //     points.push(p)
+    //     currentSubPathBegin = p
+    //   } else if (cmd.type === SVGPathData.CLOSE_PATH) {
+    //     if (currentSubPathBegin) {
+    //       points.push(currentSubPathBegin)
+    //     }
+    //     // If a "closepath" is followed immediately by a "moveto", then the "moveto"
+    //     // identifies the start point of the next subpath.
+    //     // If a "closepath" is followed immediately by any other command,
+    //     // then the next subpath starts at the same initial point as the current subpath.
+    //     if (i < pathData.commands.length - 1) {
+    //       const nextCmd = pathData.commands[i+1]
+    //       if (nextCmd.type === SVGPathData.MOVE_TO) {
+    //         currentSubPathBegin = new Point(cmd.x, cmd.y)
+    //       }
+    //     }
+    //   } else if (cmd.type === SVGPathData.LINE_TO) {
+
+    //   }
+
+    // }
+    pathData.commands.forEach(cmd => {
+      switch (cmd.type) {
+        case SVGPathData.MOVE_TO:
+          const p = new Point(cmd.x, cmd.y)
+          points.push(p)
+          // each moveto starts a new subpath
+          currentSubPathBegin = p
+          break
+        case SVGPathData.LINE_TO:
+        case SVGPathData.QUAD_TO:
+        case SVGPathData.SMOOTH_QUAD_TO:
+        case SVGPathData.CURVE_TO:
+        case SVGPathData.SMOOTH_CURVE_TO:
+        case SVGPathData.ARC:
+          points.push(new Point(cmd.x, cmd.y))
+          break
+        case SVGPathData.HORIZ_LINE_TO:
+          points.push(new Point(cmd.x, 0))
+          break
+        case SVGPathData.VERT_LINE_TO:
+          points.push(new Point(0, cmd.y))
+          break
+        case SVGPathData.CLOSE_PATH:
+          if (currentSubPathBegin) {
+            points.push(currentSubPathBegin)
+          }
+          break
+      }
+    })
+    this.drawMarkers(path, points, svgTransform) // TODO drawMarkers: path
   }
 
   /**
