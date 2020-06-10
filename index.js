@@ -711,6 +711,14 @@ export default class Svg2Roughjs {
   parseStyleConfig(element, svgTransform) {
     const config = Object.assign({}, this.$roughConfig)
 
+    // Scalefactor for certain style attributes. For lack of a better option here, use the determinant
+    let scaleFactor = 1
+    if (!this.isIdentityTransform(svgTransform)) {
+      const m = svgTransform.matrix
+      const det = m.a * m.d - m.c * m.b
+      scaleFactor = Math.sqrt(det)
+    }
+
     // incorporate the elements base opacity
     const elementOpacity = this.getEffectiveElementOpacity(element, 1, this.$useElementContext)
 
@@ -744,19 +752,10 @@ export default class Svg2Roughjs {
       config.stroke = 'none'
     }
 
-    let strokeWidth = this.getEffectiveAttribute(element, 'stroke-width', this.$useElementContext)
+    const strokeWidth = this.getEffectiveAttribute(element, 'stroke-width', this.$useElementContext)
     if (strokeWidth) {
       // Convert to user space units (px)
-      strokeWidth = this.convertToPixelUnit(strokeWidth)
-      // If we have a transform and an explicit stroke, include the scaling factor
-      if (svgTransform && stroke !== 'none') {
-        // For lack of a better option here, use the determinant
-        const m = svgTransform.matrix
-        const det = m.a * m.d - m.c * m.b
-        const factor = Math.sqrt(det)
-        strokeWidth *= factor
-      }
-      config.strokeWidth = strokeWidth
+      config.strokeWidth = this.convertToPixelUnit(strokeWidth) * scaleFactor
     } else {
       config.strokeWidth = 0
     }
@@ -770,7 +769,8 @@ export default class Svg2Roughjs {
       strokeDashArray = strokeDashArray
         .split(/[\s,]+/)
         .filter(entry => entry.length > 0)
-        .map(dash => this.convertToPixelUnit(dash))
+        // make sure that dashes/dots are at least somewhat visible
+        .map(dash => Math.max(0.5, this.convertToPixelUnit(dash) * scaleFactor))
       config.strokeLineDash = strokeDashArray
     }
 
