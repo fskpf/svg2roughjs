@@ -398,7 +398,7 @@ export default class Svg2Roughjs {
   }
 
   /**
-   * Whether the given SVGTransform resembles an the identity transform.
+   * Whether the given SVGTransform resembles an identity transform.
    * @private
    * @param {SVGTransform?} svgTransform
    * @returns {boolean} Whether the transform is an identity transform.
@@ -418,6 +418,21 @@ export default class Svg2Roughjs {
         matrix.e === 0 &&
         matrix.f === 0)
     )
+  }
+
+  /**
+   * Whether the given SVGTransform does not scale nor skew.
+   * @private
+   * @param {SVGTransform?} svgTransform
+   * @returns {boolean} Whether the given SVGTransform does not scale nor skew.
+   *  Returns true if transform is undefined.
+   */
+  isTranslationTransform(svgTransform) {
+    if (!svgTransform) {
+      return true
+    }
+    const matrix = svgTransform.matrix
+    return !matrix || (matrix.a === 1 && matrix.b === 0 && matrix.c === 0 && matrix.d === 1)
   }
 
   /**
@@ -781,7 +796,7 @@ export default class Svg2Roughjs {
     )
     if (strokeDashOffset) {
       strokeDashOffset = this.convertToPixelUnit(strokeDashOffset)
-      config.strokeLineDashOffset = strokeDashOffset
+      config.strokeLineDashOffset = strokeDashOffset * scaleFactor
     }
 
     // unstroked but filled shapes look weird, so always apply a stroke if we fill something
@@ -1160,7 +1175,14 @@ export default class Svg2Roughjs {
     })
     this.rc.polygon(transformed, this.parseStyleConfig(polygon, svgTransform))
 
-    this.drawMarkers(polygon, points, svgTransform)
+    // https://www.w3.org/TR/SVG11/painting.html#MarkerProperties
+    // Note that for a ‘path’ element which ends with a closed sub-path,
+    // the last vertex is the same as the initial vertex on the given
+    // sub-path (same applies to polygon).
+    if (points.length > 0) {
+      points.push(points[0])
+      this.drawMarkers(polygon, points, svgTransform)
+    }
   }
 
   /**
@@ -1190,7 +1212,7 @@ export default class Svg2Roughjs {
       return
     }
 
-    if (this.isIdentityTransform(svgTransform)) {
+    if (this.isIdentityTransform(svgTransform) || this.isTranslationTransform(svgTransform)) {
       // Simple case, there's no transform and we can use the ellipse command
       const center = this.applyMatrix(new Point(cx, cy), svgTransform)
       // transform a point on the ellipse to get the transformed radius
@@ -1249,7 +1271,7 @@ export default class Svg2Roughjs {
 
     const center = this.applyMatrix(new Point(cx, cy), svgTransform)
 
-    if (this.isIdentityTransform(svgTransform)) {
+    if (this.isIdentityTransform(svgTransform) || this.isTranslationTransform(svgTransform)) {
       // transform a point on the ellipse to get the transformed radius
       const radiusPoint = this.applyMatrix(new Point(cx + r, cy + r), svgTransform)
       const transformedWidth = 2 * (radiusPoint.x - center.x)
@@ -1408,7 +1430,11 @@ export default class Svg2Roughjs {
     }
     this.rc.path(transformedPathData, this.parseStyleConfig(path, svgTransform))
 
-    // TODO markers: drawMarkers
+    // https://www.w3.org/TR/SVG11/painting.html#MarkerProperties
+    // Note that for a ‘path’ element which ends with a closed sub-path,
+    // the last vertex is the same as the initial vertex on the given
+    // sub-path (same applies to polygon).
+    // this.drawMarkers(polygon, points, svgTransform) // TODO drawMarkers: path
   }
 
   /**
@@ -1488,7 +1514,11 @@ export default class Svg2Roughjs {
       return
     }
 
-    if (this.isIdentityTransform(svgTransform) && !rx && !ry) {
+    if (
+      (this.isIdentityTransform(svgTransform) || this.isTranslationTransform(svgTransform)) &&
+      !rx &&
+      !ry
+    ) {
       // Simple case; just a rectangle
       const p1 = this.applyMatrix(new Point(x, y), svgTransform)
       const p2 = this.applyMatrix(new Point(x + width, y + height), svgTransform)
@@ -1502,9 +1532,7 @@ export default class Svg2Roughjs {
         this.parseStyleConfig(rect, svgTransform)
       )
     } else {
-      // Rounded rectangle
       let path = ''
-
       if (!rx && !ry) {
         const p1 = this.applyMatrix(new Point(x, y), svgTransform)
         const p2 = this.applyMatrix(new Point(x + width, y), svgTransform)
