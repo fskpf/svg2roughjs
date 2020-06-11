@@ -988,6 +988,16 @@ export default class Svg2Roughjs {
       return
     }
 
+    // consider scaled coordinate system for markerWidth/markerHeight
+    const markerUnits = element.getAttribute('markerUnits')
+    let scaleFactor = 1
+    if (!markerUnits || markerUnits === 'strokeWidth') {
+      const strokeWidth = this.getEffectiveAttribute(element, 'stroke-width', null)
+      if (strokeWidth) {
+        scaleFactor = this.convertToPixelUnit(strokeWidth)
+      }
+    }
+
     // start marker
     const markerStartId = this.getIdFromUrl(element.getAttribute('marker-start'))
     const markerStartElement = markerStartId ? this.idElements[markerStartId] : null
@@ -1006,6 +1016,8 @@ export default class Svg2Roughjs {
         .createSVGMatrix()
         .translate(location.x, location.y)
         .rotate(angle)
+        .scale(scaleFactor)
+
       const combinedMatrix = svgTransform ? svgTransform.matrix.multiply(matrix) : matrix
       const markerTransform = this.svg.createSVGTransformFromMatrix(combinedMatrix)
 
@@ -1029,6 +1041,8 @@ export default class Svg2Roughjs {
         .createSVGMatrix()
         .translate(location.x, location.y)
         .rotate(angle)
+        .scale(scaleFactor)
+
       const combinedMatrix = svgTransform ? svgTransform.matrix.multiply(matrix) : matrix
       const markerTransform = this.svg.createSVGTransformFromMatrix(combinedMatrix)
 
@@ -1063,6 +1077,8 @@ export default class Svg2Roughjs {
           .createSVGMatrix()
           .translate(loc.x, loc.y)
           .rotate(angle)
+          .scale(scaleFactor)
+
         const combinedMatrix = svgTransform ? svgTransform.matrix.multiply(matrix) : matrix
         const markerTransform = this.svg.createSVGTransformFromMatrix(combinedMatrix)
 
@@ -1412,9 +1428,12 @@ export default class Svg2Roughjs {
         .transform(SVGPathDataTransformer.NORMALIZE_ST())
 
     // If there's a transform, transform the whole path accordingly
-    let transformedPathData = pathData
+    const transformedPathData = new SVGPathData(
+      // clone the commands, we might need them untransformed for markers
+      pathData.commands.map(cmd => Object.assign({}, cmd))
+    )
     if (svgTransform) {
-      transformedPathData = pathData.transform(
+      transformedPathData.transform(
         SVGPathDataTransformer.MATRIX(
           svgTransform.matrix.a,
           svgTransform.matrix.b,
@@ -1426,7 +1445,7 @@ export default class Svg2Roughjs {
       )
     }
 
-    const encodedPathData = encodeSVGPath(pathData.commands)
+    const encodedPathData = encodeSVGPath(transformedPathData.commands)
     if (encodedPathData.indexOf('undefined') !== -1) {
       // DEBUG STUFF
       console.error('broken path data')
@@ -1440,46 +1459,8 @@ export default class Svg2Roughjs {
     // Note that for a ‘path’ element which ends with a closed sub-path,
     // the last vertex is the same as the initial vertex on the given
     // sub-path (same applies to polygon).
-
-    // [SVGPathData.MOVE_TO]: 2,
-    // [SVGPathData.LINE_TO]: 2,
-    // [SVGPathData.HORIZ_LINE_TO]: 1,
-    // [SVGPathData.VERT_LINE_TO]: 1,
-    // [SVGPathData.CLOSE_PATH]: 0,
-    // [SVGPathData.QUAD_TO]: 4,
-    // [SVGPathData.SMOOTH_QUAD_TO]: 2,
-    // [SVGPathData.CURVE_TO]: 6,
-    // [SVGPathData.SMOOTH_CURVE_TO]: 4,
-    // [SVGPathData.ARC]: 7,
-
     const points = []
     let currentSubPathBegin
-    // for (let i = 0; i < pathData.commands.length; i++) {
-    //   const cmd = pathData.commands[i]
-
-    //   if (cmd.type === SVGPathData.MOVE_TO) {
-    //     const p = new Point(cmd.x, cmd.y)
-    //     points.push(p)
-    //     currentSubPathBegin = p
-    //   } else if (cmd.type === SVGPathData.CLOSE_PATH) {
-    //     if (currentSubPathBegin) {
-    //       points.push(currentSubPathBegin)
-    //     }
-    //     // If a "closepath" is followed immediately by a "moveto", then the "moveto"
-    //     // identifies the start point of the next subpath.
-    //     // If a "closepath" is followed immediately by any other command,
-    //     // then the next subpath starts at the same initial point as the current subpath.
-    //     if (i < pathData.commands.length - 1) {
-    //       const nextCmd = pathData.commands[i+1]
-    //       if (nextCmd.type === SVGPathData.MOVE_TO) {
-    //         currentSubPathBegin = new Point(cmd.x, cmd.y)
-    //       }
-    //     }
-    //   } else if (cmd.type === SVGPathData.LINE_TO) {
-
-    //   }
-
-    // }
     pathData.commands.forEach(cmd => {
       switch (cmd.type) {
         case SVGPathData.MOVE_TO:
@@ -1509,7 +1490,7 @@ export default class Svg2Roughjs {
           break
       }
     })
-    this.drawMarkers(path, points, svgTransform) // TODO drawMarkers: path
+    this.drawMarkers(path, points, svgTransform)
   }
 
   /**
