@@ -1070,7 +1070,7 @@ export default class Svg2Roughjs {
           const inAngle = this.getAngle(prevPt, loc)
           const outAngle = this.getAngle(loc, nextPt)
           const reverse = nextPt.x < loc.x ? 180 : 0
-          angle = (inAngle + outAngle + reverse) / 2
+          angle = (inAngle + outAngle) / 2 + reverse
         }
 
         const matrix = this.svg
@@ -1095,8 +1095,7 @@ export default class Svg2Roughjs {
    * @returns {number}
    */
   getAngle(p0, p1) {
-    const m = (p1.y - p0.y) / (p1.x - p0.x)
-    return Math.atan(m) * (180 / Math.PI)
+    return Math.atan2(p1.y - p0.y, p1.x - p0.x) * (180 / Math.PI)
   }
 
   /**
