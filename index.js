@@ -34,11 +34,20 @@ class Point {
   }
 }
 
+export class DrawingMode {
+  static get SVG() {
+    return 'DrawingMode.SVG'
+  }
+  static get CANVAS() {
+    'DrawingMode.CANVAS'
+  }
+}
+
 /**
  * Svg2Roughjs parses a given SVG and draws it with Rough.js
  * in a canvas.
  */
-export default class Svg2Roughjs {
+export class Svg2Roughjs {
   /**
    * A simple regexp which is used to test whether a given string value
    * contains unit identifiers, e.g. "1px", "1em", "1%", ...
@@ -77,8 +86,13 @@ export default class Svg2Roughjs {
         this.height = 150
       }
 
-      this.canvas.width = this.width
-      this.canvas.height = this.height
+      if (this.mode === DrawingMode.CANVAS) {
+        this.canvas.width = this.width
+        this.canvas.height = this.height
+      } else {
+        this.canvas.setAttribute('width', this.width)
+        this.canvas.setAttribute('height', this.height)
+      }
 
       // pre-process defs for subsequent references
       this.collectElementsWithID()
@@ -170,22 +184,73 @@ export default class Svg2Roughjs {
   }
 
   /**
+   * Changes the output format of the converted SVG.
+   * Changing this property, will replace the current output
+   * element with either a new HTML canvas or new SVG element.
+   * @param {DrawingMode} mode
+   */
+  set mode(mode) {
+    if (this.$drawingMode === mode) {
+      return
+    }
+    this.$drawingMode = mode
+
+    const parent = this.canvas.parentElement
+    parent.removeChild(this.canvas)
+
+    let target
+    if (mode === DrawingMode.CANVAS) {
+      target = document.createElement('canvas')
+      target.width = this.width
+      target.height = this.height
+      this.ctx = target.getContext('2d')
+    } else {
+      this.ctx = null
+      target = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+      target.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
+      target.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink')
+      target.setAttribute('width', this.width)
+      target.setAttribute('height', this.height)
+    }
+    parent.appendChild(target)
+    this.canvas = target
+
+    if (mode === DrawingMode.CANVAS) {
+      this.rc = rough.canvas(this.canvas, this.$roughConfig)
+    } else {
+      this.rc = rough.svg(this.canvas, this.$roughConfig)
+    }
+
+    this.redraw()
+  }
+
+  /**
+   * @returns {DrawingMode}
+   */
+  get mode() {
+    return this.$drawingMode
+  }
+
+  /**
    * Creates a new instance of Svg2roughjs.
-   * @param {string | HTMLCanvasElement} target Either a selector for the container to which a canvas should be added
-   * or an `HTMLCanvasElement` into which should be drawn.
+   * @param {string | HTMLCanvasElement | SVGSVGElement} target Either a selector for the container to which a canvas should be added
+   * or an `HTMLCanvasElement` or `SVGSVGElement` that should be used as output target.
+   * @param {DrawingMode?} mode Whether the output should be an SVG or drawn to an HTML canvas.
+   * Defaults to SVG or CANVAS depending if the given target is of type `HTMLCanvasElement` or `SVGSVGElement`,
+   * otherwise it defaults to SVG.
    * @param {object?} roughConfig Config object this passed to the Rough.js ctor and
    * also used while parsing the styles for `SVGElement`s.
    */
-  constructor(target, roughConfig = {}) {
+  constructor(target, mode = DrawingMode.SVG, roughConfig = {}) {
     if (!target) {
       throw new Error('No target provided')
     }
-    if (typeof target === 'object' && target.tagName === 'CANVAS') {
-      if (target.tagName === 'CANVAS') {
-        // directly use the given canvas
+    if (typeof target === 'object') {
+      if (target.tagName === 'CANVAS' || target.tagName === 'SVG') {
         this.canvas = target
+        this.$drawingMode = target.tagName === 'CANVAS' ? DrawingMode.CANVAS : DrawingMode.SVG
       } else {
-        throw new Error('Target object is not an HMTLCanvaseElement')
+        throw new Error('Target object is not of type HMTLCanvaseElement or SVGSVGElement')
       }
     } else if (typeof target === 'string') {
       // create a new HTMLCanvasElement as child of the given element
@@ -193,22 +258,28 @@ export default class Svg2Roughjs {
       if (!container) {
         throw new Error(`No element found with ${target}`)
       }
-      this.canvas = document.createElement('canvas')
-      this.canvas.width = container.clientWidth
-      this.canvas.height = container.clientHeight
+      if (mode === DrawingMode.CANVAS) {
+        this.canvas = document.createElement('canvas')
+        this.canvas.width = container.clientWidth
+        this.canvas.height = container.clientHeight
+      } else {
+        this.canvas = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+        this.canvas.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
+        this.canvas.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink')
+      }
+      this.$drawingMode = mode
       container.appendChild(this.canvas)
     }
 
     // the Rough.js instance to draw the SVG elements
-    this.rc = rough.canvas(this.canvas, roughConfig)
+    if (this.mode === DrawingMode.CANVAS) {
+      this.rc = rough.canvas(this.canvas, roughConfig)
+      // canvas context for convenient access
+      this.ctx = this.canvas.getContext('2d')
+    } else {
+      this.rc = rough.svg(this.canvas, roughConfig)
+    }
     this.$roughConfig = roughConfig
-
-    // canvas context for convenient access
-    this.ctx = this.canvas.getContext('2d')
-
-    // size of the canvas
-    this.width = this.canvas.width
-    this.height = this.canvas.height
 
     // default font family
     this.$fontFamily = 'Comic Sans MS, cursive'
@@ -222,7 +293,13 @@ export default class Svg2Roughjs {
    * @private
    */
   clearCanvas() {
-    this.ctx.clearRect(0, 0, this.width, this.height)
+    if (this.mode === DrawingMode.CANVAS) {
+      this.ctx.clearRect(0, 0, this.width, this.height)
+    } else {
+      while (this.canvas.firstChild) {
+        this.canvas.removeChild(this.canvas.firstChild)
+      }
+    }
   }
 
   /**
@@ -235,8 +312,12 @@ export default class Svg2Roughjs {
     }
     this.clearCanvas()
     if (this.backgroundColor) {
-      this.ctx.fillStyle = this.backgroundColor
-      this.ctx.fillRect(0, 0, this.width, this.height)
+      if (this.mode === DrawingMode.CANVAS) {
+        this.ctx.fillStyle = this.backgroundColor
+        this.ctx.fillRect(0, 0, this.width, this.height)
+      } else {
+        // TODO backgroundColor for SVG
+      }
     }
     this.processRoot(this.svg, null, this.width, this.height)
   }
@@ -356,6 +437,18 @@ export default class Svg2Roughjs {
   }
 
   /**
+   * Helper method to append the returned `SVGGElement` from
+   * Rough.js when drawing in SVG mode.
+   * @private
+   * @param {SVGGElement} element
+   */
+  postProcessElement(element) {
+    if (this.mode === DrawingMode.SVG && element) {
+      this.canvas.appendChild(element)
+    }
+  }
+
+  /**
    * Combines the given transform with the element's transform.
    * @param {SVGElement} element
    * @param {SVGTransform} transform
@@ -388,12 +481,22 @@ export default class Svg2Roughjs {
    * Applies the given svgTransform to the canvas context.
    * @private
    * @param {SVGTransform?} svgTransform
+   * @param {SVGElement?} element The element to which the transform should be applied
+   * when in SVG mode.
    */
-  applyGlobalTransform(svgTransform) {
+  applyGlobalTransform(svgTransform, element) {
     if (svgTransform && svgTransform.matrix) {
       const matrix = svgTransform.matrix
-      // IE11 doesn't support SVGMatrix as parameter for setTransform
-      this.ctx.setTransform(matrix.a, matrix.b, matrix.c, matrix.d, matrix.e, matrix.f)
+      if (this.mode === DrawingMode.CANVAS) {
+        // IE11 doesn't support SVGMatrix as parameter for setTransform
+        this.ctx.setTransform(matrix.a, matrix.b, matrix.c, matrix.d, matrix.e, matrix.f)
+      } else if (this.mode === DrawingMode.SVG && element) {
+        if (element.transform.baseVal.numberOfItems > 0) {
+          element.transform.baseVal.getItem(0).setMatrix(matrix)
+        } else {
+          element.transform.baseVal.appendItem(svgTransform)
+        }
+      }
     }
   }
 
@@ -930,8 +1033,12 @@ export default class Svg2Roughjs {
     // possibly apply a clip on the canvas before drawing on it
     const clipPath = element.getAttribute('clip-path')
     if (clipPath) {
-      this.ctx.save()
-      this.applyClipPath(clipPath, svgTransform)
+      if (this.mode === DrawingMode.CANVAS) {
+        this.ctx.save()
+        this.applyClipPath(clipPath, svgTransform)
+      } else {
+        // TODO SVG
+      }
     }
 
     switch (element.tagName) {
@@ -973,7 +1080,11 @@ export default class Svg2Roughjs {
 
     // re-set the clip for the next element
     if (clipPath) {
-      this.ctx.restore()
+      if (this.mode === DrawingMode.CANVAS) {
+        this.ctx.restore()
+      } else {
+        // TODO SVG
+      }
     }
   }
 
@@ -1113,9 +1224,9 @@ export default class Svg2Roughjs {
     if (style.fill && style.fill !== 'none') {
       const fillStyle = Object.assign({}, style)
       fillStyle.stroke = 'none'
-      this.rc.polygon(transformed, fillStyle)
+      this.postProcessElement(this.rc.polygon(transformed, fillStyle))
     }
-    this.rc.linearPath(transformed, style)
+    this.postProcessElement(this.rc.linearPath(transformed, style))
 
     this.drawMarkers(polyline, points, svgTransform)
   }
@@ -1191,7 +1302,10 @@ export default class Svg2Roughjs {
       const pt = this.applyMatrix(p, svgTransform)
       return [pt.x, pt.y]
     })
-    this.rc.polygon(transformed, this.parseStyleConfig(polygon, svgTransform))
+
+    this.postProcessElement(
+      this.rc.polygon(transformed, this.parseStyleConfig(polygon, svgTransform))
+    )
 
     // https://www.w3.org/TR/SVG11/painting.html#MarkerProperties
     // Note that for a ‘path’ element which ends with a closed sub-path,
@@ -1230,6 +1344,7 @@ export default class Svg2Roughjs {
       return
     }
 
+    let result
     if (this.isIdentityTransform(svgTransform) || this.isTranslationTransform(svgTransform)) {
       // Simple case, there's no transform and we can use the ellipse command
       const center = this.applyMatrix(new Point(cx, cy), svgTransform)
@@ -1237,7 +1352,7 @@ export default class Svg2Roughjs {
       const radiusPoint = this.applyMatrix(new Point(cx + rx, cy + ry), svgTransform)
       const transformedWidth = 2 * (radiusPoint.x - center.x)
       const transformedHeight = 2 * (radiusPoint.y - center.y)
-      this.rc.ellipse(
+      result = this.rc.ellipse(
         center.x,
         center.y,
         transformedWidth,
@@ -1257,8 +1372,10 @@ export default class Svg2Roughjs {
       const c6 = this.applyMatrix(new Point(cx - factor * rx, cy - ry), svgTransform)
       const c8 = this.applyMatrix(new Point(cx + rx, cy - factor * ry), svgTransform)
       const path = `M ${p1} C ${c1} ${c2} ${p2} S ${c4} ${p3} S ${c6} ${p4} S ${c8} ${p1}z`
-      this.rc.path(path, this.parseStyleConfig(ellipse, svgTransform))
+      result = this.rc.path(path, this.parseStyleConfig(ellipse, svgTransform))
     }
+
+    this.postProcessElement(result)
   }
 
   /**
@@ -1289,11 +1406,12 @@ export default class Svg2Roughjs {
 
     const center = this.applyMatrix(new Point(cx, cy), svgTransform)
 
+    let result
     if (this.isIdentityTransform(svgTransform) || this.isTranslationTransform(svgTransform)) {
       // transform a point on the ellipse to get the transformed radius
       const radiusPoint = this.applyMatrix(new Point(cx + r, cy + r), svgTransform)
       const transformedWidth = 2 * (radiusPoint.x - center.x)
-      this.rc.circle(
+      result = this.rc.circle(
         center.x,
         center.y,
         transformedWidth,
@@ -1312,8 +1430,10 @@ export default class Svg2Roughjs {
       const c6 = this.applyMatrix(new Point(cx - factor * r, cy - r), svgTransform)
       const c8 = this.applyMatrix(new Point(cx + r, cy - factor * r), svgTransform)
       const path = `M ${p1} C ${c1} ${c2} ${p2} S ${c4} ${p3} S ${c6} ${p4} S ${c8} ${p1}z`
-      this.rc.path(path, this.parseStyleConfig(circle, svgTransform))
+      result = this.rc.path(path, this.parseStyleConfig(circle, svgTransform))
     }
+
+    this.postProcessElement(result)
   }
 
   /**
@@ -1332,7 +1452,9 @@ export default class Svg2Roughjs {
       return
     }
 
-    this.rc.line(tp1.x, tp1.y, tp2.x, tp2.y, this.parseStyleConfig(line, svgTransform))
+    this.postProcessElement(
+      this.rc.line(tp1.x, tp1.y, tp2.x, tp2.y, this.parseStyleConfig(line, svgTransform))
+    )
 
     this.drawMarkers(line, [p1, p2], svgTransform)
   }
@@ -1452,7 +1574,9 @@ export default class Svg2Roughjs {
       return
     }
 
-    this.rc.path(encodedPathData, this.parseStyleConfig(path, svgTransform))
+    this.postProcessElement(
+      this.rc.path(encodedPathData, this.parseStyleConfig(path, svgTransform))
+    )
 
     // https://www.w3.org/TR/SVG11/painting.html#MarkerProperties
     // Note that for a ‘path’ element which ends with a closed sub-path,
@@ -1579,12 +1703,14 @@ export default class Svg2Roughjs {
       const p2 = this.applyMatrix(new Point(x + width, y + height), svgTransform)
       const transformedWidth = p2.x - p1.x
       const transformedHeight = p2.y - p1.y
-      this.rc.rectangle(
-        p1.x,
-        p1.y,
-        transformedWidth,
-        transformedHeight,
-        this.parseStyleConfig(rect, svgTransform)
+      this.postProcessElement(
+        this.rc.rectangle(
+          p1.x,
+          p1.y,
+          transformedWidth,
+          transformedHeight,
+          this.parseStyleConfig(rect, svgTransform)
+        )
       )
     } else {
       let path = ''
@@ -1644,12 +1770,21 @@ export default class Svg2Roughjs {
       }
 
       // must use square line cap here so it looks like a rectangle. Default seems to be butt.
-      this.ctx.save()
-      this.ctx.lineCap = 'square'
+      if (this.mode === DrawingMode.CANVAS) {
+        this.ctx.save()
+        this.ctx.lineCap = 'square'
+      }
 
-      this.rc.path(path, this.parseStyleConfig(rect, svgTransform))
+      const result = this.rc.path(path, this.parseStyleConfig(rect, svgTransform))
+      if (this.mode === DrawingMode.SVG && result) {
+        // same as for the canvas context, use square line-cap instead of default butt here
+        result.setAttribute('stroke-linecap', 'square')
+      }
+      this.postProcessElement(result)
 
-      this.ctx.restore()
+      if (this.mode === DrawingMode.CANVAS) {
+        this.ctx.restore()
+      }
     }
   }
 
@@ -1693,16 +1828,24 @@ export default class Svg2Roughjs {
         return
       }
     } else {
-      // we just draw the image 'as is' into the canvas
-      const img = new Image()
       let matrix = this.svg.createSVGMatrix().translate(x, y)
       matrix = svgTransform ? svgTransform.matrix.multiply(matrix) : matrix
-      const dx = matrix.e
-      const dy = matrix.f
-      img.onload = () => {
-        this.ctx.drawImage(img, dx, dy)
+      if (this.mode === DrawingMode.CANVAS) {
+        // we just draw the image 'as is' into the canvas
+        const dx = matrix.e
+        const dy = matrix.f
+        const img = new Image()
+        img.onload = () => {
+          this.ctx.drawImage(img, dx, dy)
+        }
+        img.src = href
+      } else {
+        const imageClone = svgImage.cloneNode()
+        const container = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+        this.applyGlobalTransform(svgTransform, container)
+        container.appendChild(imageClone)
+        this.postProcessElement(container)
       }
-      img.src = href
     }
   }
 
@@ -1712,6 +1855,20 @@ export default class Svg2Roughjs {
    * @param {SVGTransform?} svgTransform
    */
   drawText(text, svgTransform) {
+    if (this.mode === DrawingMode.SVG) {
+      const container = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+      this.applyGlobalTransform(svgTransform, container)
+      const textClone = text.cloneNode(true)
+      if (textClone.transform.baseVal.numberOfItems > 0) {
+        // remove transformation, since it is transformed globally by its parent container
+        textClone.transform.baseVal.clear()
+      }
+      textClone.setAttribute('font-family', this.fontFamily)
+      container.appendChild(textClone)
+      this.postProcessElement(container)
+      return
+    }
+
     this.ctx.save()
 
     let textLocation = new Point(this.getLengthInPx(text.x), this.getLengthInPx(text.y))

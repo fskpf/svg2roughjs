@@ -16,7 +16,7 @@ import SAMPLE_ORGANIC2 from '../public/organic2.svg'
 import SAMPLE_TREE from '../public/tree1.svg'
 import SAMPLE_VENN from '../public/venn.svg'
 
-import Svg2Roughjs from 'svg2roughjs'
+import { DrawingMode, Svg2Roughjs } from 'svg2roughjs'
 
 let loadingSvg = false
 let scheduledLoad
@@ -151,7 +151,7 @@ function loadSample(svg2roughjs, sample) {
 let codeMirrorInstance
 
 function run() {
-  const svg2roughjs = new Svg2Roughjs('#output')
+  const svg2roughjs = new Svg2Roughjs('#output', DrawingMode.SVG)
   svg2roughjs.backgroundColor = 'white'
   const sampleSelect = document.getElementById('sample-select')
   sampleSelect.addEventListener('change', () => {
@@ -203,9 +203,13 @@ function run() {
   loadSample(svg2roughjs, sampleSelect.value)
 
   const fillStyleSelect = document.getElementById('fill-style')
+  const outputFormatSelect = document.getElementById('output-format')
   const roughnessInput = document.getElementById('roughness-input')
   const bowingInput = document.getElementById('bowing-input')
 
+  outputFormatSelect.addEventListener('change', () => {
+    svg2roughjs.mode = outputFormatSelect.value === 'svg' ? DrawingMode.SVG : DrawingMode.CANVAS
+  })
   fillStyleSelect.addEventListener('change', () => {
     svg2roughjs.roughConfig = {
       bowing: parseInt(bowingInput.value),
