@@ -34,13 +34,34 @@ const svg2roughjs = new Svg2Roughjs('#output')
 const svg = document.getElementById('some-svg-element')
 svg2roughjs.svg = svg // or maybe use the DOMParser to load an SVG file instead
 ```
-The `roughConfig` property may be used to pass additional Rough.js style properties, e.g. to change the fill-style, roughness or bowing, as shown in the `sample-application`.
 
-`fontFamily` can be used to define a custom font with which text elements should be drawn. By default, 'Comic Sans MS, cursive' is used. If set to `null`, the text element's original font-family is used.
+## API
 
-`backgroundColor` can be used to set a base color for the canvas on which the sketch is created. By default, it is drawn on a transparent canvas.
+### Exports
 
-`randomize` can be used to randomize Rough.js' fillWeight, hachureAngle and hachureGap. Enabled by default.
+* `Svg2Roughjs`: The main class for the conversion. 
+* `RenderMode`: An enum that is used to switch between `SVG` and `CANVAS` rendering. 
+
+### Methods
+
+* `constructor(target, renderMode?, roughConfig?)`<br>
+Creates a new Svg2Rough.js instance.<br>
+`target` may either be a selector for a parent HTML element into which a new canvas or SVG should be created, or directly an `HTMLCanvasElement` or `SVGSVGElement` that should be used for the output.<br>
+The optional `renderMode` defaults to `RenderMode.SVG` if the `target` is a parent element selector, otherwise defaults to the respective mode.
+
+* `redraw()`<br>
+Clears the output canvas or SVG and processes the input `svg` anew.
+
+### Properties
+
+Property | Description | Default
+--- | --- | ---
+`svg` | The input SVG that should be converted.<br>Changing this property triggers `redraw()`. | `undefined`
+`renderMode` | Switch between canvas or SVG output. | `RenderMode.SVG` 
+`roughConfig` | Rough.js style properties, e.g. to change the fill-style, roughness or bowing. | `{}`
+`fontFamily` | Font with which text elements should be drawn.<br>If set to `null`, the text element's original font-family is used. | `'Comic Sans MS, cursive'`
+`backgroundColor` | Sets a background color onto which the sketch is drawn. | `transparent`
+`randomize` | Randomize Rough.js' fillWeight, hachureAngle and hachureGap. | `true`
 
 ## Sample Images
 
