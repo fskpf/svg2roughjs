@@ -320,7 +320,11 @@ export class Svg2Roughjs {
         this.ctx.fillStyle = this.backgroundColor
         this.ctx.fillRect(0, 0, this.width, this.height)
       } else {
-        // TODO backgroundColor for SVG
+        const bgRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
+        bgRect.width.baseVal.value = this.width
+        bgRect.height.baseVal.value = this.height
+        bgRect.setAttribute('fill', this.backgroundColor)
+        this.canvas.appendChild(bgRect)
       }
     }
     this.processRoot(this.svg, null, this.width, this.height)
