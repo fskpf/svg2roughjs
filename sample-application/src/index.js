@@ -232,6 +232,18 @@ function run() {
     }
   })
 
+  const opacityInput = document.getElementById('opacity')
+  opacityInput.addEventListener('change', () => {
+    document.getElementById('input').style.opacity = opacityInput.value
+  })
+  const opacityLabel = document.querySelector('label[for=opacity]')
+  opacityLabel.addEventListener('click', () => {
+    const currentOpacity = opacityInput.value
+    const newOpacity = currentOpacity < 1 ? 1 : 0
+    document.getElementById('input').style.opacity = newOpacity
+    opacityInput.value = newOpacity
+  })
+
   function loadFile(file) {
     const reader = new FileReader()
     reader.readAsText(file)
@@ -275,12 +287,22 @@ function run() {
 
   const downloadBtn = document.getElementById('download-btn')
   downloadBtn.addEventListener('click', () => {
-    // download file
-    const canvas = document.querySelector('canvas')
-    const image = canvas.toDataURL('image/png', 1.0).replace('image/png', 'image/octet-stream')
     const link = document.createElement('a')
-    link.download = 'svg2roughjs.png'
-    link.href = image
+
+    if (svg2roughjs.renderMode === RenderMode.CANVAS) {
+      const canvas = document.querySelector('#output canvas')
+      const image = canvas.toDataURL('image/png', 1.0).replace('image/png', 'image/octet-stream')
+      link.download = 'svg2roughjs.png'
+      link.href = image
+    } else {
+      const serializer = new XMLSerializer()
+      let svgString = serializer.serializeToString(document.querySelector('#output svg'))
+      svgString = '<?xml version="1.0" standalone="no"?>\r\n' + svgString
+      const svgBlob = new Blob([svgString], { type: 'image/svg+xml' })
+      link.download = 'svg2roughjs.svg'
+      link.href = URL.createObjectURL(svgBlob)
+    }
+
     link.click()
   })
 

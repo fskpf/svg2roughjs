@@ -190,6 +190,10 @@
     .checkbox * {
       cursor: pointer;
     }
+
+    label[for=opacity] {
+      cursor: pointer;
+    }
   </style>
 </head>
 
@@ -268,8 +272,8 @@
           <option value="venn">venn.svg</option>
         </select>
         <label for="opacity">Compare: </label>
-        <input id="opacity" type="range" min="0" max="1" step="0.05" value="0" onchange="opacityChanged()">
-        <button id="download-btn">Download Sketch (PNG)</button>
+        <input id="opacity" type="range" min="0" max="1" step="0.05" value="0">
+        <button id="download-btn">Download Sketch</button>
       </div>
 
       <div class="separator" style="margin: 0;"></div>
@@ -283,13 +287,6 @@
       </div>
     </div>
   </div>
-
-  <script>
-    function opacityChanged() {
-      var value = document.getElementById('opacity').value
-      document.getElementById('input').style.opacity = value
-    }
-  </script>
 
   <!-- the bundle in injected by the build -->
 
