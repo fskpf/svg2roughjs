@@ -115,7 +115,11 @@ export class Svg2Roughjs {
    */
   set roughConfig(config) {
     this.$roughConfig = config
-    this.rc = rough.canvas(this.canvas, config)
+    if (this.mode === DrawingMode.CANVAS) {
+      this.rc = rough.canvas(this.canvas, this.$roughConfig)
+    } else {
+      this.rc = rough.svg(this.canvas, this.$roughConfig)
+    }
     this.redraw()
   }
 
@@ -440,11 +444,16 @@ export class Svg2Roughjs {
    * Helper method to append the returned `SVGGElement` from
    * Rough.js when drawing in SVG mode.
    * @private
-   * @param {SVGGElement} element
+   * @param {SVGElement} element
+   * @param {SVGElement} sketchElement
    */
-  postProcessElement(element) {
-    if (this.mode === DrawingMode.SVG && element) {
-      this.canvas.appendChild(element)
+  postProcessElement(element, sketchElement) {
+    if (this.mode === DrawingMode.SVG && sketchElement) {
+      this.canvas.appendChild(sketchElement)
+      const sketchClipPathId = element.getAttribute('data-sketchy-clip-path')
+      if (sketchClipPathId) {
+        sketchElement.setAttribute('clip-path', `url(#${sketchClipPathId})`)
+      }
     }
   }
 
@@ -927,56 +936,83 @@ export class Svg2Roughjs {
   /**
    * Applies the clip-path to the CanvasContext.
    * @private
+   * @param {SVGElement} owner
    * @param {string} clipPathAttr
+   * @param {SVGTransform?} svgTransform
    */
-  applyClipPath(clipPathAttr, svgTransform) {
+  applyClipPath(owner, clipPathAttr, svgTransform) {
     const id = this.getIdFromUrl(clipPathAttr)
     if (!id) {
       return
     }
 
     const clipPath = this.idElements[id]
-    if (clipPath) {
-      // TODO clipPath: consider clipPathUnits
+    if (!clipPath) {
+      return
+    }
 
+    // TODO clipPath: consider clipPathUnits
+    let clipContainer
+    if (this.mode === DrawingMode.CANVAS) {
+      // for a canvas, we just apply a 'ctx.clip()' path
       this.ctx.beginPath()
+    } else {
+      // for SVG output we create clipPath defs
+      let targetDefs = this.canvas.querySelector('defs')
+      if (!targetDefs) {
+        targetDefs = document.createElementNS('http://www.w3.org/2000/svg', 'defs')
+        if (this.canvas.childElementCount > 0) {
+          this.canvas.insertBefore(targetDefs, this.canvas.firstElementChild)
+        } else {
+          this.canvas.appendChild(targetDefs)
+        }
+      }
+      // unfortunately, we cannot reuse clip-paths due to the 'global transform' approach
+      const sketchClipPathId = `${id}_${targetDefs.childElementCount}`
+      clipContainer = document.createElementNS('http://www.w3.org/2000/svg', 'clipPath')
+      clipContainer.id = sketchClipPathId
+      // remember the new id by storing it on the owner element
+      owner.setAttribute('data-sketchy-clip-path', sketchClipPathId)
+      targetDefs.appendChild(clipContainer)
+    }
 
-      // traverse clip-path elements in DFS
-      const stack = []
-      const children = this.getNodeChildren(clipPath)
+    // traverse clip-path elements in DFS
+    const stack = []
+    const children = this.getNodeChildren(clipPath)
+    for (let i = children.length - 1; i >= 0; i--) {
+      const childElement = children[i]
+      const childTransform = svgTransform
+        ? this.getCombinedTransform(childElement, svgTransform)
+        : this.getSvgTransform(childElement)
+      stack.push({ element: childElement, transform: childTransform })
+    }
+
+    while (stack.length > 0) {
+      const { element, transform } = stack.pop()
+
+      this.applyElementClip(element, clipContainer, transform)
+
+      if (
+        element.tagName === 'defs' ||
+        element.tagName === 'svg' ||
+        element.tagName === 'clipPath' ||
+        element.tagName === 'text'
+      ) {
+        // some elements are ignored on clippaths
+        continue
+      }
+      // process childs
+      const children = this.getNodeChildren(element)
       for (let i = children.length - 1; i >= 0; i--) {
         const childElement = children[i]
-        const childTransform = svgTransform
-          ? this.getCombinedTransform(childElement, svgTransform)
+        const childTransform = transform
+          ? this.getCombinedTransform(childElement, transform)
           : this.getSvgTransform(childElement)
         stack.push({ element: childElement, transform: childTransform })
       }
+    }
 
-      while (stack.length > 0) {
-        const { element, transform } = stack.pop()
-
-        this.applyElementClip(element, transform)
-
-        if (
-          element.tagName === 'defs' ||
-          element.tagName === 'svg' ||
-          element.tagName === 'clipPath' ||
-          element.tagName === 'text'
-        ) {
-          // some elements are ignored on clippaths
-          continue
-        }
-        // process childs
-        const children = this.getNodeChildren(element)
-        for (let i = children.length - 1; i >= 0; i--) {
-          const childElement = children[i]
-          const childTransform = transform
-            ? this.getCombinedTransform(childElement, transform)
-            : this.getSvgTransform(childElement)
-          stack.push({ element: childElement, transform: childTransform })
-        }
-      }
-
+    if (this.mode === DrawingMode.CANVAS) {
       this.ctx.clip()
     }
   }
@@ -985,21 +1021,22 @@ export class Svg2Roughjs {
    * Applies the element as clip to the CanvasContext.
    * @private
    * @param {SVGElement} element
-   * @param {SVGTransform} svgTransform
+   * @param {SVGClipPathElement} container
+   * @param {SVGTransform?} svgTransform
    */
-  applyElementClip(element, svgTransform) {
+  applyElementClip(element, container, svgTransform) {
     switch (element.tagName) {
       case 'rect':
-        this.drawRect(element, svgTransform, true)
+        this.applyRectClip(element, container, svgTransform)
         break
       case 'circle':
-        this.drawCircle(element, svgTransform, true)
+        this.applyCircleClip(element, container, svgTransform)
         break
       case 'ellipse':
-        this.drawEllipse(element, svgTransform, true)
+        this.applyEllipseClip(element, container, svgTransform)
         break
       case 'polygon':
-        this.drawPolygon(element, svgTransform, true)
+        this.applyPolygonClip(element, container, svgTransform)
         break
       // TODO clipPath: more elements
     }
@@ -1035,10 +1072,8 @@ export class Svg2Roughjs {
     if (clipPath) {
       if (this.mode === DrawingMode.CANVAS) {
         this.ctx.save()
-        this.applyClipPath(clipPath, svgTransform)
-      } else {
-        // TODO SVG
       }
+      this.applyClipPath(element, clipPath, svgTransform)
     }
 
     switch (element.tagName) {
@@ -1082,8 +1117,6 @@ export class Svg2Roughjs {
     if (clipPath) {
       if (this.mode === DrawingMode.CANVAS) {
         this.ctx.restore()
-      } else {
-        // TODO SVG
       }
     }
   }
@@ -1224,9 +1257,9 @@ export class Svg2Roughjs {
     if (style.fill && style.fill !== 'none') {
       const fillStyle = Object.assign({}, style)
       fillStyle.stroke = 'none'
-      this.postProcessElement(this.rc.polygon(transformed, fillStyle))
+      this.postProcessElement(polyline, this.rc.polygon(transformed, fillStyle))
     }
-    this.postProcessElement(this.rc.linearPath(transformed, style))
+    this.postProcessElement(polyline, this.rc.linearPath(transformed, style))
 
     this.drawMarkers(polyline, points, svgTransform)
   }
@@ -1274,13 +1307,12 @@ export class Svg2Roughjs {
   /**
    * @private
    * @param {SVGPolygonElement} polygon
+   * @param {SVGClipPathElement?} container
    * @param {SVGTransform?} svgTransform
-   * @param {boolean?} applyAsClip
    */
-  drawPolygon(polygon, svgTransform, applyAsClip) {
-    const points = this.getPointsArray(polygon)
-
-    if (applyAsClip) {
+  applyPolygonClip(polygon, container, svgTransform) {
+    if (this.mode === DrawingMode.CANVAS) {
+      const points = this.getPointsArray(polygon)
       // in the clip case, we can actually transform the entire
       // canvas without distorting the hand-drawn style
       if (points.length > 0) {
@@ -1295,8 +1327,21 @@ export class Svg2Roughjs {
         this.ctx.closePath()
         this.ctx.restore()
       }
-      return
+    } else {
+      const clip = document.createElementNS('http://www.w3.org/2000/svg', 'polygon')
+      clip.setAttribute('points', polygon.getAttribute('points'))
+      this.applyGlobalTransform(svgTransform, clip)
+      container.appendChild(clip)
     }
+  }
+
+  /**
+   * @private
+   * @param {SVGPolygonElement} polygon
+   * @param {SVGTransform?} svgTransform
+   */
+  drawPolygon(polygon, svgTransform) {
+    const points = this.getPointsArray(polygon)
 
     const transformed = points.map(p => {
       const pt = this.applyMatrix(p, svgTransform)
@@ -1304,6 +1349,7 @@ export class Svg2Roughjs {
     })
 
     this.postProcessElement(
+      polygon,
       this.rc.polygon(transformed, this.parseStyleConfig(polygon, svgTransform))
     )
 
@@ -1320,10 +1366,10 @@ export class Svg2Roughjs {
   /**
    * @private
    * @param {SVGEllipseElement} ellipse
+   * @param {SVGClipPathElement} container
    * @param {SVGTransform?} svgTransform
-   * @param {boolean?} applyAsClip
    */
-  drawEllipse(ellipse, svgTransform, applyAsClip) {
+  applyEllipseClip(ellipse, container, svgTransform) {
     const cx = ellipse.cx.baseVal.value
     const cy = ellipse.cy.baseVal.value
     const rx = ellipse.rx.baseVal.value
@@ -1334,13 +1380,37 @@ export class Svg2Roughjs {
       return
     }
 
-    if (applyAsClip) {
+    if (this.mode === DrawingMode.CANVAS) {
       // in the clip case, we can actually transform the entire
       // canvas without distorting the hand-drawn style
       this.ctx.save()
       this.applyGlobalTransform(svgTransform)
       this.ctx.ellipse(cx, cy, rx, ry, 0, 0, 2 * Math.PI)
       this.ctx.restore()
+    } else {
+      const clip = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse')
+      clip.cx.baseVal.value = cx
+      clip.cy.baseVal.value = cy
+      clip.rx.baseVal.value = rx
+      clip.ry.baseVal.value = ry
+      this.applyGlobalTransform(svgTransform, clip)
+      container.appendChild(clip)
+    }
+  }
+
+  /**
+   * @private
+   * @param {SVGEllipseElement} ellipse
+   * @param {SVGTransform?} svgTransform
+   */
+  drawEllipse(ellipse, svgTransform) {
+    const cx = ellipse.cx.baseVal.value
+    const cy = ellipse.cy.baseVal.value
+    const rx = ellipse.rx.baseVal.value
+    const ry = ellipse.ry.baseVal.value
+
+    if (rx === 0 || ry === 0) {
+      // zero-radius ellipse is not rendered
       return
     }
 
@@ -1375,16 +1445,15 @@ export class Svg2Roughjs {
       result = this.rc.path(path, this.parseStyleConfig(ellipse, svgTransform))
     }
 
-    this.postProcessElement(result)
+    this.postProcessElement(ellipse, result)
   }
-
   /**
    * @private
    * @param {SVGCircleElement} circle
+   * @param {SVGClipPathElement} container
    * @param {SVGTransform?} svgTransform
-   * @param {boolean?} applyAsClip
    */
-  drawCircle(circle, svgTransform, applyAsClip) {
+  applyCircleClip(circle, container, svgTransform) {
     const cx = circle.cx.baseVal.value
     const cy = circle.cy.baseVal.value
     const r = circle.r.baseVal.value
@@ -1394,13 +1463,35 @@ export class Svg2Roughjs {
       return
     }
 
-    if (applyAsClip) {
+    if (this.mode === DrawingMode.CANVAS) {
       // in the clip case, we can actually transform the entire
       // canvas without distorting the hand-drawn style
       this.ctx.save()
       this.applyGlobalTransform(svgTransform)
       this.ctx.ellipse(cx, cy, r, r, 0, 0, 2 * Math.PI)
       this.ctx.restore()
+    } else {
+      const clip = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
+      clip.cx.baseVal.value = cx
+      clip.cy.baseVal.value = cy
+      clip.r.baseVal.value = r
+      this.applyGlobalTransform(svgTransform, clip)
+      container.appendChild(clip)
+    }
+  }
+
+  /**
+   * @private
+   * @param {SVGCircleElement} circle
+   * @param {SVGTransform?} svgTransform
+   */
+  drawCircle(circle, svgTransform) {
+    const cx = circle.cx.baseVal.value
+    const cy = circle.cy.baseVal.value
+    const r = circle.r.baseVal.value
+
+    if (r === 0) {
+      // zero-radius circle is not rendered
       return
     }
 
@@ -1433,7 +1524,7 @@ export class Svg2Roughjs {
       result = this.rc.path(path, this.parseStyleConfig(circle, svgTransform))
     }
 
-    this.postProcessElement(result)
+    this.postProcessElement(circle, result)
   }
 
   /**
@@ -1453,6 +1544,7 @@ export class Svg2Roughjs {
     }
 
     this.postProcessElement(
+      line,
       this.rc.line(tp1.x, tp1.y, tp2.x, tp2.y, this.parseStyleConfig(line, svgTransform))
     )
 
@@ -1575,6 +1667,7 @@ export class Svg2Roughjs {
     }
 
     this.postProcessElement(
+      path,
       this.rc.path(encodedPathData, this.parseStyleConfig(path, svgTransform))
     )
 
@@ -1619,10 +1712,10 @@ export class Svg2Roughjs {
   /**
    * @private
    * @param {SVGRectElement} rect
+   * @param {SVGClipPathElement} container
    * @param {SVGTransform?} svgTransform
-   * @param {boolean?} applyAsClip
    */
-  drawRect(rect, svgTransform, applyAsClip) {
+  applyRectClip(rect, container, svgTransform) {
     const x = rect.x.baseVal.value
     const y = rect.y.baseVal.value
     const width = rect.width.baseVal.value
@@ -1635,21 +1728,10 @@ export class Svg2Roughjs {
 
     let rx = rect.hasAttribute('rx') ? rect.rx.baseVal.value : null
     let ry = rect.hasAttribute('ry') ? rect.ry.baseVal.value : null
-    if (rx || ry) {
-      // Negative values are an error and result in the default value
-      rx = rx < 0 ? 0 : rx
-      ry = ry < 0 ? 0 : ry
-      // If only one of the two values is specified, the other has the same value
-      rx = rx === null ? ry : rx
-      ry = ry === null ? rx : ry
-      // Clamp both values to half their sides' lengths
-      rx = Math.min(rx, width / 2)
-      ry = Math.min(ry, height / 2)
-    }
 
-    if (applyAsClip) {
-      // in the clip case, we can actually transform the entire
-      // canvas without distorting the hand-drawn style
+    // in the clip case, we can actually transform the entire
+    // canvas without distorting the hand-drawn style
+    if (this.mode === DrawingMode.CANVAS) {
       this.ctx.save()
       this.applyGlobalTransform(svgTransform)
       if (!rx && !ry) {
@@ -1690,7 +1772,51 @@ export class Svg2Roughjs {
         this.ctx.closePath()
       }
       this.ctx.restore()
+    } else {
+      const clip = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
+      clip.x.baseVal.value = x
+      clip.y.baseVal.value = y
+      clip.width.baseVal.value = width
+      clip.height.baseVal.value = height
+      if (rx) {
+        clip.rx.baseVal.value = rx
+      }
+      if (ry) {
+        clip.ry.baseVal.value = ry
+      }
+      this.applyGlobalTransform(svgTransform, clip)
+      container.appendChild(clip)
+    }
+  }
+
+  /**
+   * @private
+   * @param {SVGRectElement} rect
+   * @param {SVGTransform?} svgTransform
+   */
+  drawRect(rect, svgTransform) {
+    const x = rect.x.baseVal.value
+    const y = rect.y.baseVal.value
+    const width = rect.width.baseVal.value
+    const height = rect.height.baseVal.value
+
+    if (width === 0 || height === 0) {
+      // zero-width or zero-height rect will not be rendered
       return
+    }
+
+    let rx = rect.hasAttribute('rx') ? rect.rx.baseVal.value : null
+    let ry = rect.hasAttribute('ry') ? rect.ry.baseVal.value : null
+    if (rx || ry) {
+      // Negative values are an error and result in the default value
+      rx = rx < 0 ? 0 : rx
+      ry = ry < 0 ? 0 : ry
+      // If only one of the two values is specified, the other has the same value
+      rx = rx === null ? ry : rx
+      ry = ry === null ? rx : ry
+      // Clamp both values to half their sides' lengths
+      rx = Math.min(rx, width / 2)
+      ry = Math.min(ry, height / 2)
     }
 
     if (
@@ -1704,6 +1830,7 @@ export class Svg2Roughjs {
       const transformedWidth = p2.x - p1.x
       const transformedHeight = p2.y - p1.y
       this.postProcessElement(
+        rect,
         this.rc.rectangle(
           p1.x,
           p1.y,
@@ -1780,7 +1907,7 @@ export class Svg2Roughjs {
         // same as for the canvas context, use square line-cap instead of default butt here
         result.setAttribute('stroke-linecap', 'square')
       }
-      this.postProcessElement(result)
+      this.postProcessElement(rect, result)
 
       if (this.mode === DrawingMode.CANVAS) {
         this.ctx.restore()
@@ -1844,7 +1971,7 @@ export class Svg2Roughjs {
         const container = document.createElementNS('http://www.w3.org/2000/svg', 'g')
         this.applyGlobalTransform(svgTransform, container)
         container.appendChild(imageClone)
-        this.postProcessElement(container)
+        this.postProcessElement(svgImage, container)
       }
     }
   }
@@ -1865,7 +1992,7 @@ export class Svg2Roughjs {
       }
       textClone.setAttribute('font-family', this.fontFamily)
       container.appendChild(textClone)
-      this.postProcessElement(container)
+      this.postProcessElement(text, container)
       return
     }
 
