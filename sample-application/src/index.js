@@ -153,6 +153,7 @@ let codeMirrorInstance
 function run() {
   const svg2roughjs = new Svg2Roughjs('#output', RenderMode.SVG)
   svg2roughjs.backgroundColor = 'white'
+  svg2roughjs.pencilFilter = !!document.getElementById('pencilFilter').checked
   const sampleSelect = document.getElementById('sample-select')
   sampleSelect.addEventListener('change', () => {
     loadSample(svg2roughjs, sampleSelect.value)
@@ -209,6 +210,7 @@ function run() {
 
   outputFormatSelect.addEventListener('change', () => {
     svg2roughjs.renderMode = outputFormatSelect.value === 'svg' ? RenderMode.SVG : RenderMode.CANVAS
+    document.getElementById('pencilFilter').disabled = outputFormatSelect.value !== 'svg'
   })
   fillStyleSelect.addEventListener('change', () => {
     svg2roughjs.roughConfig = {
@@ -316,11 +318,11 @@ function run() {
   })
   const randomizeCheckbox = document.getElementById('randomize')
   randomizeCheckbox.addEventListener('change', e => {
-    if (randomizeCheckbox.checked) {
-      svg2roughjs.randomize = true
-    } else {
-      svg2roughjs.randomize = false
-    }
+    svg2roughjs.randomize = !!randomizeCheckbox.checked
+  })
+  const pencilCheckbox = document.getElementById('pencilFilter')
+  pencilCheckbox.addEventListener('change', e => {
+    svg2roughjs.pencilFilter = !!pencilCheckbox.checked
   })
 }
 

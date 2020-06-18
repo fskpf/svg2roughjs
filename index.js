@@ -236,6 +236,25 @@ export class Svg2Roughjs {
   }
 
   /**
+   * Whether to apply a pencil filter.
+   * Only works for SVG render mode.
+   * @param {boolean}
+   */
+  set pencilFilter(value) {
+    if (this.$pencilFilter !== value) {
+      this.$pencilFilter = value
+      this.redraw()
+    }
+  }
+
+  /**
+   * @returns {boolean}
+   */
+  get pencilFilter() {
+    return this.$pencilFilter
+  }
+
+  /**
    * Creates a new instance of Svg2roughjs.
    * @param {string | HTMLCanvasElement | SVGSVGElement} target Either a selector for the container to which a canvas should be added
    * or an `HTMLCanvasElement` or `SVGSVGElement` that should be used as output target.
@@ -315,6 +334,8 @@ export class Svg2Roughjs {
       return
     }
     this.clearCanvas()
+
+    let backgroundElement = null
     if (this.backgroundColor) {
       if (this.renderMode === RenderMode.CANVAS) {
         this.ctx.fillStyle = this.backgroundColor
@@ -325,8 +346,31 @@ export class Svg2Roughjs {
         bgRect.height.baseVal.value = this.height
         bgRect.setAttribute('fill', this.backgroundColor)
         this.canvas.appendChild(bgRect)
+        backgroundElement = bgRect
       }
     }
+    if (this.pencilFilter && this.renderMode === RenderMode.SVG) {
+      const defs = this.getOutputDefsElement()
+      if (defs) {
+        defs.appendChild(SvgTextures.roughPaperFilter)
+        defs.appendChild(SvgTextures.pencilTextureFilter)
+        const style = document.createElementNS('http://www.w3.org/1999/xhtml', 'style')
+        style.setAttribute('type', 'text/css')
+        style.innerHTML = `svg > g:not(.text-container) { filter:url(#pencilTextureFilter); }`
+        defs.appendChild(style)
+      }
+      if (backgroundElement) {
+        backgroundElement.setAttribute('filter', 'url(#roughPaperFilter)')
+      } else {
+        const roughPaperRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
+        roughPaperRect.width.baseVal.value = this.width
+        roughPaperRect.height.baseVal.value = this.height
+        roughPaperRect.setAttribute('fill', this.backgroundColor || 'white')
+        roughPaperRect.setAttribute('filter', 'url(#roughPaperFilter)')
+        this.canvas.insertBefore(roughPaperRect, this.canvas.firstElementChild)
+      }
+    }
+
     this.processRoot(this.svg, null, this.width, this.height)
   }
 
@@ -938,6 +982,26 @@ export class Svg2Roughjs {
   }
 
   /**
+   * @private
+   * @returns {SVGDefsElement|null}
+   */
+  getOutputDefsElement() {
+    if (this.renderMode === RenderMode.SVG) {
+      let outputDefs = this.canvas.querySelector('defs')
+      if (!outputDefs) {
+        outputDefs = document.createElementNS('http://www.w3.org/2000/svg', 'defs')
+        if (this.canvas.childElementCount > 0) {
+          this.canvas.insertBefore(outputDefs, this.canvas.firstElementChild)
+        } else {
+          this.canvas.appendChild(outputDefs)
+        }
+      }
+      return outputDefs
+    }
+    return null
+  }
+
+  /**
    * Applies the clip-path to the CanvasContext.
    * @private
    * @param {SVGElement} owner
@@ -962,15 +1026,7 @@ export class Svg2Roughjs {
       this.ctx.beginPath()
     } else {
       // for SVG output we create clipPath defs
-      let targetDefs = this.canvas.querySelector('defs')
-      if (!targetDefs) {
-        targetDefs = document.createElementNS('http://www.w3.org/2000/svg', 'defs')
-        if (this.canvas.childElementCount > 0) {
-          this.canvas.insertBefore(targetDefs, this.canvas.firstElementChild)
-        } else {
-          this.canvas.appendChild(targetDefs)
-        }
-      }
+      let targetDefs = this.getOutputDefsElement()
       // unfortunately, we cannot reuse clip-paths due to the 'global transform' approach
       const sketchClipPathId = `${id}_${targetDefs.childElementCount}`
       clipContainer = document.createElementNS('http://www.w3.org/2000/svg', 'clipPath')
@@ -1988,6 +2044,7 @@ export class Svg2Roughjs {
   drawText(text, svgTransform) {
     if (this.renderMode === RenderMode.SVG) {
       const container = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+      container.setAttribute('class', 'text-container')
       this.applyGlobalTransform(svgTransform, container)
       const textClone = text.cloneNode(true)
       if (textClone.transform.baseVal.numberOfItems > 0) {
@@ -2165,5 +2222,90 @@ export class Svg2Roughjs {
       }
     }
     return children
+  }
+}
+
+class SvgTextures {
+  static get roughPaperFilter() {
+    const filter = document.createElementNS('http://www.w3.org/2000/svg', 'filter')
+    filter.setAttribute('id', 'roughPaperFilter')
+    filter.setAttribute('x', '0')
+    filter.setAttribute('y', '0')
+    filter.setAttribute('width', '100%')
+    filter.setAttribute('height', '100%')
+    filter.setAttribute('filterUnits', 'objectBoundingBox')
+
+    const feTurbulence = document.createElementNS('http://www.w3.org/2000/svg', 'feTurbulence')
+    feTurbulence.setAttribute('type', 'fractalNoise')
+    feTurbulence.setAttribute('baseFrequency', '128')
+    feTurbulence.setAttribute('numOctaves', '1')
+    feTurbulence.setAttribute('result', 'noise')
+    filter.appendChild(feTurbulence)
+
+    const feDiffuseLighting = document.createElementNS(
+      'http://www.w3.org/2000/svg',
+      'feDiffuseLighting'
+    )
+    feDiffuseLighting.setAttribute('in', 'noise')
+    feDiffuseLighting.setAttribute('lighting-color', 'white')
+    feDiffuseLighting.setAttribute('surfaceScale', '1')
+    feDiffuseLighting.setAttribute('result', 'diffLight')
+    const feDistantLight = document.createElementNS('http://www.w3.org/2000/svg', 'feDistantLight')
+    feDistantLight.setAttribute('azimuth', '45')
+    feDistantLight.setAttribute('elevation', '55')
+    feDiffuseLighting.appendChild(feDistantLight)
+    filter.appendChild(feDiffuseLighting)
+
+    const feGaussianBlur = document.createElementNS('http://www.w3.org/2000/svg', 'feGaussianBlur')
+    feGaussianBlur.setAttribute('in', 'diffLight')
+    feGaussianBlur.setAttribute('stdDeviation', '0.75')
+    feGaussianBlur.setAttribute('result', 'dlblur')
+    filter.appendChild(feGaussianBlur)
+
+    const feComposite = document.createElementNS('http://www.w3.org/2000/svg', 'feComposite')
+    feComposite.setAttribute('operator', 'arithmetic')
+    feComposite.setAttribute('k1', '1.2')
+    feComposite.setAttribute('k2', '0')
+    feComposite.setAttribute('k3', '0')
+    feComposite.setAttribute('k4', '0')
+    feComposite.setAttribute('in', 'dlblur')
+    feComposite.setAttribute('in2', 'SourceGraphic')
+    feComposite.setAttribute('result', 'out')
+    filter.appendChild(feComposite)
+
+    return filter
+  }
+
+  static get pencilTextureFilter() {
+    const filter = document.createElementNS('http://www.w3.org/2000/svg', 'filter')
+    filter.setAttribute('id', 'pencilTextureFilter')
+    filter.setAttribute('x', '0%')
+    filter.setAttribute('y', '0%')
+    filter.setAttribute('width', '100%')
+    filter.setAttribute('height', '100%')
+    filter.setAttribute('filterUnits', 'objectBoundingBox')
+
+    const feTurbulence = document.createElementNS('http://www.w3.org/2000/svg', 'feTurbulence')
+    feTurbulence.setAttribute('type', 'fractalNoise')
+    feTurbulence.setAttribute('baseFrequency', '2')
+    feTurbulence.setAttribute('numOctaves', '5')
+    feTurbulence.setAttribute('stitchTiles', 'stitch')
+    feTurbulence.setAttribute('result', 'f1')
+    filter.appendChild(feTurbulence)
+
+    const feColorMatrix = document.createElementNS('http://www.w3.org/2000/svg', 'feColorMatrix')
+    feColorMatrix.setAttribute('type', 'matrix')
+    feColorMatrix.setAttribute('values', '0 0 0 0 0, 0 0 0 0 0, 0 0 0 0 0, 0 0 0 -1.5 1.5')
+    feColorMatrix.setAttribute('result', 'f2')
+    filter.appendChild(feColorMatrix)
+
+    const feComposite = document.createElementNS('http://www.w3.org/2000/svg', 'feComposite')
+    feComposite.setAttribute('operator', 'in')
+    feComposite.setAttribute('in', 'SourceGraphic')
+    feComposite.setAttribute('in2', 'f2')
+    feComposite.setAttribute('result', 'f3')
+    filter.appendChild(feComposite)
+
+    return filter
   }
 }

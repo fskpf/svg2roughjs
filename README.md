@@ -62,6 +62,7 @@ Property | Description | Default
 `fontFamily` | Font with which text elements should be drawn.<br>If set to `null`, the text element's original font-family is used. | `'Comic Sans MS, cursive'`
 `backgroundColor` | Sets a background color onto which the sketch is drawn. | `transparent`
 `randomize` | Randomize Rough.js' fillWeight, hachureAngle and hachureGap. | `true`
+`pencilFilter` | Applies a pencil effect on the SVG rendering.<br>Has no effect on canvas render mode. | `false`
 
 ## Sample Images
 
