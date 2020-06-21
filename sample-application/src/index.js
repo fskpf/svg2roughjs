@@ -237,6 +237,7 @@ function run() {
   const opacityInput = document.getElementById('opacity')
   opacityInput.addEventListener('change', () => {
     document.getElementById('input').style.opacity = opacityInput.value
+    document.getElementById('output').style.opacity = 1 - parseFloat(opacityInput.value)
   })
   const opacityLabel = document.querySelector('label[for=opacity]')
   opacityLabel.addEventListener('click', () => {
@@ -244,6 +245,7 @@ function run() {
     const newOpacity = currentOpacity < 1 ? 1 : 0
     document.getElementById('input').style.opacity = newOpacity
     opacityInput.value = newOpacity
+    document.getElementById('output').style.opacity = 1 - newOpacity
   })
 
   function loadFile(file) {
