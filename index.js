@@ -269,9 +269,9 @@ export class Svg2Roughjs {
       throw new Error('No target provided')
     }
     if (typeof target === 'object') {
-      if (target.tagName === 'CANVAS' || target.tagName === 'SVG') {
+      if (target.tagName === 'canvas' || target.tagName === 'svg') {
         this.canvas = target
-        this.$renderMode = target.tagName === 'CANVAS' ? RenderMode.CANVAS : RenderMode.SVG
+        this.$renderMode = target.tagName === 'canvas' ? RenderMode.CANVAS : RenderMode.SVG
       } else {
         throw new Error('Target object is not of type HMTLCanvaseElement or SVGSVGElement')
       }
