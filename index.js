@@ -2064,7 +2064,11 @@ export class Svg2Roughjs {
         // remove transformation, since it is transformed globally by its parent container
         textClone.transform.baseVal.clear()
       }
-      textClone.setAttribute('font-family', this.fontFamily)
+
+      const style = textClone.getAttribute('style')
+      const cssFont = this.getCssFont(text, true)
+      textClone.setAttribute('style', style ? cssFont + style : cssFont)
+
       container.appendChild(textClone)
       this.postProcessElement(text, container)
       return
@@ -2075,7 +2079,7 @@ export class Svg2Roughjs {
     let textLocation = new Point(this.getLengthInPx(text.x), this.getLengthInPx(text.y))
 
     // text style
-    this.ctx.font = this.getCssFont(text, svgTransform)
+    this.ctx.font = this.getCssFont(text)
     const style = this.parseStyleConfig(text, svgTransform)
     if (style.fill) {
       this.ctx.fillStyle = style.fill
@@ -2184,29 +2188,29 @@ export class Svg2Roughjs {
   /**
    * @private
    * @param {SVGTextElement} text
-   * @param {SVGTransform?} svgTransform
+   * @param {boolean?} asStyleString Formats the return value as inline style string
    * @return {string}
    */
-  getCssFont(text, svgTransform) {
+  getCssFont(text, asStyleString) {
     let cssFont = ''
     const fontStyle = this.getEffectiveAttribute(text, 'font-style', this.$useElementContext)
     if (fontStyle) {
-      cssFont += fontStyle
+      cssFont += asStyleString ? `font-style: ${fontStyle};` : fontStyle
     }
     const fontWeight = this.getEffectiveAttribute(text, 'font-weight', this.$useElementContext)
     if (fontWeight) {
-      cssFont += ` ${fontWeight}`
+      cssFont += asStyleString ? `font-weight: ${fontWeight};` : ` ${fontWeight}`
     }
     let fontSize = this.getEffectiveAttribute(text, 'font-size', this.$useElementContext)
     if (fontSize) {
-      cssFont += ` ${fontSize}`
+      cssFont += asStyleString ? `font-size: ${fontSize};` : ` ${fontSize}`
     }
     if (this.fontFamily) {
-      cssFont += ` ${this.fontFamily}`
+      cssFont += asStyleString ? `font-family: ${this.fontFamily};` : ` ${this.fontFamily}`
     } else {
       const fontFamily = this.getEffectiveAttribute(text, 'font-family', this.$useElementContext)
       if (fontFamily) {
-        cssFont += ` ${fontFamily}`
+        cssFont += asStyleString ? `font-family: ${this.fontFamily};` : ` ${this.fontFamily}`
       }
     }
 
