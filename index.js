@@ -2235,7 +2235,7 @@ export class Svg2Roughjs {
     } else {
       const fontFamily = this.getEffectiveAttribute(text, 'font-family', this.$useElementContext)
       if (fontFamily) {
-        cssFont += asStyleString ? `font-family: ${this.fontFamily};` : ` ${this.fontFamily}`
+        cssFont += asStyleString ? `font-family: ${fontFamily};` : ` ${fontFamily}`
       }
     }
 
