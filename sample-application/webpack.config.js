@@ -34,7 +34,7 @@ module.exports = {
     new HtmlWebpackPlugin({
       template: './src/index.html'
     }),
-    new CopyWebpackPlugin([{ from: 'static', to: 'static' }])
+    new CopyWebpackPlugin({ patterns: [{ from: 'static', to: 'static' }] })
   ],
   module: {
     rules: [
