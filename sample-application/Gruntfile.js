@@ -13,6 +13,8 @@ module.exports = function(grunt) {
       svg2roughjs: {
         files: [
           { src: '../index.js', dest: './node_modules/svg2roughjs/index.js' },
+          { src: '../index.js.map', dest: './node_modules/svg2roughjs/index.js.map' },
+          { src: '../index.d.ts', dest: './node_modules/svg2roughjs/index.d.ts' },
           { src: '../package.json', dest: './node_modules/svg2roughjs/package.json' },
           { src: '../README.md', dest: './node_modules/svg2roughjs/README.md' },
           { src: '../LICENSE.md', dest: './node_modules/svg2roughjs/LICENSE.md' }
