@@ -39,7 +39,7 @@ export class RenderMode {
     return 'RenderMode.SVG'
   }
   static get CANVAS() {
-    'RenderMode.CANVAS'
+    return 'RenderMode.CANVAS'
   }
 }
 
