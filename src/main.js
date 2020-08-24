@@ -1,38 +1,9 @@
 import tinycolor from 'tinycolor2'
 import { SVGPathData, encodeSVGPath, SVGPathDataTransformer } from 'svg-pathdata'
 import rough from 'roughjs/bundled/rough.esm'
+import { Point } from './point'
 
 var units = require('units-css')
-
-/**
- * A small helper class that represents a point.
- */
-class Point {
-  /**
-   * @return {number}
-   */
-  get x() {
-    return this.$x
-  }
-  /**
-   * @return {number}
-   */
-  get y() {
-    return this.$y
-  }
-  /**
-   * @param {number} x
-   * @param {number} y
-   */
-  constructor(x, y) {
-    this.$x = x || 0
-    this.$y = y || 0
-  }
-
-  toString() {
-    return `${this.x},${this.y}`
-  }
-}
 
 export class RenderMode {
   static get SVG() {

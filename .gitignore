@@ -2,3 +2,4 @@ node_modules
 sample-application/dist
 svg2roughjs-*.tgz
 .idea
+dist
