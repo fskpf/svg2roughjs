@@ -30,26 +30,51 @@ var Point = /** @class */ (function () {
     return Point;
 }());
 
-var units = require('units-css');
-var RenderMode = /** @class */ (function () {
-    function RenderMode() {
+var RenderMode;
+(function (RenderMode) {
+    RenderMode[RenderMode["SVG"] = 0] = "SVG";
+    RenderMode[RenderMode["CANVAS"] = 1] = "CANVAS";
+})(RenderMode || (RenderMode = {}));
+
+var SvgTextures = /** @class */ (function () {
+    function SvgTextures() {
     }
-    Object.defineProperty(RenderMode, "SVG", {
+    Object.defineProperty(SvgTextures, "pencilTextureFilter", {
         get: function () {
-            return 'RenderMode.SVG';
+            var filter = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
+            filter.setAttribute('id', 'pencilTextureFilter');
+            filter.setAttribute('x', '0%');
+            filter.setAttribute('y', '0%');
+            filter.setAttribute('width', '100%');
+            filter.setAttribute('height', '100%');
+            filter.setAttribute('filterUnits', 'objectBoundingBox');
+            var feTurbulence = document.createElementNS('http://www.w3.org/2000/svg', 'feTurbulence');
+            feTurbulence.setAttribute('type', 'fractalNoise');
+            feTurbulence.setAttribute('baseFrequency', '2');
+            feTurbulence.setAttribute('numOctaves', '5');
+            feTurbulence.setAttribute('stitchTiles', 'stitch');
+            feTurbulence.setAttribute('result', 'f1');
+            filter.appendChild(feTurbulence);
+            var feColorMatrix = document.createElementNS('http://www.w3.org/2000/svg', 'feColorMatrix');
+            feColorMatrix.setAttribute('type', 'matrix');
+            feColorMatrix.setAttribute('values', '0 0 0 0 0, 0 0 0 0 0, 0 0 0 0 0, 0 0 0 -1.5 1.5');
+            feColorMatrix.setAttribute('result', 'f2');
+            filter.appendChild(feColorMatrix);
+            var feComposite = document.createElementNS('http://www.w3.org/2000/svg', 'feComposite');
+            feComposite.setAttribute('operator', 'in');
+            feComposite.setAttribute('in', 'SourceGraphic');
+            feComposite.setAttribute('in2', 'f2');
+            feComposite.setAttribute('result', 'f3');
+            filter.appendChild(feComposite);
+            return filter;
         },
         enumerable: false,
         configurable: true
     });
-    Object.defineProperty(RenderMode, "CANVAS", {
-        get: function () {
-            return 'RenderMode.CANVAS';
-        },
-        enumerable: false,
-        configurable: true
-    });
-    return RenderMode;
+    return SvgTextures;
 }());
+
+var units = require('units-css');
 /**
  * Svg2Roughjs parses a given SVG and draws it with Rough.js
  * in a canvas.
@@ -2090,43 +2115,6 @@ var Svg2Roughjs = /** @class */ (function () {
         });
     };
     return Svg2Roughjs;
-}());
-var SvgTextures = /** @class */ (function () {
-    function SvgTextures() {
-    }
-    Object.defineProperty(SvgTextures, "pencilTextureFilter", {
-        get: function () {
-            var filter = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
-            filter.setAttribute('id', 'pencilTextureFilter');
-            filter.setAttribute('x', '0%');
-            filter.setAttribute('y', '0%');
-            filter.setAttribute('width', '100%');
-            filter.setAttribute('height', '100%');
-            filter.setAttribute('filterUnits', 'objectBoundingBox');
-            var feTurbulence = document.createElementNS('http://www.w3.org/2000/svg', 'feTurbulence');
-            feTurbulence.setAttribute('type', 'fractalNoise');
-            feTurbulence.setAttribute('baseFrequency', '2');
-            feTurbulence.setAttribute('numOctaves', '5');
-            feTurbulence.setAttribute('stitchTiles', 'stitch');
-            feTurbulence.setAttribute('result', 'f1');
-            filter.appendChild(feTurbulence);
-            var feColorMatrix = document.createElementNS('http://www.w3.org/2000/svg', 'feColorMatrix');
-            feColorMatrix.setAttribute('type', 'matrix');
-            feColorMatrix.setAttribute('values', '0 0 0 0 0, 0 0 0 0 0, 0 0 0 0 0, 0 0 0 -1.5 1.5');
-            feColorMatrix.setAttribute('result', 'f2');
-            filter.appendChild(feColorMatrix);
-            var feComposite = document.createElementNS('http://www.w3.org/2000/svg', 'feComposite');
-            feComposite.setAttribute('operator', 'in');
-            feComposite.setAttribute('in', 'SourceGraphic');
-            feComposite.setAttribute('in2', 'f2');
-            feComposite.setAttribute('result', 'f3');
-            filter.appendChild(feComposite);
-            return filter;
-        },
-        enumerable: false,
-        configurable: true
-    });
-    return SvgTextures;
 }());
 
 export { RenderMode, Svg2Roughjs };

@@ -1,7 +1,8 @@
-declare class RenderMode {
-    static get SVG(): string;
-    static get CANVAS(): string;
+declare enum RenderMode {
+    SVG = 0,
+    CANVAS = 1
 }
+
 /**
  * Svg2Roughjs parses a given SVG and draws it with Rough.js
  * in a canvas.
