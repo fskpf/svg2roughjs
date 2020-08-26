@@ -95,7 +95,9 @@ var Svg2Roughjs = /** @class */ (function () {
         if (roughConfig === void 0) { roughConfig = {}; }
         this.width = 0;
         this.height = 0;
-        this.$renderMode = null;
+        this.$renderMode = RenderMode.CANVAS;
+        this.ctx = null;
+        this.$pencilFilter = false;
         this.idElements = {};
         if (!target) {
             throw new Error('No target provided');
@@ -129,7 +131,7 @@ var Svg2Roughjs = /** @class */ (function () {
             container.appendChild(this.canvas);
         }
         // the Rough.js instance to draw the SVG elements
-        if (this.renderMode === RenderMode.CANVAS) {
+        if (this.renderMode === RenderMode.CANVAS && this.ctx) {
             var canvas = this.canvas;
             this.rc = rough.canvas(canvas, roughConfig);
             // canvas context for convenient access
@@ -186,7 +188,7 @@ var Svg2Roughjs = /** @class */ (function () {
                 else {
                     this.height = 150;
                 }
-                if (this.renderMode === RenderMode.CANVAS) {
+                if (this.renderMode === RenderMode.CANVAS && this.ctx) {
                     var canvas = this.canvas;
                     canvas.width = this.width;
                     canvas.height = this.height;
@@ -215,7 +217,7 @@ var Svg2Roughjs = /** @class */ (function () {
          */
         set: function (config) {
             this.$roughConfig = config;
-            if (this.renderMode === RenderMode.CANVAS) {
+            if (this.renderMode === RenderMode.CANVAS && this.ctx) {
                 this.rc = rough.canvas(this.canvas, this.$roughConfig);
             }
             else {
@@ -287,7 +289,6 @@ var Svg2Roughjs = /** @class */ (function () {
          * element with either a new HTML canvas or new SVG element.
          */
         set: function (mode) {
-            var _a, _b;
             if (this.$renderMode === mode) {
                 return;
             }
@@ -297,8 +298,8 @@ var Svg2Roughjs = /** @class */ (function () {
             var target;
             if (mode === RenderMode.CANVAS) {
                 target = document.createElement('canvas');
-                target.width = this.width || 0;
-                target.height = this.height || 0;
+                target.width = this.width;
+                target.height = this.height;
                 this.ctx = target.getContext('2d');
             }
             else {
@@ -306,8 +307,8 @@ var Svg2Roughjs = /** @class */ (function () {
                 target = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
                 target.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
                 target.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
-                target.setAttribute('width', ((_a = this.width) === null || _a === void 0 ? void 0 : _a.toString()) || '0');
-                target.setAttribute('height', ((_b = this.height) === null || _b === void 0 ? void 0 : _b.toString()) || '0');
+                target.setAttribute('width', this.width.toString());
+                target.setAttribute('height', this.height.toString());
             }
             parent.appendChild(target);
             this.canvas = target;
@@ -348,7 +349,7 @@ var Svg2Roughjs = /** @class */ (function () {
             return;
         }
         // reset target element
-        if (this.renderMode === RenderMode.CANVAS) {
+        if (this.renderMode === RenderMode.CANVAS && this.ctx) {
             this.initializeCanvas(this.canvas);
         }
         else {
@@ -361,10 +362,12 @@ var Svg2Roughjs = /** @class */ (function () {
      */
     Svg2Roughjs.prototype.initializeCanvas = function (canvas) {
         this.ctx = canvas.getContext('2d');
-        this.ctx.clearRect(0, 0, this.width, this.height);
-        if (this.backgroundColor) {
-            this.ctx.fillStyle = this.backgroundColor;
-            this.ctx.fillRect(0, 0, this.width, this.height);
+        if (this.ctx) {
+            this.ctx.clearRect(0, 0, this.width, this.height);
+            if (this.backgroundColor) {
+                this.ctx.fillStyle = this.backgroundColor;
+                this.ctx.fillRect(0, 0, this.width, this.height);
+            }
         }
     };
     /**
@@ -539,7 +542,7 @@ var Svg2Roughjs = /** @class */ (function () {
     Svg2Roughjs.prototype.applyGlobalTransform = function (svgTransform, element) {
         if (svgTransform && svgTransform.matrix) {
             var matrix = svgTransform.matrix;
-            if (this.renderMode === RenderMode.CANVAS) {
+            if (this.renderMode === RenderMode.CANVAS && this.ctx) {
                 // IE11 doesn't support SVGMatrix as parameter for setTransform
                 this.ctx.setTransform(matrix.a, matrix.b, matrix.c, matrix.d, matrix.e, matrix.f);
             }
@@ -960,7 +963,7 @@ var Svg2Roughjs = /** @class */ (function () {
         }
         // TODO clipPath: consider clipPathUnits
         var clipContainer;
-        if (this.renderMode === RenderMode.CANVAS) {
+        if (this.renderMode === RenderMode.CANVAS && this.ctx) {
             // for a canvas, we just apply a 'ctx.clip()' path
             this.ctx.beginPath();
         }
@@ -1005,7 +1008,7 @@ var Svg2Roughjs = /** @class */ (function () {
                 stack.push({ element: childElement, transform: childTransform });
             }
         }
-        if (this.renderMode === RenderMode.CANVAS) {
+        if (this.renderMode === RenderMode.CANVAS && this.ctx) {
             this.ctx.clip();
         }
     };
@@ -1048,7 +1051,7 @@ var Svg2Roughjs = /** @class */ (function () {
         // possibly apply a clip on the canvas before drawing on it
         var clipPath = element.getAttribute('clip-path');
         if (clipPath) {
-            if (this.renderMode === RenderMode.CANVAS) {
+            if (this.renderMode === RenderMode.CANVAS && this.ctx) {
                 this.ctx.save();
             }
             this.applyClipPath(element, clipPath, svgTransform);
@@ -1091,7 +1094,7 @@ var Svg2Roughjs = /** @class */ (function () {
         }
         // re-set the clip for the next element
         if (clipPath) {
-            if (this.renderMode === RenderMode.CANVAS) {
+            if (this.renderMode === RenderMode.CANVAS && this.ctx) {
                 this.ctx.restore();
             }
         }
@@ -1244,7 +1247,7 @@ var Svg2Roughjs = /** @class */ (function () {
         return points;
     };
     Svg2Roughjs.prototype.applyPolygonClip = function (polygon, container, svgTransform) {
-        if (this.renderMode === RenderMode.CANVAS) {
+        if (this.renderMode === RenderMode.CANVAS && this.ctx) {
             var points = this.getPointsArray(polygon);
             // in the clip case, we can actually transform the entire
             // canvas without distorting the hand-drawn style
@@ -1294,7 +1297,7 @@ var Svg2Roughjs = /** @class */ (function () {
             // zero-radius ellipse is not rendered
             return;
         }
-        if (this.renderMode === RenderMode.CANVAS) {
+        if (this.renderMode === RenderMode.CANVAS && this.ctx) {
             // in the clip case, we can actually transform the entire
             // canvas without distorting the hand-drawn style
             this.ctx.save();
@@ -1356,7 +1359,7 @@ var Svg2Roughjs = /** @class */ (function () {
             // zero-radius circle is not rendered
             return;
         }
-        if (this.renderMode === RenderMode.CANVAS) {
+        if (this.renderMode === RenderMode.CANVAS && this.ctx) {
             // in the clip case, we can actually transform the entire
             // canvas without distorting the hand-drawn style
             this.ctx.save();
@@ -1549,7 +1552,7 @@ var Svg2Roughjs = /** @class */ (function () {
         var ry = rect.hasAttribute('ry') ? rect.ry.baseVal.value : 0;
         // in the clip case, we can actually transform the entire
         // canvas without distorting the hand-drawn style
-        if (this.renderMode === RenderMode.CANVAS) {
+        if (this.renderMode === RenderMode.CANVAS && this.ctx) {
             this.ctx.save();
             this.applyGlobalTransform(svgTransform);
             if (!rx && !ry) {
@@ -1673,7 +1676,7 @@ var Svg2Roughjs = /** @class */ (function () {
                 path += 'z';
             }
             // must use square line cap here so it looks like a rectangle. Default seems to be butt.
-            if (this.renderMode === RenderMode.CANVAS) {
+            if (this.renderMode === RenderMode.CANVAS && this.ctx) {
                 this.ctx.save();
                 this.ctx.lineCap = 'square';
             }
@@ -1683,7 +1686,7 @@ var Svg2Roughjs = /** @class */ (function () {
                 result.setAttribute('stroke-linecap', 'square');
             }
             this.postProcessElement(rect, result);
-            if (this.renderMode === RenderMode.CANVAS) {
+            if (this.renderMode === RenderMode.CANVAS && this.ctx) {
                 this.ctx.restore();
             }
         }
@@ -1731,7 +1734,9 @@ var Svg2Roughjs = /** @class */ (function () {
                 var dy_1 = matrix.f;
                 var img_1 = new Image();
                 img_1.onload = function () {
-                    _this.ctx.drawImage(img_1, dx_1, dy_1);
+                    if (_this.ctx) {
+                        _this.ctx.drawImage(img_1, dx_1, dy_1);
+                    }
                 };
                 img_1.src = href;
             }
@@ -1759,6 +1764,9 @@ var Svg2Roughjs = /** @class */ (function () {
             textClone.setAttribute('style', style_1 ? cssFont + style_1 : cssFont);
             container.appendChild(textClone);
             this.postProcessElement(text, container);
+            return;
+        }
+        if (!this.ctx) {
             return;
         }
         this.ctx.save();

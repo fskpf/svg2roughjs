@@ -50,14 +50,14 @@ export class Svg2Roughjs {
   private width: number = 0
   private height: number = 0
   private canvas?: HTMLCanvasElement | SVGSVGElement
-  private $roughConfig: RoughConfig | null
+  private $roughConfig: RoughConfig
   private rc: any
   private $fontFamily: string | null
   private $randomize: boolean
   private $backgroundColor?: string
-  private $renderMode: RenderMode | null = null
-  private ctx?: CanvasRenderingContext2D | null
-  private $pencilFilter?: boolean
+  private $renderMode: RenderMode = RenderMode.CANVAS
+  private ctx: CanvasRenderingContext2D | null = null
+  private $pencilFilter: boolean = false
   private idElements: { [key: string]: SVGElement | string } = {}
   private $useElementContext?: UseContext
 
@@ -95,7 +95,7 @@ export class Svg2Roughjs {
         this.height = 150
       }
 
-      if (this.renderMode === RenderMode.CANVAS) {
+      if (this.renderMode === RenderMode.CANVAS && this.ctx) {
         const canvas = this.canvas as HTMLCanvasElement
         canvas.width = this.width
         canvas.height = this.height
@@ -121,9 +121,9 @@ export class Svg2Roughjs {
    * any SVG element.
    * Changing this property triggers a repaint.
    */
-  set roughConfig(config: RoughConfig | null) {
+  set roughConfig(config: RoughConfig) {
     this.$roughConfig = config
-    if (this.renderMode === RenderMode.CANVAS) {
+    if (this.renderMode === RenderMode.CANVAS && this.ctx) {
       this.rc = rough.canvas(this.canvas, this.$roughConfig)
     } else {
       this.rc = rough.svg(this.canvas, this.$roughConfig)
@@ -131,7 +131,7 @@ export class Svg2Roughjs {
     this.redraw()
   }
 
-  get roughConfig(): RoughConfig | null {
+  get roughConfig(): RoughConfig {
     return this.$roughConfig
   }
 
@@ -185,7 +185,7 @@ export class Svg2Roughjs {
    * Changing this property will replace the current output
    * element with either a new HTML canvas or new SVG element.
    */
-  set renderMode(mode: RenderMode | null) {
+  set renderMode(mode: RenderMode) {
     if (this.$renderMode === mode) {
       return
     }
@@ -197,16 +197,16 @@ export class Svg2Roughjs {
     let target: HTMLCanvasElement | SVGSVGElement
     if (mode === RenderMode.CANVAS) {
       target = document.createElement('canvas')
-      target.width = this.width || 0
-      target.height = this.height || 0
+      target.width = this.width
+      target.height = this.height
       this.ctx = target.getContext('2d')
     } else {
       this.ctx = null
       target = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
       target.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
       target.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink')
-      target.setAttribute('width', this.width?.toString() || '0')
-      target.setAttribute('height', this.height?.toString() || '0')
+      target.setAttribute('width', this.width.toString())
+      target.setAttribute('height', this.height.toString())
     }
     parent!.appendChild(target)
     this.canvas = target
@@ -220,7 +220,7 @@ export class Svg2Roughjs {
     this.redraw()
   }
 
-  get renderMode(): RenderMode | null {
+  get renderMode(): RenderMode {
     return this.$renderMode
   }
 
@@ -228,14 +228,14 @@ export class Svg2Roughjs {
    * Whether to apply a pencil filter.
    * Only works for SVG render mode.
    */
-  set pencilFilter(value: boolean | undefined) {
+  set pencilFilter(value: boolean) {
     if (this.$pencilFilter !== value) {
       this.$pencilFilter = value
       this.redraw()
     }
   }
 
-  get pencilFilter(): boolean | undefined {
+  get pencilFilter(): boolean {
     return this.$pencilFilter
   }
 
@@ -251,8 +251,8 @@ export class Svg2Roughjs {
    */
   constructor(
     target: string | HTMLCanvasElement | SVGSVGElement,
-    renderMode: RenderMode | null = RenderMode.SVG,
-    roughConfig: RoughConfig | null = {}
+    renderMode: RenderMode = RenderMode.SVG,
+    roughConfig: RoughConfig = {}
   ) {
     if (!target) {
       throw new Error('No target provided')
@@ -284,7 +284,7 @@ export class Svg2Roughjs {
     }
 
     // the Rough.js instance to draw the SVG elements
-    if (this.renderMode === RenderMode.CANVAS) {
+    if (this.renderMode === RenderMode.CANVAS && this.ctx) {
       const canvas = this.canvas as HTMLCanvasElement
       this.rc = rough.canvas(canvas, roughConfig)
       // canvas context for convenient access
@@ -311,7 +311,7 @@ export class Svg2Roughjs {
     }
 
     // reset target element
-    if (this.renderMode === RenderMode.CANVAS) {
+    if (this.renderMode === RenderMode.CANVAS && this.ctx) {
       this.initializeCanvas(this.canvas as HTMLCanvasElement)
     } else {
       this.initializeSvg(this.canvas as SVGSVGElement)
@@ -324,11 +324,13 @@ export class Svg2Roughjs {
    * Prepares the given canvas element depending on the set properties.
    */
   private initializeCanvas(canvas: HTMLCanvasElement) {
-    this.ctx = canvas.getContext('2d')!
-    this.ctx.clearRect(0, 0, this.width, this.height)
-    if (this.backgroundColor) {
-      this.ctx.fillStyle = this.backgroundColor
-      this.ctx.fillRect(0, 0, this.width, this.height)
+    this.ctx = canvas.getContext('2d')
+    if (this.ctx) {
+      this.ctx.clearRect(0, 0, this.width, this.height)
+      if (this.backgroundColor) {
+        this.ctx.fillStyle = this.backgroundColor
+        this.ctx.fillRect(0, 0, this.width, this.height)
+      }
     }
   }
 
@@ -536,9 +538,9 @@ export class Svg2Roughjs {
   ) {
     if (svgTransform && svgTransform.matrix) {
       const matrix = svgTransform.matrix
-      if (this.renderMode === RenderMode.CANVAS) {
+      if (this.renderMode === RenderMode.CANVAS && this.ctx) {
         // IE11 doesn't support SVGMatrix as parameter for setTransform
-        this.ctx!.setTransform(matrix.a, matrix.b, matrix.c, matrix.d, matrix.e, matrix.f)
+        this.ctx.setTransform(matrix.a, matrix.b, matrix.c, matrix.d, matrix.e, matrix.f)
       } else if (this.renderMode === RenderMode.SVG && element) {
         if (element.transform.baseVal.numberOfItems > 0) {
           element.transform.baseVal.getItem(0).setMatrix(matrix)
@@ -1012,9 +1014,9 @@ export class Svg2Roughjs {
 
     // TODO clipPath: consider clipPathUnits
     let clipContainer: SVGClipPathElement | undefined
-    if (this.renderMode === RenderMode.CANVAS) {
+    if (this.renderMode === RenderMode.CANVAS && this.ctx) {
       // for a canvas, we just apply a 'ctx.clip()' path
-      this.ctx!.beginPath()
+      this.ctx.beginPath()
     } else {
       // for SVG output we create clipPath defs
       let targetDefs = this.getDefsElement(this.canvas as SVGSVGElement)
@@ -1063,8 +1065,8 @@ export class Svg2Roughjs {
       }
     }
 
-    if (this.renderMode === RenderMode.CANVAS) {
-      this.ctx!.clip()
+    if (this.renderMode === RenderMode.CANVAS && this.ctx) {
+      this.ctx.clip()
     }
   }
 
@@ -1114,8 +1116,8 @@ export class Svg2Roughjs {
     // possibly apply a clip on the canvas before drawing on it
     const clipPath = element.getAttribute('clip-path')
     if (clipPath) {
-      if (this.renderMode === RenderMode.CANVAS) {
-        this.ctx!.save()
+      if (this.renderMode === RenderMode.CANVAS && this.ctx) {
+        this.ctx.save()
       }
       this.applyClipPath(element, clipPath, svgTransform)
     }
@@ -1159,8 +1161,8 @@ export class Svg2Roughjs {
 
     // re-set the clip for the next element
     if (clipPath) {
-      if (this.renderMode === RenderMode.CANVAS) {
-        this.ctx!.restore()
+      if (this.renderMode === RenderMode.CANVAS && this.ctx) {
+        this.ctx.restore()
       }
     }
   }
@@ -1339,21 +1341,21 @@ export class Svg2Roughjs {
     container: SVGClipPathElement | null,
     svgTransform: SVGTransform | null
   ) {
-    if (this.renderMode === RenderMode.CANVAS) {
+    if (this.renderMode === RenderMode.CANVAS && this.ctx) {
       const points = this.getPointsArray(polygon)
       // in the clip case, we can actually transform the entire
       // canvas without distorting the hand-drawn style
       if (points.length > 0) {
-        this.ctx!.save()
+        this.ctx.save()
         this.applyGlobalTransform(svgTransform)
         const startPt = points[0]
-        this.ctx!.moveTo(startPt.x, startPt.y)
+        this.ctx.moveTo(startPt.x, startPt.y)
         for (let i = 1; i < points.length; i++) {
           const pt = points[i]
-          this.ctx!.lineTo(pt.x, pt.y)
+          this.ctx.lineTo(pt.x, pt.y)
         }
-        this.ctx!.closePath()
-        this.ctx!.restore()
+        this.ctx.closePath()
+        this.ctx.restore()
       }
     } else {
       const clip = document.createElementNS('http://www.w3.org/2000/svg', 'polygon')
@@ -1401,13 +1403,13 @@ export class Svg2Roughjs {
       return
     }
 
-    if (this.renderMode === RenderMode.CANVAS) {
+    if (this.renderMode === RenderMode.CANVAS && this.ctx) {
       // in the clip case, we can actually transform the entire
       // canvas without distorting the hand-drawn style
-      this.ctx!.save()
+      this.ctx.save()
       this.applyGlobalTransform(svgTransform)
-      this.ctx!.ellipse(cx, cy, rx, ry, 0, 0, 2 * Math.PI)
-      this.ctx!.restore()
+      this.ctx.ellipse(cx, cy, rx, ry, 0, 0, 2 * Math.PI)
+      this.ctx.restore()
     } else {
       const clip = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse')
       clip.cx.baseVal.value = cx
@@ -1477,13 +1479,13 @@ export class Svg2Roughjs {
       return
     }
 
-    if (this.renderMode === RenderMode.CANVAS) {
+    if (this.renderMode === RenderMode.CANVAS && this.ctx) {
       // in the clip case, we can actually transform the entire
       // canvas without distorting the hand-drawn style
-      this.ctx!.save()
+      this.ctx.save()
       this.applyGlobalTransform(svgTransform)
-      this.ctx!.ellipse(cx, cy, r, r, 0, 0, 2 * Math.PI)
-      this.ctx!.restore()
+      this.ctx.ellipse(cx, cy, r, r, 0, 0, 2 * Math.PI)
+      this.ctx.restore()
     } else {
       const clip = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
       clip.cx.baseVal.value = cx
@@ -1719,17 +1721,17 @@ export class Svg2Roughjs {
 
     // in the clip case, we can actually transform the entire
     // canvas without distorting the hand-drawn style
-    if (this.renderMode === RenderMode.CANVAS) {
-      this.ctx!.save()
+    if (this.renderMode === RenderMode.CANVAS && this.ctx) {
+      this.ctx.save()
       this.applyGlobalTransform(svgTransform)
       if (!rx && !ry) {
-        this.ctx!.rect(x, y, width, height)
+        this.ctx.rect(x, y, width, height)
       } else {
         // Construct path for the rounded rectangle
         const factor = (4 / 3) * (Math.sqrt(2) - 1)
-        this.ctx!.moveTo(x + rx, y)
-        this.ctx!.lineTo(x + width - rx, y)
-        this.ctx!.bezierCurveTo(
+        this.ctx.moveTo(x + rx, y)
+        this.ctx.lineTo(x + width - rx, y)
+        this.ctx.bezierCurveTo(
           x + width - rx + factor * rx,
           y,
           x + width,
@@ -1737,8 +1739,8 @@ export class Svg2Roughjs {
           x + width,
           y + ry
         )
-        this.ctx!.lineTo(x + width, y + height - ry)
-        this.ctx!.bezierCurveTo(
+        this.ctx.lineTo(x + width, y + height - ry)
+        this.ctx.bezierCurveTo(
           x + width,
           y + height - ry + factor * ry,
           x + width - factor * rx,
@@ -1746,8 +1748,8 @@ export class Svg2Roughjs {
           x + width - rx,
           y + height
         )
-        this.ctx!.lineTo(x + rx, y + height)
-        this.ctx!.bezierCurveTo(
+        this.ctx.lineTo(x + rx, y + height)
+        this.ctx.bezierCurveTo(
           x + rx - factor * rx,
           y + height,
           x,
@@ -1755,11 +1757,11 @@ export class Svg2Roughjs {
           x,
           y + height - ry
         )
-        this.ctx!.lineTo(x, y + ry)
-        this.ctx!.bezierCurveTo(x, y + factor * ry, x + factor * rx, y, x + rx, y)
-        this.ctx!.closePath()
+        this.ctx.lineTo(x, y + ry)
+        this.ctx.bezierCurveTo(x, y + factor * ry, x + factor * rx, y, x + rx, y)
+        this.ctx.closePath()
       }
-      this.ctx!.restore()
+      this.ctx.restore()
     } else {
       const clip = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
       clip.x.baseVal.value = x
@@ -1881,9 +1883,9 @@ export class Svg2Roughjs {
       }
 
       // must use square line cap here so it looks like a rectangle. Default seems to be butt.
-      if (this.renderMode === RenderMode.CANVAS) {
-        this.ctx!.save()
-        this.ctx!.lineCap = 'square'
+      if (this.renderMode === RenderMode.CANVAS && this.ctx) {
+        this.ctx.save()
+        this.ctx.lineCap = 'square'
       }
 
       const result = this.rc.path(path, this.parseStyleConfig(rect, svgTransform))
@@ -1893,8 +1895,8 @@ export class Svg2Roughjs {
       }
       this.postProcessElement(rect, result)
 
-      if (this.renderMode === RenderMode.CANVAS) {
-        this.ctx!.restore()
+      if (this.renderMode === RenderMode.CANVAS && this.ctx) {
+        this.ctx.restore()
       }
     }
   }
@@ -1942,7 +1944,9 @@ export class Svg2Roughjs {
         const dy = matrix.f
         const img = new Image()
         img.onload = () => {
-          this.ctx!.drawImage(img, dx, dy)
+          if (this.ctx) {
+            this.ctx.drawImage(img, dx, dy)
+          }
         }
         img.src = href
       } else {
@@ -1974,29 +1978,32 @@ export class Svg2Roughjs {
       this.postProcessElement(text, container)
       return
     }
+    if (!this.ctx) {
+      return
+    }
 
-    this.ctx!.save()
+    this.ctx.save()
 
     let textLocation = new Point(this.getLengthInPx(text.x), this.getLengthInPx(text.y))
 
     // text style
-    this.ctx!.font = this.getCssFont(text)
+    this.ctx.font = this.getCssFont(text)
     const style = this.parseStyleConfig(text, svgTransform)
     if (style.fill) {
-      this.ctx!.fillStyle = style.fill
+      this.ctx.fillStyle = style.fill
     }
     const stroke = this.getEffectiveAttribute(text, 'stroke')
     const hasStroke = stroke && stroke != 'none'
     if (hasStroke) {
-      this.ctx!.strokeStyle = stroke!
-      this.ctx!.lineWidth = this.convertToPixelUnit(
+      this.ctx.strokeStyle = stroke!
+      this.ctx.lineWidth = this.convertToPixelUnit(
         this.getEffectiveAttribute(text, 'stroke-width')!
       )
     }
 
     const textAnchor = this.getEffectiveAttribute(text, 'text-anchor', this.$useElementContext)
     if (textAnchor) {
-      this.ctx!.textAlign = textAnchor !== 'middle' ? (textAnchor as CanvasTextAlign) : 'center'
+      this.ctx.textAlign = textAnchor !== 'middle' ? (textAnchor as CanvasTextAlign) : 'center'
     }
 
     // apply the global transform
@@ -2005,17 +2012,17 @@ export class Svg2Roughjs {
     // consider dx/dy of the text element
     const dx = this.getLengthInPx(text.dx)
     const dy = this.getLengthInPx(text.dy)
-    this.ctx!.translate(dx, dy)
+    this.ctx.translate(dx, dy)
 
     if (text.childElementCount === 0) {
-      this.ctx!.fillText(
+      this.ctx.fillText(
         this.getTextContent(text),
         textLocation.x,
         textLocation.y,
         text.getComputedTextLength()
       )
       if (hasStroke) {
-        this.ctx!.strokeText(
+        this.ctx.strokeText(
           this.getTextContent(text),
           textLocation.x,
           textLocation.y,
@@ -2030,16 +2037,16 @@ export class Svg2Roughjs {
           textLocation = new Point(this.getLengthInPx(child.x), this.getLengthInPx(child.y))
           const dx = this.getLengthInPx(child.dx)
           const dy = this.getLengthInPx(child.dy)
-          this.ctx!.translate(dx, dy)
-          this.ctx!.fillText(this.getTextContent(child), textLocation.x, textLocation.y)
+          this.ctx.translate(dx, dy)
+          this.ctx.fillText(this.getTextContent(child), textLocation.x, textLocation.y)
           if (hasStroke) {
-            this.ctx!.strokeText(this.getTextContent(child), textLocation.x, textLocation.y)
+            this.ctx.strokeText(this.getTextContent(child), textLocation.x, textLocation.y)
           }
         }
       }
     }
 
-    this.ctx!.restore()
+    this.ctx.restore()
   }
 
   /**

@@ -45,8 +45,8 @@ declare class Svg2Roughjs {
     private $randomize;
     private $backgroundColor?;
     private $renderMode;
-    private ctx?;
-    private $pencilFilter?;
+    private ctx;
+    private $pencilFilter;
     private idElements;
     private $useElementContext?;
     /**
@@ -67,8 +67,8 @@ declare class Svg2Roughjs {
      * any SVG element.
      * Changing this property triggers a repaint.
      */
-    set roughConfig(config: RoughConfig | null);
-    get roughConfig(): RoughConfig | null;
+    set roughConfig(config: RoughConfig);
+    get roughConfig(): RoughConfig;
     /**
      * Set a font-family for the rendering of text elements.
      * If set to `null`, then the font-family of the SVGTextElement is used.
@@ -97,14 +97,14 @@ declare class Svg2Roughjs {
      * Changing this property will replace the current output
      * element with either a new HTML canvas or new SVG element.
      */
-    set renderMode(mode: RenderMode | null);
-    get renderMode(): RenderMode | null;
+    set renderMode(mode: RenderMode);
+    get renderMode(): RenderMode;
     /**
      * Whether to apply a pencil filter.
      * Only works for SVG render mode.
      */
-    set pencilFilter(value: boolean | undefined);
-    get pencilFilter(): boolean | undefined;
+    set pencilFilter(value: boolean);
+    get pencilFilter(): boolean;
     /**
      * Creates a new instance of Svg2roughjs.
      * @param target Either a selector for the container to which a canvas should be added
@@ -115,7 +115,7 @@ declare class Svg2Roughjs {
      * @param roughConfig Config object this passed to the Rough.js ctor and
      * also used while parsing the styles for `SVGElement`s.
      */
-    constructor(target: string | HTMLCanvasElement | SVGSVGElement, renderMode?: RenderMode | null, roughConfig?: RoughConfig | null);
+    constructor(target: string | HTMLCanvasElement | SVGSVGElement, renderMode?: RenderMode, roughConfig?: RoughConfig);
     /**
      * Triggers an entire redraw of the SVG which also
      * processes it anew.
