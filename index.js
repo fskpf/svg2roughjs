@@ -82,17 +82,21 @@ var units = require('units-css');
 var Svg2Roughjs = /** @class */ (function () {
     /**
      * Creates a new instance of Svg2roughjs.
-     * @param {string | HTMLCanvasElement | SVGSVGElement} target Either a selector for the container to which a canvas should be added
+     * @param target Either a selector for the container to which a canvas should be added
      * or an `HTMLCanvasElement` or `SVGSVGElement` that should be used as output target.
-     * @param {RenderMode?} renderMode Whether the output should be an SVG or drawn to an HTML canvas.
+     * @param renderMode Whether the output should be an SVG or drawn to an HTML canvas.
      * Defaults to SVG or CANVAS depending if the given target is of type `HTMLCanvasElement` or `SVGSVGElement`,
      * otherwise it defaults to SVG.
-     * @param {object?} roughConfig Config object this passed to the Rough.js ctor and
+     * @param roughConfig Config object this passed to the Rough.js ctor and
      * also used while parsing the styles for `SVGElement`s.
      */
     function Svg2Roughjs(target, renderMode, roughConfig) {
         if (renderMode === void 0) { renderMode = RenderMode.SVG; }
         if (roughConfig === void 0) { roughConfig = {}; }
+        this.width = 0;
+        this.height = 0;
+        this.$renderMode = null;
+        this.idElements = {};
         if (!target) {
             throw new Error('No target provided');
         }
@@ -126,9 +130,10 @@ var Svg2Roughjs = /** @class */ (function () {
         }
         // the Rough.js instance to draw the SVG elements
         if (this.renderMode === RenderMode.CANVAS) {
-            this.rc = rough.canvas(this.canvas, roughConfig);
+            var canvas = this.canvas;
+            this.rc = rough.canvas(canvas, roughConfig);
             // canvas context for convenient access
-            this.ctx = this.canvas.getContext('2d');
+            this.ctx = canvas.getContext('2d');
         }
         else {
             this.rc = rough.svg(this.canvas, roughConfig);
@@ -139,19 +144,18 @@ var Svg2Roughjs = /** @class */ (function () {
         // we randomize the visualization per element by default
         this.$randomize = true;
     }
-    /**
-     * A simple regexp which is used to test whether a given string value
-     * contains unit identifiers, e.g. "1px", "1em", "1%", ...
-     * @private
-     * @returns {RegExp}
-     */
-    Svg2Roughjs.CONTAINS_UNIT_REGEXP = function () {
-        return /[a-z%]/;
-    };
-    Object.defineProperty(Svg2Roughjs.prototype, "svg", {
+    Object.defineProperty(Svg2Roughjs, "CONTAINS_UNIT_REGEXP", {
         /**
-         * @return {SVGSVGElement}
+         * A simple regexp which is used to test whether a given string value
+         * contains unit identifiers, e.g. "1px", "1em", "1%", ...
          */
+        get: function () {
+            return /[a-z%]/;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(Svg2Roughjs.prototype, "svg", {
         get: function () {
             return this.$svg;
         },
@@ -160,11 +164,9 @@ var Svg2Roughjs = /** @class */ (function () {
          * Changing this property triggers drawing of the SVG into
          * the canvas or container element with which Svg2Roughjs
          * was initialized.
-         * @param {SVGSVGElement} svg
          */
         set: function (svg) {
             if (this.$svg !== svg) {
-                /** @type {SVGSVGElement} */
                 this.$svg = svg;
                 if (svg.hasAttribute('width')) {
                     this.width = svg.width.baseVal.value;
@@ -185,12 +187,14 @@ var Svg2Roughjs = /** @class */ (function () {
                     this.height = 150;
                 }
                 if (this.renderMode === RenderMode.CANVAS) {
-                    this.canvas.width = this.width;
-                    this.canvas.height = this.height;
+                    var canvas = this.canvas;
+                    canvas.width = this.width;
+                    canvas.height = this.height;
                 }
                 else {
-                    this.canvas.setAttribute('width', this.width);
-                    this.canvas.setAttribute('height', this.height);
+                    var svg_1 = this.canvas;
+                    svg_1.setAttribute('width', this.width.toString());
+                    svg_1.setAttribute('height', this.height.toString());
                 }
                 // pre-process defs for subsequent references
                 this.collectElementsWithID();
@@ -201,9 +205,6 @@ var Svg2Roughjs = /** @class */ (function () {
         configurable: true
     });
     Object.defineProperty(Svg2Roughjs.prototype, "roughConfig", {
-        /**
-         * @return {object}
-         */
         get: function () {
             return this.$roughConfig;
         },
@@ -211,7 +212,6 @@ var Svg2Roughjs = /** @class */ (function () {
          * Rough.js config object that is provided to Rough.js for drawing
          * any SVG element.
          * Changing this property triggers a repaint.
-         * @param {object}
          */
         set: function (config) {
             this.$roughConfig = config;
@@ -227,9 +227,6 @@ var Svg2Roughjs = /** @class */ (function () {
         configurable: true
     });
     Object.defineProperty(Svg2Roughjs.prototype, "fontFamily", {
-        /**
-         * @returns {string}
-         */
         get: function () {
             return this.$fontFamily;
         },
@@ -238,7 +235,6 @@ var Svg2Roughjs = /** @class */ (function () {
          * If set to `null`, then the font-family of the SVGTextElement is used.
          * By default, 'Comic Sans MS, cursive' is used.
          * Changing this property triggers a repaint.
-         * @param {string | null}
          */
         set: function (fontFamily) {
             if (this.$fontFamily !== fontFamily) {
@@ -250,9 +246,6 @@ var Svg2Roughjs = /** @class */ (function () {
         configurable: true
     });
     Object.defineProperty(Svg2Roughjs.prototype, "randomize", {
-        /**
-         * @returns {boolean}
-         */
         get: function () {
             return this.$randomize;
         },
@@ -261,7 +254,6 @@ var Svg2Roughjs = /** @class */ (function () {
          * Also randomizes the disableMultiStroke option of Rough.js.
          * By default true.
          * Changing this property triggers a repaint.
-         * @param {boolean}
          */
         set: function (randomize) {
             this.$randomize = randomize;
@@ -271,9 +263,6 @@ var Svg2Roughjs = /** @class */ (function () {
         configurable: true
     });
     Object.defineProperty(Svg2Roughjs.prototype, "backgroundColor", {
-        /**
-         * @returns {string}
-         */
         get: function () {
             return this.$backgroundColor;
         },
@@ -281,7 +270,6 @@ var Svg2Roughjs = /** @class */ (function () {
          * Optional solid background color with which
          * the canvas should be initialized.
          * It is drawn on a transparent canvas by default.
-         * @param {string}
          */
         set: function (color) {
             this.$backgroundColor = color;
@@ -290,19 +278,16 @@ var Svg2Roughjs = /** @class */ (function () {
         configurable: true
     });
     Object.defineProperty(Svg2Roughjs.prototype, "renderMode", {
-        /**
-         * @returns {RenderMode}
-         */
         get: function () {
             return this.$renderMode;
         },
         /**
          * Changes the output format of the converted SVG.
-         * Changing this property, will replace the current output
+         * Changing this property will replace the current output
          * element with either a new HTML canvas or new SVG element.
-         * @param {RenderMode} mode
          */
         set: function (mode) {
+            var _a, _b;
             if (this.$renderMode === mode) {
                 return;
             }
@@ -312,8 +297,8 @@ var Svg2Roughjs = /** @class */ (function () {
             var target;
             if (mode === RenderMode.CANVAS) {
                 target = document.createElement('canvas');
-                target.width = this.width;
-                target.height = this.height;
+                target.width = this.width || 0;
+                target.height = this.height || 0;
                 this.ctx = target.getContext('2d');
             }
             else {
@@ -321,8 +306,8 @@ var Svg2Roughjs = /** @class */ (function () {
                 target = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
                 target.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
                 target.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
-                target.setAttribute('width', this.width);
-                target.setAttribute('height', this.height);
+                target.setAttribute('width', ((_a = this.width) === null || _a === void 0 ? void 0 : _a.toString()) || '0');
+                target.setAttribute('height', ((_b = this.height) === null || _b === void 0 ? void 0 : _b.toString()) || '0');
             }
             parent.appendChild(target);
             this.canvas = target;
@@ -338,16 +323,12 @@ var Svg2Roughjs = /** @class */ (function () {
         configurable: true
     });
     Object.defineProperty(Svg2Roughjs.prototype, "pencilFilter", {
-        /**
-         * @returns {boolean}
-         */
         get: function () {
             return this.$pencilFilter;
         },
         /**
          * Whether to apply a pencil filter.
          * Only works for SVG render mode.
-         * @param {boolean}
          */
         set: function (value) {
             if (this.$pencilFilter !== value) {
@@ -377,8 +358,6 @@ var Svg2Roughjs = /** @class */ (function () {
     };
     /**
      * Prepares the given canvas element depending on the set properties.
-     * @private
-     * @param {HTMLCanvasElement} canvas
      */
     Svg2Roughjs.prototype.initializeCanvas = function (canvas) {
         this.ctx = canvas.getContext('2d');
@@ -390,8 +369,6 @@ var Svg2Roughjs = /** @class */ (function () {
     };
     /**
      * Prepares the given SVG element depending on the set properties.
-     * @private
-     * @param {SVGSVGElement} svgElement
      */
     Svg2Roughjs.prototype.initializeSvg = function (svgElement) {
         // maybe canvas rendering was used before
@@ -417,25 +394,26 @@ var Svg2Roughjs = /** @class */ (function () {
     };
     /**
      * Traverses the SVG in DFS and draws each element to the canvas.
-     * @private
-     * @param {SVGSVGElement | SVGGElement} root either an SVG- or g-element
-     * @param {SVGTransform?} svgTransform
-     * @param {number?} width Use elements can overwrite width
-     * @param {number?} height Use elements can overwrite height
+     * @param root either an SVG- or g-element
+     * @param width Use elements can overwrite width
+     * @param height Use elements can overwrite height
      */
     Svg2Roughjs.prototype.processRoot = function (root, svgTransform, width, height) {
+        var _a, _b;
         // traverse svg in DFS
         var stack = [];
-        if (root.tagName === 'svg' || root.tagName === 'symbol' || root.tagName === 'marker') {
+        if (root instanceof SVGSVGElement ||
+            root instanceof SVGSymbolElement ||
+            root instanceof SVGMarkerElement) {
             var rootX = 0;
             var rootY = 0;
-            if (root.tagName === 'symbol') {
-                rootX = parseFloat(root.getAttribute('x')) || 0;
-                rootY = parseFloat(root.getAttribute('y')) || 0;
+            if (root instanceof SVGSymbolElement) {
+                rootX = parseFloat((_a = root.getAttribute('x')) !== null && _a !== void 0 ? _a : '') || 0;
+                rootY = parseFloat((_b = root.getAttribute('y')) !== null && _b !== void 0 ? _b : '') || 0;
                 width = width || parseFloat(root.getAttribute('width')) || void 0;
                 height = height || parseFloat(root.getAttribute('height')) || void 0;
             }
-            else if (root.tagName === 'marker') {
+            else if (root instanceof SVGMarkerElement) {
                 rootX = -root.refX.baseVal.value;
                 rootY = -root.refY.baseVal.value;
                 width = width || parseFloat(root.getAttribute('markerWidth')) || void 0;
@@ -449,7 +427,7 @@ var Svg2Roughjs = /** @class */ (function () {
             if (typeof width !== 'undefined' &&
                 typeof height !== 'undefined' &&
                 root.getAttribute('viewBox')) {
-                var _a = root.viewBox.baseVal, viewBoxX = _a.x, viewBoxY = _a.y, viewBoxWidth = _a.width, viewBoxHeight = _a.height;
+                var _c = root.viewBox.baseVal, viewBoxX = _c.x, viewBoxY = _c.y, viewBoxWidth = _c.width, viewBoxHeight = _c.height;
                 // viewBox values might scale the SVGs content
                 if (root.tagName === 'marker') {
                     // refX / refY works differently on markers than the x / y attribute
@@ -476,7 +454,7 @@ var Svg2Roughjs = /** @class */ (function () {
             var children = this.getNodeChildren(root);
             for (var i = children.length - 1; i >= 0; i--) {
                 var child = children[i];
-                if (child.tagName === 'symbol' || child.tagName === 'marker') {
+                if (child instanceof SVGSymbolElement || child instanceof SVGMarkerElement) {
                     // symbols and marker can only be instantiated by specific elements
                     continue;
                 }
@@ -490,7 +468,7 @@ var Svg2Roughjs = /** @class */ (function () {
             stack.push({ element: root, transform: svgTransform });
         }
         while (stack.length > 0) {
-            var _b = stack.pop(), element = _b.element, transform = _b.transform;
+            var _d = stack.pop(), element = _d.element, transform = _d.transform;
             // maybe draw the element
             this.drawElement(element, transform);
             if (element.tagName === 'defs' ||
@@ -518,9 +496,6 @@ var Svg2Roughjs = /** @class */ (function () {
     /**
      * Helper method to append the returned `SVGGElement` from
      * Rough.js when drawing in SVG mode.
-     * @private
-     * @param {SVGElement} element
-     * @param {SVGElement} sketchElement
      */
     Svg2Roughjs.prototype.postProcessElement = function (element, sketchElement) {
         if (this.renderMode === RenderMode.SVG && sketchElement) {
@@ -537,9 +512,6 @@ var Svg2Roughjs = /** @class */ (function () {
     };
     /**
      * Combines the given transform with the element's transform.
-     * @param {SVGElement} element
-     * @param {SVGTransform} transform
-     * @returns {SVGTransform}
      */
     Svg2Roughjs.prototype.getCombinedTransform = function (element, transform) {
         var elementTransform = this.getSvgTransform(element);
@@ -552,9 +524,6 @@ var Svg2Roughjs = /** @class */ (function () {
     };
     /**
      * Returns the consolidated of the given element.
-     * @private
-     * @param {SVGElement} element
-     * @returns {SVGTransform|null}
      */
     Svg2Roughjs.prototype.getSvgTransform = function (element) {
         if (element.transform && element.transform.baseVal.numberOfItems > 0) {
@@ -564,9 +533,7 @@ var Svg2Roughjs = /** @class */ (function () {
     };
     /**
      * Applies the given svgTransform to the canvas context.
-     * @private
-     * @param {SVGTransform?} svgTransform
-     * @param {SVGElement?} element The element to which the transform should be applied
+     * @param element The element to which the transform should be applied
      * when in SVG mode.
      */
     Svg2Roughjs.prototype.applyGlobalTransform = function (svgTransform, element) {
@@ -588,9 +555,7 @@ var Svg2Roughjs = /** @class */ (function () {
     };
     /**
      * Whether the given SVGTransform resembles an identity transform.
-     * @private
-     * @param {SVGTransform?} svgTransform
-     * @returns {boolean} Whether the transform is an identity transform.
+     * @returns Whether the transform is an identity transform.
      *  Returns true if transform is undefined.
      */
     Svg2Roughjs.prototype.isIdentityTransform = function (svgTransform) {
@@ -608,9 +573,7 @@ var Svg2Roughjs = /** @class */ (function () {
     };
     /**
      * Whether the given SVGTransform does not scale nor skew.
-     * @private
-     * @param {SVGTransform?} svgTransform
-     * @returns {boolean} Whether the given SVGTransform does not scale nor skew.
+     * @returns Whether the given SVGTransform does not scale nor skew.
      *  Returns true if transform is undefined.
      */
     Svg2Roughjs.prototype.isTranslationTransform = function (svgTransform) {
@@ -622,7 +585,6 @@ var Svg2Roughjs = /** @class */ (function () {
     };
     /**
      * Stores elements with IDs for later use.
-     * @private
      */
     Svg2Roughjs.prototype.collectElementsWithID = function () {
         this.idElements = {};
@@ -641,11 +603,6 @@ var Svg2Roughjs = /** @class */ (function () {
      * [a c e] [x] = (a*x + c*y + e)
      * [b d f] [y] = (b*x + d*y + f)
      * [0 0 1] [1] = (0 + 0 + 1)
-     *
-     * @private
-     * @param {Point} point
-     * @param {SVGTransform?} svgTransform
-     * @return {Point}
      */
     Svg2Roughjs.prototype.applyMatrix = function (point, svgTransform) {
         if (!svgTransform) {
@@ -657,20 +614,14 @@ var Svg2Roughjs = /** @class */ (function () {
         return new Point(x, y);
     };
     /**
-     * Returns a random number in the given rande.
-     * @private
-     * @param {number} min
-     * @param {number} max
-     * @return {number}
+     * Returns a random number in the given range.
      */
     Svg2Roughjs.prototype.getRandomNumber = function (min, max) {
         return Math.random() * (max - min) + min;
     };
     /**
      * Returns the `offset` of an `SVGStopElement`.
-     * @private
-     * @param {SVGStopElement} stop
-     * @return {number} stop percentage
+     * @return stop percentage
      */
     Svg2Roughjs.prototype.getStopOffset = function (stop) {
         var offset = stop.getAttribute('offset');
@@ -685,17 +636,15 @@ var Svg2Roughjs = /** @class */ (function () {
         }
     };
     /**
-     * Returns the `stop-color`of an `SVGStopElement`.
-     * @private
-     * @param {SVGStopElement} stop
-     * @return {tinycolor}
+     * Returns the `stop-color` of an `SVGStopElement`.
      */
     Svg2Roughjs.prototype.getStopColor = function (stop) {
+        var _a;
         var stopColorStr = stop.getAttribute('stop-color');
         if (!stopColorStr) {
-            var style = stop.getAttribute('style');
+            var style = (_a = stop.getAttribute('style')) !== null && _a !== void 0 ? _a : '';
             var match = /stop-color:\s?(.*);?/.exec(style);
-            if (match.length > 1) {
+            if (match && match.length > 1) {
                 stopColorStr = match[1];
             }
         }
@@ -704,10 +653,6 @@ var Svg2Roughjs = /** @class */ (function () {
     /**
      * Converts an SVG gradient to a color by mixing all stop colors
      * with `tinycolor.mix`.
-     * @private
-     * @param {SVGLinearGradientElement | SVGRadialGradientElement} gradient
-     * @param {number} opacity
-     * @return {string}
      */
     Svg2Roughjs.prototype.gradientToColor = function (gradient, opacity) {
         var stops = Array.prototype.slice.apply(gradient.querySelectorAll('stop'));
@@ -715,7 +660,7 @@ var Svg2Roughjs = /** @class */ (function () {
             return 'transparent';
         }
         else if (stops.length === 1) {
-            var color = this.getStopColor(stop);
+            var color = this.getStopColor(stops[0]);
             color.setAlpha(opacity);
             return color.toString();
         }
@@ -752,11 +697,11 @@ var Svg2Roughjs = /** @class */ (function () {
     };
     /**
      * Returns the id from the url string
-     * @private
-     * @param {string} url
-     * @returns {string}
      */
     Svg2Roughjs.prototype.getIdFromUrl = function (url) {
+        if (url === null) {
+            return null;
+        }
         var result = /url\('#?(.*?)'\)/.exec(url) || /url\("#?(.*?)"\)/.exec(url) || /url\(#?(.*?)\)/.exec(url);
         if (result && result.length > 1) {
             return result[1];
@@ -767,10 +712,6 @@ var Svg2Roughjs = /** @class */ (function () {
      * Parses a `fill` url by looking in the SVG `defs` element.
      * When a gradient is found, it is converted to a color and stored
      * in the internal defs store for this url.
-     * @private
-     * @param {string} url
-     * @param {number} opacity
-     * @return {string}
      */
     Svg2Roughjs.prototype.parseFillUrl = function (url, opacity) {
         var id = this.getIdFromUrl(url);
@@ -784,21 +725,20 @@ var Svg2Roughjs = /** @class */ (function () {
                 return fill;
             }
             else {
-                if (fill.tagName === 'linearGradient' || fill.tagName === 'radialGradient') {
+                if (fill instanceof SVGLinearGradientElement || fill instanceof SVGRadialGradientElement) {
                     var color = this.gradientToColor(fill, opacity);
                     this.idElements[id] = color;
                     return color;
                 }
             }
         }
+        return undefined;
     };
     /**
      * Converts SVG opacity attributes to a [0, 1] range.
-     * @private
-     * @param {SVGElement} element
-     * @param {string} attribute
      */
     Svg2Roughjs.prototype.getOpacity = function (element, attribute) {
+        //@ts-ignore
         var attr = getComputedStyle(element)[attribute] || element.getAttribute(attribute);
         if (attr) {
             if (attr.indexOf('%') !== -1) {
@@ -811,11 +751,7 @@ var Svg2Roughjs = /** @class */ (function () {
     /**
      * Traverses the given elements hierarchy bottom-up to determine its effective
      * opacity attribute.
-     * @private
-     * @param {SVGElement} element
-     * @param {number} currentOpacity
-     * @param {object?} currentUseCtx Consider different DOM hierarchy for use elements
-     * @returns {number}
+     * @param currentUseCtx Consider different DOM hierarchy for use elements
      */
     Svg2Roughjs.prototype.getEffectiveElementOpacity = function (element, currentOpacity, currentUseCtx) {
         var attr;
@@ -854,16 +790,15 @@ var Svg2Roughjs = /** @class */ (function () {
     /**
      * Returns the attribute value of an element under consideration
      * of inherited attributes from the `parentElement`.
-     * @private
-     * @param {SVGElement} element
-     * @param {string} attributeName Name of the attribute to look up
-     * @param {object?} currentUseCtx Consider different DOM hierarchy for use elements
-     * @return {string|null} attribute value if it exists
+     * @param attributeName Name of the attribute to look up
+     * @param currentUseCtx Consider different DOM hierarchy for use elements
+     * @return attribute value if it exists
      */
     Svg2Roughjs.prototype.getEffectiveAttribute = function (element, attributeName, currentUseCtx) {
         // getComputedStyle doesn't work for, e.g. <svg fill='rgba(...)'>
         var attr;
         if (!currentUseCtx) {
+            // @ts-ignore
             attr = getComputedStyle(element)[attributeName] || element.getAttribute(attributeName);
         }
         else {
@@ -891,9 +826,7 @@ var Svg2Roughjs = /** @class */ (function () {
      * (https://developer.mozilla.org/de/docs/Web/SVG/Content_type#Length)
      * or a <percentage>
      * (https://developer.mozilla.org/de/docs/Web/SVG/Content_type#Percentage).
-     * @private
-     * @param {string} value
-     * @returns {number} THe value in px unit
+     * @returns The value in px unit
      */
     Svg2Roughjs.prototype.convertToPixelUnit = function (value) {
         // css-units fails for converting from unit-less to 'px' in IE11,
@@ -907,10 +840,7 @@ var Svg2Roughjs = /** @class */ (function () {
      * Converts the effective style attributes of the given `SVGElement`
      * to a Rough.js config object that is used to draw the element with
      * Rough.js.
-     * @private
-     * @param {SVGElement} element
-     * @param {SVGTransform?} svgTransform
-     * @return {object} config for Rough.js drawing
+     * @return config for Rough.js drawing
      */
     Svg2Roughjs.prototype.parseStyleConfig = function (element, svgTransform) {
         var _this = this;
@@ -967,17 +897,15 @@ var Svg2Roughjs = /** @class */ (function () {
         }
         var strokeDashArray = this.getEffectiveAttribute(element, 'stroke-dasharray', this.$useElementContext);
         if (strokeDashArray && strokeDashArray !== 'none') {
-            strokeDashArray = strokeDashArray
+            config.strokeLineDash = strokeDashArray
                 .split(/[\s,]+/)
                 .filter(function (entry) { return entry.length > 0; })
                 // make sure that dashes/dots are at least somewhat visible
                 .map(function (dash) { return Math.max(0.5, _this.convertToPixelUnit(dash) * scaleFactor); });
-            config.strokeLineDash = strokeDashArray;
         }
         var strokeDashOffset = this.getEffectiveAttribute(element, 'stroke-dashoffset', this.$useElementContext);
         if (strokeDashOffset) {
-            strokeDashOffset = this.convertToPixelUnit(strokeDashOffset);
-            config.strokeLineDashOffset = strokeDashOffset * scaleFactor;
+            config.strokeLineDashOffset = this.convertToPixelUnit(strokeDashOffset) * scaleFactor;
         }
         // unstroked but filled shapes look weird, so always apply a stroke if we fill something
         if (config.fill && config.stroke === 'none') {
@@ -1005,11 +933,6 @@ var Svg2Roughjs = /** @class */ (function () {
         }
         return config;
     };
-    /**
-     * @private
-     * @param {SVGSVGElement}
-     * @returns {SVGDefsElement}
-     */
     Svg2Roughjs.prototype.getDefsElement = function (svgElement) {
         var outputDefs = svgElement.querySelector('defs');
         if (!outputDefs) {
@@ -1025,10 +948,6 @@ var Svg2Roughjs = /** @class */ (function () {
     };
     /**
      * Applies the clip-path to the CanvasContext.
-     * @private
-     * @param {SVGElement} owner
-     * @param {string} clipPathAttr
-     * @param {SVGTransform?} svgTransform
      */
     Svg2Roughjs.prototype.applyClipPath = function (owner, clipPathAttr, svgTransform) {
         var id = this.getIdFromUrl(clipPathAttr);
@@ -1092,10 +1011,6 @@ var Svg2Roughjs = /** @class */ (function () {
     };
     /**
      * Applies the element as clip to the CanvasContext.
-     * @private
-     * @param {SVGElement} element
-     * @param {SVGClipPathElement} container
-     * @param {SVGTransform?} svgTransform
      */
     Svg2Roughjs.prototype.applyElementClip = function (element, container, svgTransform) {
         switch (element.tagName) {
@@ -1114,10 +1029,6 @@ var Svg2Roughjs = /** @class */ (function () {
             // TODO clipPath: more elements
         }
     };
-    /**
-     * @private
-     * @param {SVGElement} element
-     */
     Svg2Roughjs.prototype.isHidden = function (element) {
         var style = element.style;
         if (!style) {
@@ -1128,9 +1039,6 @@ var Svg2Roughjs = /** @class */ (function () {
     /**
      * The main switch to delegate drawing of `SVGElement`s
      * to different subroutines.
-     * @private
-     * @param {SVGElement} element
-     * @param {SVGTransform} svgTransform
      */
     Svg2Roughjs.prototype.drawElement = function (element, svgTransform) {
         if (this.isHidden(element)) {
@@ -1188,12 +1096,6 @@ var Svg2Roughjs = /** @class */ (function () {
             }
         }
     };
-    /**
-     * @private
-     * @param {SVGPathElement|SVGLineElement|SVGPolylineElement|SVGPolygonElement} element
-     * @param {Point[]} points Array of coordinates
-     * @param {SVGTransform?}
-     */
     Svg2Roughjs.prototype.drawMarkers = function (element, points, svgTransform) {
         if (points.length === 0) {
             return;
@@ -1202,14 +1104,16 @@ var Svg2Roughjs = /** @class */ (function () {
         var markerUnits = element.getAttribute('markerUnits');
         var scaleFactor = 1;
         if (!markerUnits || markerUnits === 'strokeWidth') {
-            var strokeWidth = this.getEffectiveAttribute(element, 'stroke-width', null);
+            var strokeWidth = this.getEffectiveAttribute(element, 'stroke-width');
             if (strokeWidth) {
                 scaleFactor = this.convertToPixelUnit(strokeWidth);
             }
         }
         // start marker
         var markerStartId = this.getIdFromUrl(element.getAttribute('marker-start'));
-        var markerStartElement = markerStartId ? this.idElements[markerStartId] : null;
+        var markerStartElement = markerStartId
+            ? this.idElements[markerStartId]
+            : null;
         if (markerStartElement) {
             var angle = markerStartElement.orientAngle.baseVal.value;
             if (points.length > 1) {
@@ -1285,19 +1189,10 @@ var Svg2Roughjs = /** @class */ (function () {
     };
     /**
      * The angle in degree of the line defined by the given points.
-     * @private
-     * @param {Point} p0
-     * @param {Point} p1
-     * @returns {number}
      */
     Svg2Roughjs.prototype.getAngle = function (p0, p1) {
         return Math.atan2(p1.y - p0.y, p1.x - p0.x) * (180 / Math.PI);
     };
-    /**
-     * @private
-     * @param {SVGPolylineElement} polyline
-     * @param {SVGTransform?} svgTransform
-     */
     Svg2Roughjs.prototype.drawPolyline = function (polyline, svgTransform) {
         var _this = this;
         var points = this.getPointsArray(polyline);
@@ -1314,11 +1209,6 @@ var Svg2Roughjs = /** @class */ (function () {
         this.postProcessElement(polyline, this.rc.linearPath(transformed, style));
         this.drawMarkers(polyline, points, svgTransform);
     };
-    /**
-     * @private
-     * @param {SVGPolygonElement | SVGPolylineElement} element
-     * @returns {Array<Point>}
-     */
     Svg2Roughjs.prototype.getPointsArray = function (element) {
         var pointsAttr = element.getAttribute('points');
         if (!pointsAttr) {
@@ -1353,12 +1243,6 @@ var Svg2Roughjs = /** @class */ (function () {
         }
         return points;
     };
-    /**
-     * @private
-     * @param {SVGPolygonElement} polygon
-     * @param {SVGClipPathElement?} container
-     * @param {SVGTransform?} svgTransform
-     */
     Svg2Roughjs.prototype.applyPolygonClip = function (polygon, container, svgTransform) {
         if (this.renderMode === RenderMode.CANVAS) {
             var points = this.getPointsArray(polygon);
@@ -1384,11 +1268,6 @@ var Svg2Roughjs = /** @class */ (function () {
             container.appendChild(clip);
         }
     };
-    /**
-     * @private
-     * @param {SVGPolygonElement} polygon
-     * @param {SVGTransform?} svgTransform
-     */
     Svg2Roughjs.prototype.drawPolygon = function (polygon, svgTransform) {
         var _this = this;
         var points = this.getPointsArray(polygon);
@@ -1406,12 +1285,6 @@ var Svg2Roughjs = /** @class */ (function () {
             this.drawMarkers(polygon, points, svgTransform);
         }
     };
-    /**
-     * @private
-     * @param {SVGEllipseElement} ellipse
-     * @param {SVGClipPathElement} container
-     * @param {SVGTransform?} svgTransform
-     */
     Svg2Roughjs.prototype.applyEllipseClip = function (ellipse, container, svgTransform) {
         var cx = ellipse.cx.baseVal.value;
         var cy = ellipse.cy.baseVal.value;
@@ -1439,11 +1312,6 @@ var Svg2Roughjs = /** @class */ (function () {
             container.appendChild(clip);
         }
     };
-    /**
-     * @private
-     * @param {SVGEllipseElement} ellipse
-     * @param {SVGTransform?} svgTransform
-     */
     Svg2Roughjs.prototype.drawEllipse = function (ellipse, svgTransform) {
         var cx = ellipse.cx.baseVal.value;
         var cy = ellipse.cy.baseVal.value;
@@ -1480,12 +1348,6 @@ var Svg2Roughjs = /** @class */ (function () {
         }
         this.postProcessElement(ellipse, result);
     };
-    /**
-     * @private
-     * @param {SVGCircleElement} circle
-     * @param {SVGClipPathElement} container
-     * @param {SVGTransform?} svgTransform
-     */
     Svg2Roughjs.prototype.applyCircleClip = function (circle, container, svgTransform) {
         var cx = circle.cx.baseVal.value;
         var cy = circle.cy.baseVal.value;
@@ -1511,11 +1373,6 @@ var Svg2Roughjs = /** @class */ (function () {
             container.appendChild(clip);
         }
     };
-    /**
-     * @private
-     * @param {SVGCircleElement} circle
-     * @param {SVGTransform?} svgTransform
-     */
     Svg2Roughjs.prototype.drawCircle = function (circle, svgTransform) {
         var cx = circle.cx.baseVal.value;
         var cy = circle.cy.baseVal.value;
@@ -1549,11 +1406,6 @@ var Svg2Roughjs = /** @class */ (function () {
         }
         this.postProcessElement(circle, result);
     };
-    /**
-     * @private
-     * @param {SVGLineElement} line
-     * @param {SVGTransform?} svgTransform
-     */
     Svg2Roughjs.prototype.drawLine = function (line, svgTransform) {
         var p1 = new Point(line.x1.baseVal.value, line.y1.baseVal.value);
         var tp1 = this.applyMatrix(p1, svgTransform);
@@ -1566,11 +1418,6 @@ var Svg2Roughjs = /** @class */ (function () {
         this.postProcessElement(line, this.rc.line(tp1.x, tp1.y, tp2.x, tp2.y, this.parseStyleConfig(line, svgTransform)));
         this.drawMarkers(line, [p1, p2], svgTransform);
     };
-    /**
-     * @private
-     * @param {SVGSVGElement | SVGSymbolElement} element
-     * @param {SVGTransform?} svgTransform
-     */
     Svg2Roughjs.prototype.drawRoot = function (element, svgTransform) {
         var width = parseFloat(element.getAttribute('width'));
         var height = parseFloat(element.getAttribute('height'));
@@ -1580,11 +1427,6 @@ var Svg2Roughjs = /** @class */ (function () {
         }
         this.processRoot(element, svgTransform, width, height);
     };
-    /**
-     * @private
-     * @param {SVGUseElement} use
-     * @param {SVGTransform?} svgTransform
-     */
     Svg2Roughjs.prototype.drawUse = function (use, svgTransform) {
         var href = use.href.baseVal;
         if (href.startsWith('#')) {
@@ -1620,21 +1462,18 @@ var Svg2Roughjs = /** @class */ (function () {
                 this.$useElementContext = newContext;
             }
             // draw the referenced element
-            this.processRoot(defElement, this.getCombinedTransform(defElement, elementTransform), useWidth, useHeight);
+            this.processRoot(
+            // @ts-ignore
+            defElement, this.getCombinedTransform(defElement, elementTransform), useWidth, useHeight);
             // restore default context
             if (this.$useElementContext.parentContext) {
                 this.$useElementContext = this.$useElementContext.parentContext;
             }
             else {
-                this.$useElementContext = null;
+                this.$useElementContext = undefined;
             }
         }
     };
-    /**
-     * @private
-     * @param {SVGPathElement} path
-     * @param {SVGTransform?} svgTransform
-     */
     Svg2Roughjs.prototype.drawPath = function (path, svgTransform) {
         var dataAttrs = path.getAttribute('d');
         var pathData = 
@@ -1697,12 +1536,6 @@ var Svg2Roughjs = /** @class */ (function () {
         });
         this.drawMarkers(path, points, svgTransform);
     };
-    /**
-     * @private
-     * @param {SVGRectElement} rect
-     * @param {SVGClipPathElement} container
-     * @param {SVGTransform?} svgTransform
-     */
     Svg2Roughjs.prototype.applyRectClip = function (rect, container, svgTransform) {
         var x = rect.x.baseVal.value;
         var y = rect.y.baseVal.value;
@@ -1712,8 +1545,8 @@ var Svg2Roughjs = /** @class */ (function () {
             // zero-width or zero-height rect will not be rendered
             return;
         }
-        var rx = rect.hasAttribute('rx') ? rect.rx.baseVal.value : null;
-        var ry = rect.hasAttribute('ry') ? rect.ry.baseVal.value : null;
+        var rx = rect.hasAttribute('rx') ? rect.rx.baseVal.value : 0;
+        var ry = rect.hasAttribute('ry') ? rect.ry.baseVal.value : 0;
         // in the clip case, we can actually transform the entire
         // canvas without distorting the hand-drawn style
         if (this.renderMode === RenderMode.CANVAS) {
@@ -1754,11 +1587,6 @@ var Svg2Roughjs = /** @class */ (function () {
             container.appendChild(clip);
         }
     };
-    /**
-     * @private
-     * @param {SVGRectElement} rect
-     * @param {SVGTransform?} svgTransform
-     */
     Svg2Roughjs.prototype.drawRect = function (rect, svgTransform) {
         var x = rect.x.baseVal.value;
         var y = rect.y.baseVal.value;
@@ -1768,8 +1596,8 @@ var Svg2Roughjs = /** @class */ (function () {
             // zero-width or zero-height rect will not be rendered
             return;
         }
-        var rx = rect.hasAttribute('rx') ? rect.rx.baseVal.value : null;
-        var ry = rect.hasAttribute('ry') ? rect.ry.baseVal.value : null;
+        var rx = rect.hasAttribute('rx') ? rect.rx.baseVal.value : 0;
+        var ry = rect.hasAttribute('ry') ? rect.ry.baseVal.value : 0;
         if (rx || ry) {
             // Negative values are an error and result in the default value
             rx = rx < 0 ? 0 : rx;
@@ -1860,11 +1688,6 @@ var Svg2Roughjs = /** @class */ (function () {
             }
         }
     };
-    /**
-     * @private
-     * @param {SVGImageElement} svgImage
-     * @param {SVGTransform?} svgTransform
-     */
     Svg2Roughjs.prototype.drawImage = function (svgImage, svgTransform) {
         var _this = this;
         var href = svgImage.href.baseVal;
@@ -1879,7 +1702,7 @@ var Svg2Roughjs = /** @class */ (function () {
             // data:[<media type>][;charset=<character set>][;base64],<data>
             var dataUrlRegex = /^data:([^,]*),(.*)/;
             var match = dataUrlRegex.exec(href);
-            if (match.length > 2) {
+            if (match && match.length > 2) {
                 var meta = match[1];
                 var svgString = match[2];
                 var isBase64 = meta.indexOf('base64') !== -1;
@@ -1921,11 +1744,6 @@ var Svg2Roughjs = /** @class */ (function () {
             }
         }
     };
-    /**
-     * @private
-     * @param {SVGTextElement} text
-     * @param {SVGTransform?} svgTransform
-     */
     Svg2Roughjs.prototype.drawText = function (text, svgTransform) {
         if (this.renderMode === RenderMode.SVG) {
             var container = document.createElementNS('http://www.w3.org/2000/svg', 'g');
@@ -1952,9 +1770,9 @@ var Svg2Roughjs = /** @class */ (function () {
             this.ctx.fillStyle = style.fill;
         }
         var stroke = this.getEffectiveAttribute(text, 'stroke');
-        var hasStroke = stroke != 'none';
+        var hasStroke = stroke && stroke != 'none';
         if (hasStroke) {
-            this.ctx.strokeStyle = style.stroke;
+            this.ctx.strokeStyle = stroke;
             this.ctx.lineWidth = this.convertToPixelUnit(this.getEffectiveAttribute(text, 'stroke-width'));
         }
         var textAnchor = this.getEffectiveAttribute(text, 'text-anchor', this.$useElementContext);
@@ -1977,7 +1795,7 @@ var Svg2Roughjs = /** @class */ (function () {
             var children = this.getNodeChildren(text);
             for (var i = 0; i < children.length; i++) {
                 var child = children[i];
-                if (child.tagName === 'tspan') {
+                if (child instanceof SVGTSpanElement) {
                     textLocation = new Point(this.getLengthInPx(child.x), this.getLengthInPx(child.y));
                     var dx_2 = this.getLengthInPx(child.dx);
                     var dy_2 = this.getLengthInPx(child.dy);
@@ -1993,12 +1811,10 @@ var Svg2Roughjs = /** @class */ (function () {
     };
     /**
      * Retrieves the text content from a text content element (text, tspan, ...)
-     * @private
-     * @param {SVGTextContentElement} element
-     * @returns {string}
      */
     Svg2Roughjs.prototype.getTextContent = function (element) {
-        var content = element.textContent;
+        var _a;
+        var content = (_a = element.textContent) !== null && _a !== void 0 ? _a : '';
         if (this.shouldNormalizeWhitespace(element)) {
             content = content.replace(/[\n\r\t ]+/g, ' ').trim();
         }
@@ -2010,9 +1826,6 @@ var Svg2Roughjs = /** @class */ (function () {
     /**
      * Determines whether the given element has default white-space handling, i.e. normalization.
      * Returns false if the element (or an ancestor) has xml:space='preserve'
-     * @private
-     * @param {SVGElement} element
-     * @returns {boolean}
      */
     Svg2Roughjs.prototype.shouldNormalizeWhitespace = function (element) {
         var xmlSpaceAttribute = null;
@@ -2025,9 +1838,7 @@ var Svg2Roughjs = /** @class */ (function () {
         return xmlSpaceAttribute !== 'preserve'; // no attribute is also default handling
     };
     /**
-     * @private
-     * @param {SVGAnimatedLengthList} svgLengthList
-     * @return {number} length in pixels
+     * @return length in pixels
      */
     Svg2Roughjs.prototype.getLengthInPx = function (svgLengthList) {
         if (svgLengthList && svgLengthList.baseVal.numberOfItems > 0) {
@@ -2036,12 +1847,10 @@ var Svg2Roughjs = /** @class */ (function () {
         return 0;
     };
     /**
-     * @private
-     * @param {SVGTextElement} text
-     * @param {boolean?} asStyleString Formats the return value as inline style string
-     * @return {string}
+     * @param asStyleString Formats the return value as inline style string
      */
     Svg2Roughjs.prototype.getCssFont = function (text, asStyleString) {
+        if (asStyleString === void 0) { asStyleString = false; }
         var cssFont = '';
         var fontStyle = this.getEffectiveAttribute(text, 'font-style', this.$useElementContext);
         if (fontStyle) {
@@ -2070,9 +1879,6 @@ var Svg2Roughjs = /** @class */ (function () {
     /**
      * Returns the Node's children, since Node.prototype.children is not available on all browsers.
      * https://developer.mozilla.org/en-US/docs/Web/API/ParentNode/children
-     * @private
-     * @param {Node} element
-     * @returns {Array}
      */
     Svg2Roughjs.prototype.getNodeChildren = function (element) {
         if (typeof element.children !== 'undefined') {
@@ -2091,8 +1897,7 @@ var Svg2Roughjs = /** @class */ (function () {
     };
     /**
      * Calculates the average color of the colors in the given array.
-     * @param {tinycolor[]} colorArray
-     * @returns {tinycolor} The average color
+     * @returns The average color
      */
     Svg2Roughjs.prototype.averageColor = function (colorArray) {
         var count = colorArray.length;
