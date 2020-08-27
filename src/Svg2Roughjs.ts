@@ -6,9 +6,23 @@ import { Point } from './point'
 import { RenderMode } from './RenderMode'
 var units = require('units-css')
 import { SvgTextures } from './SvgTextures'
-import { getNodeChildren, averageColor, getLengthInPx } from './utils'
-
-type Color = tinycolor.Instance
+import {
+  getNodeChildren,
+  getLengthInPx,
+  isIdentityTransform,
+  getRandomNumber,
+  applyMatrix,
+  isTranslationTransform,
+  getIdFromUrl,
+  gradientToColor,
+  getOpacity,
+  CONTAINS_UNIT_REGEXP,
+  getSvgTransform,
+  isHidden,
+  getDefsElement,
+  getPointsArray,
+  getAngle
+} from './utils'
 
 type RoughConfig = {
   roughness?: number
@@ -50,25 +64,17 @@ export class Svg2Roughjs {
   private $svg?: SVGSVGElement
   private width: number = 0
   private height: number = 0
-  private canvas?: HTMLCanvasElement | SVGSVGElement
+  private canvas: HTMLCanvasElement | SVGSVGElement
   private $roughConfig: RoughConfig
   private rc: any
   private $fontFamily: string | null
   private $randomize: boolean
-  private $backgroundColor?: string
-  private $renderMode: RenderMode = RenderMode.CANVAS
+  private $backgroundColor: string | null = null
+  private $renderMode: RenderMode
   private ctx: CanvasRenderingContext2D | null = null
   private $pencilFilter: boolean = false
   private idElements: { [key: string]: SVGElement | string } = {}
   private $useElementContext?: UseContext
-
-  /**
-   * A simple regexp which is used to test whether a given string value
-   * contains unit identifiers, e.g. "1px", "1em", "1%", ...
-   */
-  private static get CONTAINS_UNIT_REGEXP(): RegExp {
-    return /[a-z%]/
-  }
 
   /**
    * The SVG that should be converted.
@@ -173,11 +179,11 @@ export class Svg2Roughjs {
    * the canvas should be initialized.
    * It is drawn on a transparent canvas by default.
    */
-  set backgroundColor(color: string | undefined) {
+  set backgroundColor(color: string | null) {
     this.$backgroundColor = color
   }
 
-  get backgroundColor(): string | undefined {
+  get backgroundColor(): string | null {
     return this.$backgroundColor
   }
 
@@ -258,14 +264,14 @@ export class Svg2Roughjs {
     if (!target) {
       throw new Error('No target provided')
     }
-    if (typeof target === 'object') {
+    if (target instanceof HTMLCanvasElement || target instanceof SVGSVGElement) {
       if (target.tagName === 'canvas' || target.tagName === 'svg') {
         this.canvas = target
         this.$renderMode = target.tagName === 'canvas' ? RenderMode.CANVAS : RenderMode.SVG
       } else {
-        throw new Error('Target object is not of type HMTLCanvaseElement or SVGSVGElement')
+        throw new Error('Target object is not of type HTMLCanvasElement or SVGSVGElement')
       }
-    } else if (typeof target === 'string') {
+    } else {
       // create a new HTMLCanvasElement as child of the given element
       const container = document.querySelector(target)
       if (!container) {
@@ -359,7 +365,7 @@ export class Svg2Roughjs {
 
     // prepare filter effects
     if (this.pencilFilter) {
-      const defs = this.getDefsElement(svgElement)
+      const defs = getDefsElement(svgElement)
       defs.appendChild(SvgTextures.pencilTextureFilter)
     }
   }
@@ -447,7 +453,7 @@ export class Svg2Roughjs {
         }
         const childTransform = svgTransform
           ? this.getCombinedTransform(child, svgTransform)
-          : this.getSvgTransform(child)
+          : getSvgTransform(child)
         stack.push({ element: child, transform: childTransform })
       }
     } else {
@@ -473,13 +479,13 @@ export class Svg2Roughjs {
         // ClipPaths are not drawn and processed separately.
         continue
       }
-      // process childs
+      // process children
       const children = getNodeChildren(element)
       for (let i = children.length - 1; i >= 0; i--) {
         const childElement = children[i] as SVGGraphicsElement
         const newTransform = transform
           ? this.getCombinedTransform(childElement, transform)
-          : this.getSvgTransform(childElement)
+          : getSvgTransform(childElement)
         stack.push({ element: childElement, transform: newTransform })
       }
     }
@@ -509,23 +515,13 @@ export class Svg2Roughjs {
    * Combines the given transform with the element's transform.
    */
   private getCombinedTransform(element: SVGGraphicsElement, transform: SVGTransform): SVGTransform {
-    const elementTransform = this.getSvgTransform(element)
+    const elementTransform = getSvgTransform(element)
     if (elementTransform) {
       const elementTransformMatrix = elementTransform.matrix
       const combinedMatrix = transform.matrix.multiply(elementTransformMatrix)
       return this.svg.createSVGTransformFromMatrix(combinedMatrix)
     }
     return transform
-  }
-
-  /**
-   * Returns the consolidated of the given element.
-   */
-  private getSvgTransform(element: SVGGraphicsElement): SVGTransform | null {
-    if (element.transform && element.transform.baseVal.numberOfItems > 0) {
-      return element.transform.baseVal.consolidate()
-    }
-    return null
   }
 
   /**
@@ -553,40 +549,6 @@ export class Svg2Roughjs {
   }
 
   /**
-   * Whether the given SVGTransform resembles an identity transform.
-   * @returns Whether the transform is an identity transform.
-   *  Returns true if transform is undefined.
-   */
-  private isIdentityTransform(svgTransform: SVGTransform | null): boolean {
-    if (!svgTransform) {
-      return true
-    }
-    const matrix = svgTransform.matrix
-    return (
-      !matrix ||
-      (matrix.a === 1 &&
-        matrix.b === 0 &&
-        matrix.c === 0 &&
-        matrix.d === 1 &&
-        matrix.e === 0 &&
-        matrix.f === 0)
-    )
-  }
-
-  /**
-   * Whether the given SVGTransform does not scale nor skew.
-   * @returns Whether the given SVGTransform does not scale nor skew.
-   *  Returns true if transform is undefined.
-   */
-  private isTranslationTransform(svgTransform: SVGTransform | null): boolean {
-    if (!svgTransform) {
-      return true
-    }
-    const matrix = svgTransform.matrix
-    return !matrix || (matrix.a === 1 && matrix.b === 0 && matrix.c === 0 && matrix.d === 1)
-  }
-
-  /**
    * Stores elements with IDs for later use.
    */
   private collectElementsWithID() {
@@ -603,132 +565,12 @@ export class Svg2Roughjs {
   }
 
   /**
-   * Applies a given `SVGTransform` to the point.
-   *
-   * [a c e] [x] = (a*x + c*y + e)
-   * [b d f] [y] = (b*x + d*y + f)
-   * [0 0 1] [1] = (0 + 0 + 1)
-   */
-  private applyMatrix(point: Point, svgTransform: SVGTransform | null): Point {
-    if (!svgTransform) {
-      return point
-    }
-    const matrix = svgTransform.matrix
-    const x = matrix.a * point.x + matrix.c * point.y + matrix.e
-    const y = matrix.b * point.x + matrix.d * point.y + matrix.f
-    return new Point(x, y)
-  }
-
-  /**
-   * Returns a random number in the given range.
-   */
-  private getRandomNumber(min: number, max: number): number {
-    return Math.random() * (max - min) + min
-  }
-
-  /**
-   * Returns the `offset` of an `SVGStopElement`.
-   * @return stop percentage
-   */
-  private getStopOffset(stop: SVGStopElement): number {
-    const offset = stop.getAttribute('offset')
-    if (!offset) {
-      return 0
-    }
-    if (offset.indexOf('%')) {
-      return parseFloat(offset.substring(0, offset.length - 1))
-    } else {
-      return parseFloat(offset) * 100
-    }
-  }
-
-  /**
-   * Returns the `stop-color` of an `SVGStopElement`.
-   */
-  private getStopColor(stop: SVGStopElement): Color {
-    let stopColorStr = stop.getAttribute('stop-color')
-    if (!stopColorStr) {
-      const style = stop.getAttribute('style') ?? ''
-      const match = /stop-color:\s?(.*);?/.exec(style)
-      if (match && match.length > 1) {
-        stopColorStr = match[1]
-      }
-    }
-    return stopColorStr ? tinycolor(stopColorStr) : tinycolor('white')
-  }
-
-  /**
-   * Converts an SVG gradient to a color by mixing all stop colors
-   * with `tinycolor.mix`.
-   */
-  private gradientToColor(
-    gradient: SVGLinearGradientElement | SVGRadialGradientElement,
-    opacity: number
-  ): string {
-    const stops = Array.prototype.slice.apply(gradient.querySelectorAll('stop'))
-    if (stops.length === 0) {
-      return 'transparent'
-    } else if (stops.length === 1) {
-      const color = this.getStopColor(stops[0])
-      color.setAlpha(opacity)
-      return color.toString()
-    } else {
-      // Because roughjs can only deal with solid colors, we try to calculate
-      // the average color of the gradient here.
-      // The idea is to create an array of discrete (average) colors that represents the
-      // gradient under consideration of the stop's offset. Thus, larger offsets
-      // result in more entries of the same mixed color (of the two adjacent color stops).
-      // At the end, this array is averaged again, to create a single solid color.
-      const resolution = 10
-      const discreteColors = []
-
-      let lastColor = null
-      for (let i = 0; i < stops.length; i++) {
-        const currentColor = this.getStopColor(stops[i])
-        const currentOffset = this.getStopOffset(stops[i])
-
-        // combine the adjacent colors
-        const combinedColor = lastColor ? averageColor([lastColor, currentColor]) : currentColor
-
-        // fill the discrete color array depending on the offset size
-        let entries = Math.max(1, (currentOffset / resolution) | 0)
-        while (entries > 0) {
-          discreteColors.push(combinedColor)
-          entries--
-        }
-
-        lastColor = currentColor
-      }
-
-      // average the discrete colors again for the final result
-      const mixedColor = averageColor(discreteColors)
-      mixedColor.setAlpha(opacity)
-      return mixedColor.toString()
-    }
-  }
-
-  /**
-   * Returns the id from the url string
-   */
-  private getIdFromUrl(url: string | null): string | null {
-    if (url === null) {
-      return null
-    }
-    const result =
-      /url\('#?(.*?)'\)/.exec(url) || /url\("#?(.*?)"\)/.exec(url) || /url\(#?(.*?)\)/.exec(url)
-    if (result && result.length > 1) {
-      return result[1]
-    }
-    return null
-  }
-
-  /**
    * Parses a `fill` url by looking in the SVG `defs` element.
    * When a gradient is found, it is converted to a color and stored
    * in the internal defs store for this url.
    */
   private parseFillUrl(url: string, opacity: number): string | undefined {
-    const id = this.getIdFromUrl(url)
+    const id = getIdFromUrl(url)
     if (!id) {
       return 'transparent'
     }
@@ -739,28 +581,13 @@ export class Svg2Roughjs {
         return fill
       } else {
         if (fill instanceof SVGLinearGradientElement || fill instanceof SVGRadialGradientElement) {
-          const color = this.gradientToColor(fill, opacity)
+          const color = gradientToColor(fill, opacity)
           this.idElements[id] = color
           return color
         }
       }
     }
     return undefined
-  }
-
-  /**
-   * Converts SVG opacity attributes to a [0, 1] range.
-   */
-  private getOpacity(element: SVGElement, attribute: string) {
-    //@ts-ignore
-    const attr = getComputedStyle(element)[attribute] || element.getAttribute(attribute)
-    if (attr) {
-      if (attr.indexOf('%') !== -1) {
-        return Math.min(1, Math.max(0, parseFloat(attr.substring(0, attr.length - 1)) / 100))
-      }
-      return Math.min(1, Math.max(0, parseFloat(attr)))
-    }
-    return 1
   }
 
   /**
@@ -864,7 +691,7 @@ export class Svg2Roughjs {
   private convertToPixelUnit(value: string): number {
     // css-units fails for converting from unit-less to 'px' in IE11,
     // thus we only apply it to non-px values
-    if (value.match(Svg2Roughjs.CONTAINS_UNIT_REGEXP) !== null) {
+    if (value.match(CONTAINS_UNIT_REGEXP) !== null) {
       return units.convert('px', value, this.$svg)
     }
     return parseFloat(value)
@@ -881,7 +708,7 @@ export class Svg2Roughjs {
 
     // Scalefactor for certain style attributes. For lack of a better option here, use the determinant
     let scaleFactor = 1
-    if (!this.isIdentityTransform(svgTransform)) {
+    if (!isIdentityTransform(svgTransform)) {
       const m = svgTransform!.matrix
       const det = m.a * m.d - m.c * m.b
       scaleFactor = Math.sqrt(det)
@@ -891,7 +718,7 @@ export class Svg2Roughjs {
     const elementOpacity = this.getEffectiveElementOpacity(element, 1, this.$useElementContext)
 
     const fill = this.getEffectiveAttribute(element, 'fill', this.$useElementContext) || 'black'
-    const fillOpacity = elementOpacity * this.getOpacity(element, 'fill-opacity')
+    const fillOpacity = elementOpacity * getOpacity(element, 'fill-opacity')
     if (fill) {
       if (fill.indexOf('url') !== -1) {
         config.fill = this.parseFillUrl(fill, fillOpacity)
@@ -905,7 +732,7 @@ export class Svg2Roughjs {
     }
 
     const stroke = this.getEffectiveAttribute(element, 'stroke', this.$useElementContext)
-    const strokeOpacity = elementOpacity * this.getOpacity(element, 'stroke-opacity')
+    const strokeOpacity = elementOpacity * getOpacity(element, 'stroke-opacity')
     if (stroke) {
       if (stroke.indexOf('url') !== -1) {
         config.stroke = this.parseFillUrl(fill, strokeOpacity)
@@ -966,11 +793,11 @@ export class Svg2Roughjs {
 
     if (this.randomize) {
       // Rough.js default is 0.5 * strokeWidth
-      config.fillWeight = this.getRandomNumber(0.5, 3)
+      config.fillWeight = getRandomNumber(0.5, 3)
       // Rough.js default is -41deg
-      config.hachureAngle = this.getRandomNumber(-30, -50)
+      config.hachureAngle = getRandomNumber(-30, -50)
       // Rough.js default is 4 * strokeWidth
-      config.hachureGap = this.getRandomNumber(3, 5)
+      config.hachureGap = getRandomNumber(3, 5)
       // randomize double stroke effect if not explicitly set through user config
       if (typeof config.disableMultiStroke === 'undefined') {
         config.disableMultiStroke = Math.random() > 0.3
@@ -978,19 +805,6 @@ export class Svg2Roughjs {
     }
 
     return config
-  }
-
-  private getDefsElement(svgElement: SVGSVGElement): SVGDefsElement {
-    let outputDefs = svgElement.querySelector('defs')
-    if (!outputDefs) {
-      outputDefs = document.createElementNS('http://www.w3.org/2000/svg', 'defs')
-      if (svgElement.childElementCount > 0) {
-        svgElement.insertBefore(outputDefs, svgElement.firstElementChild)
-      } else {
-        svgElement.appendChild(outputDefs)
-      }
-    }
-    return outputDefs
   }
 
   /**
@@ -1001,7 +815,7 @@ export class Svg2Roughjs {
     clipPathAttr: string,
     svgTransform: SVGTransform | null
   ) {
-    const id = this.getIdFromUrl(clipPathAttr)
+    const id = getIdFromUrl(clipPathAttr)
     if (!id) {
       return
     }
@@ -1018,7 +832,7 @@ export class Svg2Roughjs {
       this.ctx.beginPath()
     } else {
       // for SVG output we create clipPath defs
-      let targetDefs = this.getDefsElement(this.canvas as SVGSVGElement)
+      let targetDefs = getDefsElement(this.canvas as SVGSVGElement)
       // unfortunately, we cannot reuse clip-paths due to the 'global transform' approach
       const sketchClipPathId = `${id}_${targetDefs.childElementCount}`
       clipContainer = document.createElementNS('http://www.w3.org/2000/svg', 'clipPath')
@@ -1035,7 +849,7 @@ export class Svg2Roughjs {
       const childElement = children[i] as SVGGraphicsElement
       const childTransform = svgTransform
         ? this.getCombinedTransform(childElement, svgTransform)
-        : this.getSvgTransform(childElement)
+        : getSvgTransform(childElement)
       stack.push({ element: childElement, transform: childTransform })
     }
 
@@ -1053,13 +867,13 @@ export class Svg2Roughjs {
         // some elements are ignored on clippaths
         continue
       }
-      // process childs
+      // process children
       const children = getNodeChildren(element)
       for (let i = children.length - 1; i >= 0; i--) {
         const childElement = children[i] as SVGGraphicsElement
         const childTransform = transform
           ? this.getCombinedTransform(childElement, transform)
-          : this.getSvgTransform(childElement)
+          : getSvgTransform(childElement)
         stack.push({ element: childElement, transform: childTransform })
       }
     }
@@ -1094,20 +908,12 @@ export class Svg2Roughjs {
     }
   }
 
-  private isHidden(element: SVGElement) {
-    const style = element.style
-    if (!style) {
-      return false
-    }
-    return style.display === 'none' || style.visibility === 'hidden'
-  }
-
   /**
    * The main switch to delegate drawing of `SVGElement`s
    * to different subroutines.
    */
   private drawElement(element: SVGElement, svgTransform: SVGTransform | null) {
-    if (this.isHidden(element)) {
+    if (isHidden(element)) {
       // just skip hidden elements
       return
     }
@@ -1186,7 +992,7 @@ export class Svg2Roughjs {
     }
 
     // start marker
-    const markerStartId = this.getIdFromUrl(element.getAttribute('marker-start'))
+    const markerStartId = getIdFromUrl(element.getAttribute('marker-start'))
     const markerStartElement = markerStartId
       ? (this.idElements[markerStartId] as SVGMarkerElement)
       : null
@@ -1195,7 +1001,7 @@ export class Svg2Roughjs {
       if (points.length > 1) {
         const orientAttr = markerStartElement.getAttribute('orient')
         if (orientAttr === 'auto' || orientAttr === 'auto-start-reverse') {
-          const autoAngle = this.getAngle(points[0], points[1])
+          const autoAngle = getAngle(points[0], points[1])
           angle = orientAttr === 'auto' ? autoAngle : autoAngle + 180
         }
       }
@@ -1214,14 +1020,14 @@ export class Svg2Roughjs {
     }
 
     // end marker
-    const markerEndId = this.getIdFromUrl(element.getAttribute('marker-end'))
+    const markerEndId = getIdFromUrl(element.getAttribute('marker-end'))
     const markerEndElement = markerEndId ? (this.idElements[markerEndId] as SVGMarkerElement) : null
     if (markerEndElement) {
       let angle = markerEndElement.orientAngle.baseVal.value
       if (points.length > 1) {
         const orientAttr = markerEndElement.getAttribute('orient')
         if (orientAttr === 'auto' || orientAttr === 'auto-start-reverse') {
-          angle = this.getAngle(points[points.length - 2], points[points.length - 1])
+          angle = getAngle(points[points.length - 2], points[points.length - 1])
         }
       }
 
@@ -1239,7 +1045,7 @@ export class Svg2Roughjs {
     }
 
     // mid marker(s)
-    const markerMidId = this.getIdFromUrl(element.getAttribute('marker-mid'))
+    const markerMidId = getIdFromUrl(element.getAttribute('marker-mid'))
     const markerMidElement = markerMidId ? (this.idElements[markerMidId] as SVGMarkerElement) : null
     if (markerMidElement && points.length > 2) {
       for (let i = 0; i < points.length; i++) {
@@ -1256,8 +1062,8 @@ export class Svg2Roughjs {
           const nextPt = points[i + 1]
           // https://www.w3.org/TR/SVG11/painting.html#OrientAttribute
           // use angle bisector of incoming and outgoing angle
-          const inAngle = this.getAngle(prevPt, loc)
-          const outAngle = this.getAngle(loc, nextPt)
+          const inAngle = getAngle(prevPt, loc)
+          const outAngle = getAngle(loc, nextPt)
           const reverse = nextPt.x < loc.x ? 180 : 0
           angle = (inAngle + outAngle) / 2 + reverse
         }
@@ -1276,17 +1082,10 @@ export class Svg2Roughjs {
     }
   }
 
-  /**
-   * The angle in degree of the line defined by the given points.
-   */
-  private getAngle(p0: Point, p1: Point): number {
-    return Math.atan2(p1.y - p0.y, p1.x - p0.x) * (180 / Math.PI)
-  }
-
   private drawPolyline(polyline: SVGPolylineElement, svgTransform: SVGTransform | null) {
-    const points = this.getPointsArray(polyline)
+    const points = getPointsArray(polyline)
     const transformed = points.map(p => {
-      const pt = this.applyMatrix(p, svgTransform)
+      const pt = applyMatrix(p, svgTransform)
       return [pt.x, pt.y]
     })
     const style = this.parseStyleConfig(polyline, svgTransform)
@@ -1300,48 +1099,13 @@ export class Svg2Roughjs {
     this.drawMarkers(polyline, points, svgTransform)
   }
 
-  private getPointsArray(element: SVGPolygonElement | SVGPolylineElement): Array<Point> {
-    const pointsAttr = element.getAttribute('points')
-    if (!pointsAttr) {
-      return []
-    }
-
-    let coordinateRegexp
-    if (pointsAttr.indexOf(' ') > 0) {
-      // just assume that the coordinates (or pairs) are separated with space
-      coordinateRegexp = /\s+/g
-    } else {
-      // there are no spaces, so assume comma separators
-      coordinateRegexp = /,/g
-    }
-
-    const pointList = pointsAttr.split(coordinateRegexp)
-    const points = []
-    for (let i = 0; i < pointList.length; i++) {
-      const currentEntry = pointList[i]
-      const coordinates = currentEntry.split(',')
-      if (coordinates.length === 2) {
-        points.push(new Point(parseFloat(coordinates[0]), parseFloat(coordinates[1])))
-      } else {
-        // space as separators, take next entry as y coordinate
-        const next = i + 1
-        if (next < pointList.length) {
-          points.push(new Point(parseFloat(currentEntry), parseFloat(pointList[next])))
-          // skip the next entry
-          i = next
-        }
-      }
-    }
-    return points
-  }
-
   private applyPolygonClip(
     polygon: SVGPolygonElement,
     container: SVGClipPathElement | null,
     svgTransform: SVGTransform | null
   ) {
     if (this.renderMode === RenderMode.CANVAS && this.ctx) {
-      const points = this.getPointsArray(polygon)
+      const points = getPointsArray(polygon)
       // in the clip case, we can actually transform the entire
       // canvas without distorting the hand-drawn style
       if (points.length > 0) {
@@ -1365,10 +1129,10 @@ export class Svg2Roughjs {
   }
 
   private drawPolygon(polygon: SVGPolygonElement, svgTransform: SVGTransform | null) {
-    const points = this.getPointsArray(polygon)
+    const points = getPointsArray(polygon)
 
     const transformed = points.map(p => {
-      const pt = this.applyMatrix(p, svgTransform)
+      const pt = applyMatrix(p, svgTransform)
       return [pt.x, pt.y]
     })
 
@@ -1432,11 +1196,11 @@ export class Svg2Roughjs {
     }
 
     let result
-    if (this.isIdentityTransform(svgTransform) || this.isTranslationTransform(svgTransform)) {
+    if (isIdentityTransform(svgTransform) || isTranslationTransform(svgTransform)) {
       // Simple case, there's no transform and we can use the ellipse command
-      const center = this.applyMatrix(new Point(cx, cy), svgTransform)
+      const center = applyMatrix(new Point(cx, cy), svgTransform)
       // transform a point on the ellipse to get the transformed radius
-      const radiusPoint = this.applyMatrix(new Point(cx + rx, cy + ry), svgTransform)
+      const radiusPoint = applyMatrix(new Point(cx + rx, cy + ry), svgTransform)
       const transformedWidth = 2 * (radiusPoint.x - center.x)
       const transformedHeight = 2 * (radiusPoint.y - center.y)
       result = this.rc.ellipse(
@@ -1449,15 +1213,15 @@ export class Svg2Roughjs {
     } else {
       // in other cases we need to construct the path manually.
       const factor = (4 / 3) * (Math.sqrt(2) - 1)
-      const p1 = this.applyMatrix(new Point(cx + rx, cy), svgTransform)
-      const p2 = this.applyMatrix(new Point(cx, cy + ry), svgTransform)
-      const p3 = this.applyMatrix(new Point(cx - rx, cy), svgTransform)
-      const p4 = this.applyMatrix(new Point(cx, cy - ry), svgTransform)
-      const c1 = this.applyMatrix(new Point(cx + rx, cy + factor * ry), svgTransform)
-      const c2 = this.applyMatrix(new Point(cx + factor * rx, cy + ry), svgTransform)
-      const c4 = this.applyMatrix(new Point(cx - rx, cy + factor * ry), svgTransform)
-      const c6 = this.applyMatrix(new Point(cx - factor * rx, cy - ry), svgTransform)
-      const c8 = this.applyMatrix(new Point(cx + rx, cy - factor * ry), svgTransform)
+      const p1 = applyMatrix(new Point(cx + rx, cy), svgTransform)
+      const p2 = applyMatrix(new Point(cx, cy + ry), svgTransform)
+      const p3 = applyMatrix(new Point(cx - rx, cy), svgTransform)
+      const p4 = applyMatrix(new Point(cx, cy - ry), svgTransform)
+      const c1 = applyMatrix(new Point(cx + rx, cy + factor * ry), svgTransform)
+      const c2 = applyMatrix(new Point(cx + factor * rx, cy + ry), svgTransform)
+      const c4 = applyMatrix(new Point(cx - rx, cy + factor * ry), svgTransform)
+      const c6 = applyMatrix(new Point(cx - factor * rx, cy - ry), svgTransform)
+      const c8 = applyMatrix(new Point(cx + rx, cy - factor * ry), svgTransform)
       const path = `M ${p1} C ${c1} ${c2} ${p2} S ${c4} ${p3} S ${c6} ${p4} S ${c8} ${p1}z`
       result = this.rc.path(path, this.parseStyleConfig(ellipse, svgTransform))
     }
@@ -1505,12 +1269,12 @@ export class Svg2Roughjs {
       return
     }
 
-    const center = this.applyMatrix(new Point(cx, cy), svgTransform)
+    const center = applyMatrix(new Point(cx, cy), svgTransform)
 
     let result
-    if (this.isIdentityTransform(svgTransform) || this.isTranslationTransform(svgTransform)) {
+    if (isIdentityTransform(svgTransform) || isTranslationTransform(svgTransform)) {
       // transform a point on the ellipse to get the transformed radius
-      const radiusPoint = this.applyMatrix(new Point(cx + r, cy + r), svgTransform)
+      const radiusPoint = applyMatrix(new Point(cx + r, cy + r), svgTransform)
       const transformedWidth = 2 * (radiusPoint.x - center.x)
       result = this.rc.circle(
         center.x,
@@ -1521,15 +1285,15 @@ export class Svg2Roughjs {
     } else {
       // in other cases we need to construct the path manually.
       const factor = (4 / 3) * (Math.sqrt(2) - 1)
-      const p1 = this.applyMatrix(new Point(cx + r, cy), svgTransform)
-      const p2 = this.applyMatrix(new Point(cx, cy + r), svgTransform)
-      const p3 = this.applyMatrix(new Point(cx - r, cy), svgTransform)
-      const p4 = this.applyMatrix(new Point(cx, cy - r), svgTransform)
-      const c1 = this.applyMatrix(new Point(cx + r, cy + factor * r), svgTransform)
-      const c2 = this.applyMatrix(new Point(cx + factor * r, cy + r), svgTransform)
-      const c4 = this.applyMatrix(new Point(cx - r, cy + factor * r), svgTransform)
-      const c6 = this.applyMatrix(new Point(cx - factor * r, cy - r), svgTransform)
-      const c8 = this.applyMatrix(new Point(cx + r, cy - factor * r), svgTransform)
+      const p1 = applyMatrix(new Point(cx + r, cy), svgTransform)
+      const p2 = applyMatrix(new Point(cx, cy + r), svgTransform)
+      const p3 = applyMatrix(new Point(cx - r, cy), svgTransform)
+      const p4 = applyMatrix(new Point(cx, cy - r), svgTransform)
+      const c1 = applyMatrix(new Point(cx + r, cy + factor * r), svgTransform)
+      const c2 = applyMatrix(new Point(cx + factor * r, cy + r), svgTransform)
+      const c4 = applyMatrix(new Point(cx - r, cy + factor * r), svgTransform)
+      const c6 = applyMatrix(new Point(cx - factor * r, cy - r), svgTransform)
+      const c8 = applyMatrix(new Point(cx + r, cy - factor * r), svgTransform)
       const path = `M ${p1} C ${c1} ${c2} ${p2} S ${c4} ${p3} S ${c6} ${p4} S ${c8} ${p1}z`
       result = this.rc.path(path, this.parseStyleConfig(circle, svgTransform))
     }
@@ -1539,9 +1303,9 @@ export class Svg2Roughjs {
 
   private drawLine(line: SVGLineElement, svgTransform: SVGTransform | null) {
     const p1 = new Point(line.x1.baseVal.value, line.y1.baseVal.value)
-    const tp1 = this.applyMatrix(p1, svgTransform)
+    const tp1 = applyMatrix(p1, svgTransform)
     const p2 = new Point(line.x2.baseVal.value, line.y2.baseVal.value)
-    const tp2 = this.applyMatrix(p2, svgTransform)
+    const tp2 = applyMatrix(p2, svgTransform)
 
     if (tp1.x === tp2.x && tp1.y === tp2.y) {
       // zero-length line is not rendered
@@ -1803,14 +1567,10 @@ export class Svg2Roughjs {
       ry = Math.min(ry, height / 2)
     }
 
-    if (
-      (this.isIdentityTransform(svgTransform) || this.isTranslationTransform(svgTransform)) &&
-      !rx &&
-      !ry
-    ) {
+    if ((isIdentityTransform(svgTransform) || isTranslationTransform(svgTransform)) && !rx && !ry) {
       // Simple case; just a rectangle
-      const p1 = this.applyMatrix(new Point(x, y), svgTransform)
-      const p2 = this.applyMatrix(new Point(x + width, y + height), svgTransform)
+      const p1 = applyMatrix(new Point(x, y), svgTransform)
+      const p2 = applyMatrix(new Point(x + width, y + height), svgTransform)
       const transformedWidth = p2.x - p1.x
       const transformedHeight = p2.y - p1.y
       this.postProcessElement(
@@ -1826,10 +1586,10 @@ export class Svg2Roughjs {
     } else {
       let path = ''
       if (!rx && !ry) {
-        const p1 = this.applyMatrix(new Point(x, y), svgTransform)
-        const p2 = this.applyMatrix(new Point(x + width, y), svgTransform)
-        const p3 = this.applyMatrix(new Point(x + width, y + height), svgTransform)
-        const p4 = this.applyMatrix(new Point(x, y + height), svgTransform)
+        const p1 = applyMatrix(new Point(x, y), svgTransform)
+        const p2 = applyMatrix(new Point(x + width, y), svgTransform)
+        const p3 = applyMatrix(new Point(x + width, y + height), svgTransform)
+        const p4 = applyMatrix(new Point(x, y + height), svgTransform)
         // No rounding, so just construct the respective path as a simple polygon
         path += `M ${p1}`
         path += `L ${p2}`
@@ -1841,42 +1601,39 @@ export class Svg2Roughjs {
 
         // Construct path for the rounded rectangle
         // perform an absolute moveto operation to location (x+rx,y), where x is the value of the ‘rect’ element's ‘x’ attribute converted to user space, rx is the effective value of the ‘rx’ attribute converted to user space and y is the value of the ‘y’ attribute converted to user space
-        const p1 = this.applyMatrix(new Point(x + rx, y), svgTransform)
+        const p1 = applyMatrix(new Point(x + rx, y), svgTransform)
         path += `M ${p1}`
         // perform an absolute horizontal lineto operation to location (x+width-rx,y), where width is the ‘rect’ element's ‘width’ attribute converted to user space
-        const p2 = this.applyMatrix(new Point(x + width - rx, y), svgTransform)
+        const p2 = applyMatrix(new Point(x + width - rx, y), svgTransform)
         path += `L ${p2}`
         // perform an absolute elliptical arc operation to coordinate (x+width,y+ry), where the effective values for the ‘rx’ and ‘ry’ attributes on the ‘rect’ element converted to user space are used as the rx and ry attributes on the elliptical arc command, respectively, the x-axis-rotation is set to zero, the large-arc-flag is set to zero, and the sweep-flag is set to one
-        const p3c1 = this.applyMatrix(new Point(x + width - rx + factor * rx, y), svgTransform)
-        const p3c2 = this.applyMatrix(new Point(x + width, y + factor * ry), svgTransform)
-        const p3 = this.applyMatrix(new Point(x + width, y + ry), svgTransform)
+        const p3c1 = applyMatrix(new Point(x + width - rx + factor * rx, y), svgTransform)
+        const p3c2 = applyMatrix(new Point(x + width, y + factor * ry), svgTransform)
+        const p3 = applyMatrix(new Point(x + width, y + ry), svgTransform)
         path += `C ${p3c1} ${p3c2} ${p3}` // We cannot use the arc command, since we no longer draw in the expected coordinates. So approximate everything with lines and béziers
 
         // perform a absolute vertical lineto to location (x+width,y+height-ry), where height is the ‘rect’ element's ‘height’ attribute converted to user space
-        const p4 = this.applyMatrix(new Point(x + width, y + height - ry), svgTransform)
+        const p4 = applyMatrix(new Point(x + width, y + height - ry), svgTransform)
         path += `L ${p4}`
         // perform an absolute elliptical arc operation to coordinate (x+width-rx,y+height)
-        const p5c1 = this.applyMatrix(
-          new Point(x + width, y + height - ry + factor * ry),
-          svgTransform
-        )
-        const p5c2 = this.applyMatrix(new Point(x + width - factor * rx, y + height), svgTransform)
-        const p5 = this.applyMatrix(new Point(x + width - rx, y + height), svgTransform)
+        const p5c1 = applyMatrix(new Point(x + width, y + height - ry + factor * ry), svgTransform)
+        const p5c2 = applyMatrix(new Point(x + width - factor * rx, y + height), svgTransform)
+        const p5 = applyMatrix(new Point(x + width - rx, y + height), svgTransform)
         path += `C ${p5c1} ${p5c2} ${p5}`
         // perform an absolute horizontal lineto to location (x+rx,y+height)
-        const p6 = this.applyMatrix(new Point(x + rx, y + height), svgTransform)
+        const p6 = applyMatrix(new Point(x + rx, y + height), svgTransform)
         path += `L ${p6}`
         // perform an absolute elliptical arc operation to coordinate (x,y+height-ry)
-        const p7c1 = this.applyMatrix(new Point(x + rx - factor * rx, y + height), svgTransform)
-        const p7c2 = this.applyMatrix(new Point(x, y + height - factor * ry), svgTransform)
-        const p7 = this.applyMatrix(new Point(x, y + height - ry), svgTransform)
+        const p7c1 = applyMatrix(new Point(x + rx - factor * rx, y + height), svgTransform)
+        const p7c2 = applyMatrix(new Point(x, y + height - factor * ry), svgTransform)
+        const p7 = applyMatrix(new Point(x, y + height - ry), svgTransform)
         path += `C ${p7c1} ${p7c2} ${p7}`
         // perform an absolute absolute vertical lineto to location (x,y+ry)
-        const p8 = this.applyMatrix(new Point(x, y + ry), svgTransform)
+        const p8 = applyMatrix(new Point(x, y + ry), svgTransform)
         path += `L ${p8}`
         // perform an absolute elliptical arc operation to coordinate (x+rx,y)
-        const p9c1 = this.applyMatrix(new Point(x, y + factor * ry), svgTransform)
-        const p9c2 = this.applyMatrix(new Point(x + factor * rx, y), svgTransform)
+        const p9c1 = applyMatrix(new Point(x, y + factor * ry), svgTransform)
+        const p9c2 = applyMatrix(new Point(x + factor * rx, y), svgTransform)
         path += `C ${p9c1} ${p9c2} ${p1}`
         path += 'z'
       }

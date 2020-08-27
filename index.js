@@ -75,6 +75,11 @@ var SvgTextures = /** @class */ (function () {
 }());
 
 /**
+ * A simple regexp which is used to test whether a given string value
+ * contains unit identifiers, e.g. "1px", "1em", "1%", ...
+ */
+var CONTAINS_UNIT_REGEXP = /[a-z%]/;
+/**
  * Calculates the average color of the colors in the given array.
  * @returns The average color
  */
@@ -126,6 +131,228 @@ function getLengthInPx(svgLengthList) {
     }
     return 0;
 }
+/**
+ * Whether the given SVGTransform resembles an identity transform.
+ * @returns Whether the transform is an identity transform.
+ *  Returns true if transform is undefined.
+ */
+function isIdentityTransform(svgTransform) {
+    if (!svgTransform) {
+        return true;
+    }
+    var matrix = svgTransform.matrix;
+    return (!matrix ||
+        (matrix.a === 1 &&
+            matrix.b === 0 &&
+            matrix.c === 0 &&
+            matrix.d === 1 &&
+            matrix.e === 0 &&
+            matrix.f === 0));
+}
+/**
+ * Whether the given SVGTransform does not scale nor skew.
+ * @returns Whether the given SVGTransform does not scale nor skew.
+ *  Returns true if transform is undefined.
+ */
+function isTranslationTransform(svgTransform) {
+    if (!svgTransform) {
+        return true;
+    }
+    var matrix = svgTransform.matrix;
+    return !matrix || (matrix.a === 1 && matrix.b === 0 && matrix.c === 0 && matrix.d === 1);
+}
+/**
+ * Applies a given `SVGTransform` to the point.
+ *
+ * [a c e] [x] = (a*x + c*y + e)
+ * [b d f] [y] = (b*x + d*y + f)
+ * [0 0 1] [1] = (0 + 0 + 1)
+ */
+function applyMatrix(point, svgTransform) {
+    if (!svgTransform) {
+        return point;
+    }
+    var matrix = svgTransform.matrix;
+    var x = matrix.a * point.x + matrix.c * point.y + matrix.e;
+    var y = matrix.b * point.x + matrix.d * point.y + matrix.f;
+    return new Point(x, y);
+}
+/**
+ * Returns a random number in the given range.
+ */
+function getRandomNumber(min, max) {
+    return Math.random() * (max - min) + min;
+}
+/**
+ * Returns the `offset` of an `SVGStopElement`.
+ * @return stop percentage
+ */
+function getStopOffset(stop) {
+    var offset = stop.getAttribute('offset');
+    if (!offset) {
+        return 0;
+    }
+    if (offset.indexOf('%')) {
+        return parseFloat(offset.substring(0, offset.length - 1));
+    }
+    else {
+        return parseFloat(offset) * 100;
+    }
+}
+/**
+ * Returns the `stop-color` of an `SVGStopElement`.
+ */
+function getStopColor(stop) {
+    var _a;
+    var stopColorStr = stop.getAttribute('stop-color');
+    if (!stopColorStr) {
+        var style = (_a = stop.getAttribute('style')) !== null && _a !== void 0 ? _a : '';
+        var match = /stop-color:\s?(.*);?/.exec(style);
+        if (match && match.length > 1) {
+            stopColorStr = match[1];
+        }
+    }
+    return stopColorStr ? tinycolor(stopColorStr) : tinycolor('white');
+}
+/**
+ * Converts an SVG gradient to a color by mixing all stop colors
+ * with `tinycolor.mix`.
+ */
+function gradientToColor(gradient, opacity) {
+    var stops = Array.prototype.slice.apply(gradient.querySelectorAll('stop'));
+    if (stops.length === 0) {
+        return 'transparent';
+    }
+    else if (stops.length === 1) {
+        var color = getStopColor(stops[0]);
+        color.setAlpha(opacity);
+        return color.toString();
+    }
+    else {
+        // Because roughjs can only deal with solid colors, we try to calculate
+        // the average color of the gradient here.
+        // The idea is to create an array of discrete (average) colors that represents the
+        // gradient under consideration of the stop's offset. Thus, larger offsets
+        // result in more entries of the same mixed color (of the two adjacent color stops).
+        // At the end, this array is averaged again, to create a single solid color.
+        var resolution = 10;
+        var discreteColors = [];
+        var lastColor = null;
+        for (var i = 0; i < stops.length; i++) {
+            var currentColor = getStopColor(stops[i]);
+            var currentOffset = getStopOffset(stops[i]);
+            // combine the adjacent colors
+            var combinedColor = lastColor ? averageColor([lastColor, currentColor]) : currentColor;
+            // fill the discrete color array depending on the offset size
+            var entries = Math.max(1, (currentOffset / resolution) | 0);
+            while (entries > 0) {
+                discreteColors.push(combinedColor);
+                entries--;
+            }
+            lastColor = currentColor;
+        }
+        // average the discrete colors again for the final result
+        var mixedColor = averageColor(discreteColors);
+        mixedColor.setAlpha(opacity);
+        return mixedColor.toString();
+    }
+}
+/**
+ * Returns the id from the url string
+ */
+function getIdFromUrl(url) {
+    if (url === null) {
+        return null;
+    }
+    var result = /url\('#?(.*?)'\)/.exec(url) || /url\("#?(.*?)"\)/.exec(url) || /url\(#?(.*?)\)/.exec(url);
+    if (result && result.length > 1) {
+        return result[1];
+    }
+    return null;
+}
+/**
+ * Converts SVG opacity attributes to a [0, 1] range.
+ */
+function getOpacity(element, attribute) {
+    //@ts-ignore
+    var attr = getComputedStyle(element)[attribute] || element.getAttribute(attribute);
+    if (attr) {
+        if (attr.indexOf('%') !== -1) {
+            return Math.min(1, Math.max(0, parseFloat(attr.substring(0, attr.length - 1)) / 100));
+        }
+        return Math.min(1, Math.max(0, parseFloat(attr)));
+    }
+    return 1;
+}
+/**
+ * Returns the consolidated transform of the given element.
+ */
+function getSvgTransform(element) {
+    if (element.transform && element.transform.baseVal.numberOfItems > 0) {
+        return element.transform.baseVal.consolidate();
+    }
+    return null;
+}
+function getDefsElement(svgElement) {
+    var outputDefs = svgElement.querySelector('defs');
+    if (!outputDefs) {
+        outputDefs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        if (svgElement.childElementCount > 0) {
+            svgElement.insertBefore(outputDefs, svgElement.firstElementChild);
+        }
+        else {
+            svgElement.appendChild(outputDefs);
+        }
+    }
+    return outputDefs;
+}
+function isHidden(element) {
+    var style = element.style;
+    if (!style) {
+        return false;
+    }
+    return style.display === 'none' || style.visibility === 'hidden';
+}
+/**
+ * The angle in degree of the line defined by the given points.
+ */
+function getAngle(p0, p1) {
+    return Math.atan2(p1.y - p0.y, p1.x - p0.x) * (180 / Math.PI);
+}
+function getPointsArray(element) {
+    var pointsAttr = element.getAttribute('points');
+    if (!pointsAttr) {
+        return [];
+    }
+    var coordinateRegexp;
+    if (pointsAttr.indexOf(' ') > 0) {
+        // just assume that the coordinates (or pairs) are separated with space
+        coordinateRegexp = /\s+/g;
+    }
+    else {
+        // there are no spaces, so assume comma separators
+        coordinateRegexp = /,/g;
+    }
+    var pointList = pointsAttr.split(coordinateRegexp);
+    var points = [];
+    for (var i = 0; i < pointList.length; i++) {
+        var currentEntry = pointList[i];
+        var coordinates = currentEntry.split(',');
+        if (coordinates.length === 2) {
+            points.push(new Point(parseFloat(coordinates[0]), parseFloat(coordinates[1])));
+        }
+        else {
+            // space as separators, take next entry as y coordinate
+            var next = i + 1;
+            if (next < pointList.length) {
+                points.push(new Point(parseFloat(currentEntry), parseFloat(pointList[next])));
+                // skip the next entry
+                i = next;
+            }
+        }
+    }
+    return points;
+}
 
 var units = require('units-css');
 /**
@@ -148,23 +375,23 @@ var Svg2Roughjs = /** @class */ (function () {
         if (roughConfig === void 0) { roughConfig = {}; }
         this.width = 0;
         this.height = 0;
-        this.$renderMode = RenderMode.CANVAS;
+        this.$backgroundColor = null;
         this.ctx = null;
         this.$pencilFilter = false;
         this.idElements = {};
         if (!target) {
             throw new Error('No target provided');
         }
-        if (typeof target === 'object') {
+        if (target instanceof HTMLCanvasElement || target instanceof SVGSVGElement) {
             if (target.tagName === 'canvas' || target.tagName === 'svg') {
                 this.canvas = target;
                 this.$renderMode = target.tagName === 'canvas' ? RenderMode.CANVAS : RenderMode.SVG;
             }
             else {
-                throw new Error('Target object is not of type HMTLCanvaseElement or SVGSVGElement');
+                throw new Error('Target object is not of type HTMLCanvasElement or SVGSVGElement');
             }
         }
-        else if (typeof target === 'string') {
+        else {
             // create a new HTMLCanvasElement as child of the given element
             var container = document.querySelector(target);
             if (!container) {
@@ -199,17 +426,6 @@ var Svg2Roughjs = /** @class */ (function () {
         // we randomize the visualization per element by default
         this.$randomize = true;
     }
-    Object.defineProperty(Svg2Roughjs, "CONTAINS_UNIT_REGEXP", {
-        /**
-         * A simple regexp which is used to test whether a given string value
-         * contains unit identifiers, e.g. "1px", "1em", "1%", ...
-         */
-        get: function () {
-            return /[a-z%]/;
-        },
-        enumerable: false,
-        configurable: true
-    });
     Object.defineProperty(Svg2Roughjs.prototype, "svg", {
         get: function () {
             return this.$svg;
@@ -444,7 +660,7 @@ var Svg2Roughjs = /** @class */ (function () {
         }
         // prepare filter effects
         if (this.pencilFilter) {
-            var defs = this.getDefsElement(svgElement);
+            var defs = getDefsElement(svgElement);
             defs.appendChild(SvgTextures.pencilTextureFilter);
         }
     };
@@ -516,7 +732,7 @@ var Svg2Roughjs = /** @class */ (function () {
                 }
                 var childTransform = svgTransform
                     ? this.getCombinedTransform(child, svgTransform)
-                    : this.getSvgTransform(child);
+                    : getSvgTransform(child);
                 stack.push({ element: child, transform: childTransform });
             }
         }
@@ -538,13 +754,13 @@ var Svg2Roughjs = /** @class */ (function () {
                 // ClipPaths are not drawn and processed separately.
                 continue;
             }
-            // process childs
+            // process children
             var children = getNodeChildren(element);
             for (var i = children.length - 1; i >= 0; i--) {
                 var childElement = children[i];
                 var newTransform = transform
                     ? this.getCombinedTransform(childElement, transform)
-                    : this.getSvgTransform(childElement);
+                    : getSvgTransform(childElement);
                 stack.push({ element: childElement, transform: newTransform });
             }
         }
@@ -570,22 +786,13 @@ var Svg2Roughjs = /** @class */ (function () {
      * Combines the given transform with the element's transform.
      */
     Svg2Roughjs.prototype.getCombinedTransform = function (element, transform) {
-        var elementTransform = this.getSvgTransform(element);
+        var elementTransform = getSvgTransform(element);
         if (elementTransform) {
             var elementTransformMatrix = elementTransform.matrix;
             var combinedMatrix = transform.matrix.multiply(elementTransformMatrix);
             return this.svg.createSVGTransformFromMatrix(combinedMatrix);
         }
         return transform;
-    };
-    /**
-     * Returns the consolidated of the given element.
-     */
-    Svg2Roughjs.prototype.getSvgTransform = function (element) {
-        if (element.transform && element.transform.baseVal.numberOfItems > 0) {
-            return element.transform.baseVal.consolidate();
-        }
-        return null;
     };
     /**
      * Applies the given svgTransform to the canvas context.
@@ -610,36 +817,6 @@ var Svg2Roughjs = /** @class */ (function () {
         }
     };
     /**
-     * Whether the given SVGTransform resembles an identity transform.
-     * @returns Whether the transform is an identity transform.
-     *  Returns true if transform is undefined.
-     */
-    Svg2Roughjs.prototype.isIdentityTransform = function (svgTransform) {
-        if (!svgTransform) {
-            return true;
-        }
-        var matrix = svgTransform.matrix;
-        return (!matrix ||
-            (matrix.a === 1 &&
-                matrix.b === 0 &&
-                matrix.c === 0 &&
-                matrix.d === 1 &&
-                matrix.e === 0 &&
-                matrix.f === 0));
-    };
-    /**
-     * Whether the given SVGTransform does not scale nor skew.
-     * @returns Whether the given SVGTransform does not scale nor skew.
-     *  Returns true if transform is undefined.
-     */
-    Svg2Roughjs.prototype.isTranslationTransform = function (svgTransform) {
-        if (!svgTransform) {
-            return true;
-        }
-        var matrix = svgTransform.matrix;
-        return !matrix || (matrix.a === 1 && matrix.b === 0 && matrix.c === 0 && matrix.d === 1);
-    };
-    /**
      * Stores elements with IDs for later use.
      */
     Svg2Roughjs.prototype.collectElementsWithID = function () {
@@ -654,121 +831,12 @@ var Svg2Roughjs = /** @class */ (function () {
         }
     };
     /**
-     * Applies a given `SVGTransform` to the point.
-     *
-     * [a c e] [x] = (a*x + c*y + e)
-     * [b d f] [y] = (b*x + d*y + f)
-     * [0 0 1] [1] = (0 + 0 + 1)
-     */
-    Svg2Roughjs.prototype.applyMatrix = function (point, svgTransform) {
-        if (!svgTransform) {
-            return point;
-        }
-        var matrix = svgTransform.matrix;
-        var x = matrix.a * point.x + matrix.c * point.y + matrix.e;
-        var y = matrix.b * point.x + matrix.d * point.y + matrix.f;
-        return new Point(x, y);
-    };
-    /**
-     * Returns a random number in the given range.
-     */
-    Svg2Roughjs.prototype.getRandomNumber = function (min, max) {
-        return Math.random() * (max - min) + min;
-    };
-    /**
-     * Returns the `offset` of an `SVGStopElement`.
-     * @return stop percentage
-     */
-    Svg2Roughjs.prototype.getStopOffset = function (stop) {
-        var offset = stop.getAttribute('offset');
-        if (!offset) {
-            return 0;
-        }
-        if (offset.indexOf('%')) {
-            return parseFloat(offset.substring(0, offset.length - 1));
-        }
-        else {
-            return parseFloat(offset) * 100;
-        }
-    };
-    /**
-     * Returns the `stop-color` of an `SVGStopElement`.
-     */
-    Svg2Roughjs.prototype.getStopColor = function (stop) {
-        var _a;
-        var stopColorStr = stop.getAttribute('stop-color');
-        if (!stopColorStr) {
-            var style = (_a = stop.getAttribute('style')) !== null && _a !== void 0 ? _a : '';
-            var match = /stop-color:\s?(.*);?/.exec(style);
-            if (match && match.length > 1) {
-                stopColorStr = match[1];
-            }
-        }
-        return stopColorStr ? tinycolor(stopColorStr) : tinycolor('white');
-    };
-    /**
-     * Converts an SVG gradient to a color by mixing all stop colors
-     * with `tinycolor.mix`.
-     */
-    Svg2Roughjs.prototype.gradientToColor = function (gradient, opacity) {
-        var stops = Array.prototype.slice.apply(gradient.querySelectorAll('stop'));
-        if (stops.length === 0) {
-            return 'transparent';
-        }
-        else if (stops.length === 1) {
-            var color = this.getStopColor(stops[0]);
-            color.setAlpha(opacity);
-            return color.toString();
-        }
-        else {
-            // Because roughjs can only deal with solid colors, we try to calculate
-            // the average color of the gradient here.
-            // The idea is to create an array of discrete (average) colors that represents the
-            // gradient under consideration of the stop's offset. Thus, larger offsets
-            // result in more entries of the same mixed color (of the two adjacent color stops).
-            // At the end, this array is averaged again, to create a single solid color.
-            var resolution = 10;
-            var discreteColors = [];
-            var lastColor = null;
-            for (var i = 0; i < stops.length; i++) {
-                var currentColor = this.getStopColor(stops[i]);
-                var currentOffset = this.getStopOffset(stops[i]);
-                // combine the adjacent colors
-                var combinedColor = lastColor ? averageColor([lastColor, currentColor]) : currentColor;
-                // fill the discrete color array depending on the offset size
-                var entries = Math.max(1, (currentOffset / resolution) | 0);
-                while (entries > 0) {
-                    discreteColors.push(combinedColor);
-                    entries--;
-                }
-                lastColor = currentColor;
-            }
-            // average the discrete colors again for the final result
-            var mixedColor = averageColor(discreteColors);
-            mixedColor.setAlpha(opacity);
-            return mixedColor.toString();
-        }
-    };
-    /**
-     * Returns the id from the url string
-     */
-    Svg2Roughjs.prototype.getIdFromUrl = function (url) {
-        if (url === null) {
-            return null;
-        }
-        var result = /url\('#?(.*?)'\)/.exec(url) || /url\("#?(.*?)"\)/.exec(url) || /url\(#?(.*?)\)/.exec(url);
-        if (result && result.length > 1) {
-            return result[1];
-        }
-        return null;
-    };
-    /**
      * Parses a `fill` url by looking in the SVG `defs` element.
      * When a gradient is found, it is converted to a color and stored
      * in the internal defs store for this url.
      */
     Svg2Roughjs.prototype.parseFillUrl = function (url, opacity) {
-        var id = this.getIdFromUrl(url);
+        var id = getIdFromUrl(url);
         if (!id) {
             return 'transparent';
         }
@@ -780,27 +848,13 @@ var Svg2Roughjs = /** @class */ (function () {
             }
             else {
                 if (fill instanceof SVGLinearGradientElement || fill instanceof SVGRadialGradientElement) {
-                    var color = this.gradientToColor(fill, opacity);
+                    var color = gradientToColor(fill, opacity);
                     this.idElements[id] = color;
                     return color;
                 }
             }
         }
         return undefined;
-    };
-    /**
-     * Converts SVG opacity attributes to a [0, 1] range.
-     */
-    Svg2Roughjs.prototype.getOpacity = function (element, attribute) {
-        //@ts-ignore
-        var attr = getComputedStyle(element)[attribute] || element.getAttribute(attribute);
-        if (attr) {
-            if (attr.indexOf('%') !== -1) {
-                return Math.min(1, Math.max(0, parseFloat(attr.substring(0, attr.length - 1)) / 100));
-            }
-            return Math.min(1, Math.max(0, parseFloat(attr)));
-        }
-        return 1;
     };
     /**
      * Traverses the given elements hierarchy bottom-up to determine its effective
@@ -885,7 +939,7 @@ var Svg2Roughjs = /** @class */ (function () {
     Svg2Roughjs.prototype.convertToPixelUnit = function (value) {
         // css-units fails for converting from unit-less to 'px' in IE11,
         // thus we only apply it to non-px values
-        if (value.match(Svg2Roughjs.CONTAINS_UNIT_REGEXP) !== null) {
+        if (value.match(CONTAINS_UNIT_REGEXP) !== null) {
             return units.convert('px', value, this.$svg);
         }
         return parseFloat(value);
@@ -901,7 +955,7 @@ var Svg2Roughjs = /** @class */ (function () {
         var config = Object.assign({}, this.$roughConfig);
         // Scalefactor for certain style attributes. For lack of a better option here, use the determinant
         var scaleFactor = 1;
-        if (!this.isIdentityTransform(svgTransform)) {
+        if (!isIdentityTransform(svgTransform)) {
             var m = svgTransform.matrix;
             var det = m.a * m.d - m.c * m.b;
             scaleFactor = Math.sqrt(det);
@@ -909,7 +963,7 @@ var Svg2Roughjs = /** @class */ (function () {
         // incorporate the elements base opacity
         var elementOpacity = this.getEffectiveElementOpacity(element, 1, this.$useElementContext);
         var fill = this.getEffectiveAttribute(element, 'fill', this.$useElementContext) || 'black';
-        var fillOpacity = elementOpacity * this.getOpacity(element, 'fill-opacity');
+        var fillOpacity = elementOpacity * getOpacity(element, 'fill-opacity');
         if (fill) {
             if (fill.indexOf('url') !== -1) {
                 config.fill = this.parseFillUrl(fill, fillOpacity);
@@ -924,7 +978,7 @@ var Svg2Roughjs = /** @class */ (function () {
             }
         }
         var stroke = this.getEffectiveAttribute(element, 'stroke', this.$useElementContext);
-        var strokeOpacity = elementOpacity * this.getOpacity(element, 'stroke-opacity');
+        var strokeOpacity = elementOpacity * getOpacity(element, 'stroke-opacity');
         if (stroke) {
             if (stroke.indexOf('url') !== -1) {
                 config.stroke = this.parseFillUrl(fill, strokeOpacity);
@@ -975,11 +1029,11 @@ var Svg2Roughjs = /** @class */ (function () {
         }
         if (this.randomize) {
             // Rough.js default is 0.5 * strokeWidth
-            config.fillWeight = this.getRandomNumber(0.5, 3);
+            config.fillWeight = getRandomNumber(0.5, 3);
             // Rough.js default is -41deg
-            config.hachureAngle = this.getRandomNumber(-30, -50);
+            config.hachureAngle = getRandomNumber(-30, -50);
             // Rough.js default is 4 * strokeWidth
-            config.hachureGap = this.getRandomNumber(3, 5);
+            config.hachureGap = getRandomNumber(3, 5);
             // randomize double stroke effect if not explicitly set through user config
             if (typeof config.disableMultiStroke === 'undefined') {
                 config.disableMultiStroke = Math.random() > 0.3;
@@ -987,24 +1041,11 @@ var Svg2Roughjs = /** @class */ (function () {
         }
         return config;
     };
-    Svg2Roughjs.prototype.getDefsElement = function (svgElement) {
-        var outputDefs = svgElement.querySelector('defs');
-        if (!outputDefs) {
-            outputDefs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-            if (svgElement.childElementCount > 0) {
-                svgElement.insertBefore(outputDefs, svgElement.firstElementChild);
-            }
-            else {
-                svgElement.appendChild(outputDefs);
-            }
-        }
-        return outputDefs;
-    };
     /**
      * Applies the clip-path to the CanvasContext.
      */
     Svg2Roughjs.prototype.applyClipPath = function (owner, clipPathAttr, svgTransform) {
-        var id = this.getIdFromUrl(clipPathAttr);
+        var id = getIdFromUrl(clipPathAttr);
         if (!id) {
             return;
         }
@@ -1020,7 +1061,7 @@ var Svg2Roughjs = /** @class */ (function () {
         }
         else {
             // for SVG output we create clipPath defs
-            var targetDefs = this.getDefsElement(this.canvas);
+            var targetDefs = getDefsElement(this.canvas);
             // unfortunately, we cannot reuse clip-paths due to the 'global transform' approach
             var sketchClipPathId = id + "_" + targetDefs.childElementCount;
             clipContainer = document.createElementNS('http://www.w3.org/2000/svg', 'clipPath');
@@ -1036,7 +1077,7 @@ var Svg2Roughjs = /** @class */ (function () {
             var childElement = children[i];
             var childTransform = svgTransform
                 ? this.getCombinedTransform(childElement, svgTransform)
-                : this.getSvgTransform(childElement);
+                : getSvgTransform(childElement);
             stack.push({ element: childElement, transform: childTransform });
         }
         while (stack.length > 0) {
@@ -1049,13 +1090,13 @@ var Svg2Roughjs = /** @class */ (function () {
                 // some elements are ignored on clippaths
                 continue;
             }
-            // process childs
+            // process children
             var children_1 = getNodeChildren(element);
             for (var i = children_1.length - 1; i >= 0; i--) {
                 var childElement = children_1[i];
                 var childTransform = transform
                     ? this.getCombinedTransform(childElement, transform)
-                    : this.getSvgTransform(childElement);
+                    : getSvgTransform(childElement);
                 stack.push({ element: childElement, transform: childTransform });
             }
         }
@@ -1083,19 +1124,12 @@ var Svg2Roughjs = /** @class */ (function () {
             // TODO clipPath: more elements
         }
     };
-    Svg2Roughjs.prototype.isHidden = function (element) {
-        var style = element.style;
-        if (!style) {
-            return false;
-        }
-        return style.display === 'none' || style.visibility === 'hidden';
-    };
     /**
      * The main switch to delegate drawing of `SVGElement`s
      * to different subroutines.
      */
     Svg2Roughjs.prototype.drawElement = function (element, svgTransform) {
-        if (this.isHidden(element)) {
+        if (isHidden(element)) {
             // just skip hidden elements
             return;
         }
@@ -1164,7 +1198,7 @@ var Svg2Roughjs = /** @class */ (function () {
             }
         }
         // start marker
-        var markerStartId = this.getIdFromUrl(element.getAttribute('marker-start'));
+        var markerStartId = getIdFromUrl(element.getAttribute('marker-start'));
         var markerStartElement = markerStartId
             ? this.idElements[markerStartId]
             : null;
@@ -1173,7 +1207,7 @@ var Svg2Roughjs = /** @class */ (function () {
             if (points.length > 1) {
                 var orientAttr = markerStartElement.getAttribute('orient');
                 if (orientAttr === 'auto' || orientAttr === 'auto-start-reverse') {
-                    var autoAngle = this.getAngle(points[0], points[1]);
+                    var autoAngle = getAngle(points[0], points[1]);
                     angle = orientAttr === 'auto' ? autoAngle : autoAngle + 180;
                 }
             }
@@ -1188,14 +1222,14 @@ var Svg2Roughjs = /** @class */ (function () {
             this.processRoot(markerStartElement, markerTransform);
         }
         // end marker
-        var markerEndId = this.getIdFromUrl(element.getAttribute('marker-end'));
+        var markerEndId = getIdFromUrl(element.getAttribute('marker-end'));
         var markerEndElement = markerEndId ? this.idElements[markerEndId] : null;
         if (markerEndElement) {
             var angle = markerEndElement.orientAngle.baseVal.value;
             if (points.length > 1) {
                 var orientAttr = markerEndElement.getAttribute('orient');
                 if (orientAttr === 'auto' || orientAttr === 'auto-start-reverse') {
-                    angle = this.getAngle(points[points.length - 2], points[points.length - 1]);
+                    angle = getAngle(points[points.length - 2], points[points.length - 1]);
                 }
             }
             var location_2 = points[points.length - 1];
@@ -1209,7 +1243,7 @@ var Svg2Roughjs = /** @class */ (function () {
             this.processRoot(markerEndElement, markerTransform);
         }
         // mid marker(s)
-        var markerMidId = this.getIdFromUrl(element.getAttribute('marker-mid'));
+        var markerMidId = getIdFromUrl(element.getAttribute('marker-mid'));
         var markerMidElement = markerMidId ? this.idElements[markerMidId] : null;
         if (markerMidElement && points.length > 2) {
             for (var i = 0; i < points.length; i++) {
@@ -1225,8 +1259,8 @@ var Svg2Roughjs = /** @class */ (function () {
                     var nextPt = points[i + 1];
                     // https://www.w3.org/TR/SVG11/painting.html#OrientAttribute
                     // use angle bisector of incoming and outgoing angle
-                    var inAngle = this.getAngle(prevPt, loc);
-                    var outAngle = this.getAngle(loc, nextPt);
+                    var inAngle = getAngle(prevPt, loc);
+                    var outAngle = getAngle(loc, nextPt);
                     var reverse = nextPt.x < loc.x ? 180 : 0;
                     angle = (inAngle + outAngle) / 2 + reverse;
                 }
@@ -1241,17 +1275,10 @@ var Svg2Roughjs = /** @class */ (function () {
             }
         }
     };
-    /**
-     * The angle in degree of the line defined by the given points.
-     */
-    Svg2Roughjs.prototype.getAngle = function (p0, p1) {
-        return Math.atan2(p1.y - p0.y, p1.x - p0.x) * (180 / Math.PI);
-    };
     Svg2Roughjs.prototype.drawPolyline = function (polyline, svgTransform) {
-        var _this = this;
-        var points = this.getPointsArray(polyline);
+        var points = getPointsArray(polyline);
         var transformed = points.map(function (p) {
-            var pt = _this.applyMatrix(p, svgTransform);
+            var pt = applyMatrix(p, svgTransform);
             return [pt.x, pt.y];
         });
         var style = this.parseStyleConfig(polyline, svgTransform);
@@ -1263,43 +1290,9 @@ var Svg2Roughjs = /** @class */ (function () {
         this.postProcessElement(polyline, this.rc.linearPath(transformed, style));
         this.drawMarkers(polyline, points, svgTransform);
     };
-    Svg2Roughjs.prototype.getPointsArray = function (element) {
-        var pointsAttr = element.getAttribute('points');
-        if (!pointsAttr) {
-            return [];
-        }
-        var coordinateRegexp;
-        if (pointsAttr.indexOf(' ') > 0) {
-            // just assume that the coordinates (or pairs) are separated with space
-            coordinateRegexp = /\s+/g;
-        }
-        else {
-            // there are no spaces, so assume comma separators
-            coordinateRegexp = /,/g;
-        }
-        var pointList = pointsAttr.split(coordinateRegexp);
-        var points = [];
-        for (var i = 0; i < pointList.length; i++) {
-            var currentEntry = pointList[i];
-            var coordinates = currentEntry.split(',');
-            if (coordinates.length === 2) {
-                points.push(new Point(parseFloat(coordinates[0]), parseFloat(coordinates[1])));
-            }
-            else {
-                // space as separators, take next entry as y coordinate
-                var next = i + 1;
-                if (next < pointList.length) {
-                    points.push(new Point(parseFloat(currentEntry), parseFloat(pointList[next])));
-                    // skip the next entry
-                    i = next;
-                }
-            }
-        }
-        return points;
-    };
     Svg2Roughjs.prototype.applyPolygonClip = function (polygon, container, svgTransform) {
         if (this.renderMode === RenderMode.CANVAS && this.ctx) {
-            var points = this.getPointsArray(polygon);
+            var points = getPointsArray(polygon);
             // in the clip case, we can actually transform the entire
             // canvas without distorting the hand-drawn style
             if (points.length > 0) {
@@ -1323,10 +1316,9 @@ var Svg2Roughjs = /** @class */ (function () {
         }
     };
     Svg2Roughjs.prototype.drawPolygon = function (polygon, svgTransform) {
-        var _this = this;
-        var points = this.getPointsArray(polygon);
+        var points = getPointsArray(polygon);
         var transformed = points.map(function (p) {
-            var pt = _this.applyMatrix(p, svgTransform);
+            var pt = applyMatrix(p, svgTransform);
             return [pt.x, pt.y];
         });
         this.postProcessElement(polygon, this.rc.polygon(transformed, this.parseStyleConfig(polygon, svgTransform)));
@@ -1376,11 +1368,11 @@ var Svg2Roughjs = /** @class */ (function () {
             return;
         }
         var result;
-        if (this.isIdentityTransform(svgTransform) || this.isTranslationTransform(svgTransform)) {
+        if (isIdentityTransform(svgTransform) || isTranslationTransform(svgTransform)) {
             // Simple case, there's no transform and we can use the ellipse command
-            var center = this.applyMatrix(new Point(cx, cy), svgTransform);
+            var center = applyMatrix(new Point(cx, cy), svgTransform);
             // transform a point on the ellipse to get the transformed radius
-            var radiusPoint = this.applyMatrix(new Point(cx + rx, cy + ry), svgTransform);
+            var radiusPoint = applyMatrix(new Point(cx + rx, cy + ry), svgTransform);
             var transformedWidth = 2 * (radiusPoint.x - center.x);
             var transformedHeight = 2 * (radiusPoint.y - center.y);
             result = this.rc.ellipse(center.x, center.y, transformedWidth, transformedHeight, this.parseStyleConfig(ellipse, svgTransform));
@@ -1388,15 +1380,15 @@ var Svg2Roughjs = /** @class */ (function () {
         else {
             // in other cases we need to construct the path manually.
             var factor = (4 / 3) * (Math.sqrt(2) - 1);
-            var p1 = this.applyMatrix(new Point(cx + rx, cy), svgTransform);
-            var p2 = this.applyMatrix(new Point(cx, cy + ry), svgTransform);
-            var p3 = this.applyMatrix(new Point(cx - rx, cy), svgTransform);
-            var p4 = this.applyMatrix(new Point(cx, cy - ry), svgTransform);
-            var c1 = this.applyMatrix(new Point(cx + rx, cy + factor * ry), svgTransform);
-            var c2 = this.applyMatrix(new Point(cx + factor * rx, cy + ry), svgTransform);
-            var c4 = this.applyMatrix(new Point(cx - rx, cy + factor * ry), svgTransform);
-            var c6 = this.applyMatrix(new Point(cx - factor * rx, cy - ry), svgTransform);
-            var c8 = this.applyMatrix(new Point(cx + rx, cy - factor * ry), svgTransform);
+            var p1 = applyMatrix(new Point(cx + rx, cy), svgTransform);
+            var p2 = applyMatrix(new Point(cx, cy + ry), svgTransform);
+            var p3 = applyMatrix(new Point(cx - rx, cy), svgTransform);
+            var p4 = applyMatrix(new Point(cx, cy - ry), svgTransform);
+            var c1 = applyMatrix(new Point(cx + rx, cy + factor * ry), svgTransform);
+            var c2 = applyMatrix(new Point(cx + factor * rx, cy + ry), svgTransform);
+            var c4 = applyMatrix(new Point(cx - rx, cy + factor * ry), svgTransform);
+            var c6 = applyMatrix(new Point(cx - factor * rx, cy - ry), svgTransform);
+            var c8 = applyMatrix(new Point(cx + rx, cy - factor * ry), svgTransform);
             var path = "M " + p1 + " C " + c1 + " " + c2 + " " + p2 + " S " + c4 + " " + p3 + " S " + c6 + " " + p4 + " S " + c8 + " " + p1 + "z";
             result = this.rc.path(path, this.parseStyleConfig(ellipse, svgTransform));
         }
@@ -1435,26 +1427,26 @@ var Svg2Roughjs = /** @class */ (function () {
             // zero-radius circle is not rendered
             return;
         }
-        var center = this.applyMatrix(new Point(cx, cy), svgTransform);
+        var center = applyMatrix(new Point(cx, cy), svgTransform);
         var result;
-        if (this.isIdentityTransform(svgTransform) || this.isTranslationTransform(svgTransform)) {
+        if (isIdentityTransform(svgTransform) || isTranslationTransform(svgTransform)) {
             // transform a point on the ellipse to get the transformed radius
-            var radiusPoint = this.applyMatrix(new Point(cx + r, cy + r), svgTransform);
+            var radiusPoint = applyMatrix(new Point(cx + r, cy + r), svgTransform);
             var transformedWidth = 2 * (radiusPoint.x - center.x);
             result = this.rc.circle(center.x, center.y, transformedWidth, this.parseStyleConfig(circle, svgTransform));
         }
         else {
             // in other cases we need to construct the path manually.
             var factor = (4 / 3) * (Math.sqrt(2) - 1);
-            var p1 = this.applyMatrix(new Point(cx + r, cy), svgTransform);
-            var p2 = this.applyMatrix(new Point(cx, cy + r), svgTransform);
-            var p3 = this.applyMatrix(new Point(cx - r, cy), svgTransform);
-            var p4 = this.applyMatrix(new Point(cx, cy - r), svgTransform);
-            var c1 = this.applyMatrix(new Point(cx + r, cy + factor * r), svgTransform);
-            var c2 = this.applyMatrix(new Point(cx + factor * r, cy + r), svgTransform);
-            var c4 = this.applyMatrix(new Point(cx - r, cy + factor * r), svgTransform);
-            var c6 = this.applyMatrix(new Point(cx - factor * r, cy - r), svgTransform);
-            var c8 = this.applyMatrix(new Point(cx + r, cy - factor * r), svgTransform);
+            var p1 = applyMatrix(new Point(cx + r, cy), svgTransform);
+            var p2 = applyMatrix(new Point(cx, cy + r), svgTransform);
+            var p3 = applyMatrix(new Point(cx - r, cy), svgTransform);
+            var p4 = applyMatrix(new Point(cx, cy - r), svgTransform);
+            var c1 = applyMatrix(new Point(cx + r, cy + factor * r), svgTransform);
+            var c2 = applyMatrix(new Point(cx + factor * r, cy + r), svgTransform);
+            var c4 = applyMatrix(new Point(cx - r, cy + factor * r), svgTransform);
+            var c6 = applyMatrix(new Point(cx - factor * r, cy - r), svgTransform);
+            var c8 = applyMatrix(new Point(cx + r, cy - factor * r), svgTransform);
             var path = "M " + p1 + " C " + c1 + " " + c2 + " " + p2 + " S " + c4 + " " + p3 + " S " + c6 + " " + p4 + " S " + c8 + " " + p1 + "z";
             result = this.rc.path(path, this.parseStyleConfig(circle, svgTransform));
         }
@@ -1462,9 +1454,9 @@ var Svg2Roughjs = /** @class */ (function () {
     };
     Svg2Roughjs.prototype.drawLine = function (line, svgTransform) {
         var p1 = new Point(line.x1.baseVal.value, line.y1.baseVal.value);
-        var tp1 = this.applyMatrix(p1, svgTransform);
+        var tp1 = applyMatrix(p1, svgTransform);
         var p2 = new Point(line.x2.baseVal.value, line.y2.baseVal.value);
-        var tp2 = this.applyMatrix(p2, svgTransform);
+        var tp2 = applyMatrix(p2, svgTransform);
         if (tp1.x === tp2.x && tp1.y === tp2.y) {
             // zero-length line is not rendered
             return;
@@ -1663,12 +1655,10 @@ var Svg2Roughjs = /** @class */ (function () {
             rx = Math.min(rx, width / 2);
             ry = Math.min(ry, height / 2);
         }
-        if ((this.isIdentityTransform(svgTransform) || this.isTranslationTransform(svgTransform)) &&
-            !rx &&
-            !ry) {
+        if ((isIdentityTransform(svgTransform) || isTranslationTransform(svgTransform)) && !rx && !ry) {
             // Simple case; just a rectangle
-            var p1 = this.applyMatrix(new Point(x, y), svgTransform);
-            var p2 = this.applyMatrix(new Point(x + width, y + height), svgTransform);
+            var p1 = applyMatrix(new Point(x, y), svgTransform);
+            var p2 = applyMatrix(new Point(x + width, y + height), svgTransform);
             var transformedWidth = p2.x - p1.x;
             var transformedHeight = p2.y - p1.y;
             this.postProcessElement(rect, this.rc.rectangle(p1.x, p1.y, transformedWidth, transformedHeight, this.parseStyleConfig(rect, svgTransform)));
@@ -1676,10 +1666,10 @@ var Svg2Roughjs = /** @class */ (function () {
         else {
             var path = '';
             if (!rx && !ry) {
-                var p1 = this.applyMatrix(new Point(x, y), svgTransform);
-                var p2 = this.applyMatrix(new Point(x + width, y), svgTransform);
-                var p3 = this.applyMatrix(new Point(x + width, y + height), svgTransform);
-                var p4 = this.applyMatrix(new Point(x, y + height), svgTransform);
+                var p1 = applyMatrix(new Point(x, y), svgTransform);
+                var p2 = applyMatrix(new Point(x + width, y), svgTransform);
+                var p3 = applyMatrix(new Point(x + width, y + height), svgTransform);
+                var p4 = applyMatrix(new Point(x, y + height), svgTransform);
                 // No rounding, so just construct the respective path as a simple polygon
                 path += "M " + p1;
                 path += "L " + p2;
@@ -1691,38 +1681,38 @@ var Svg2Roughjs = /** @class */ (function () {
                 var factor = (4 / 3) * (Math.sqrt(2) - 1);
                 // Construct path for the rounded rectangle
                 // perform an absolute moveto operation to location (x+rx,y), where x is the value of the ‘rect’ element's ‘x’ attribute converted to user space, rx is the effective value of the ‘rx’ attribute converted to user space and y is the value of the ‘y’ attribute converted to user space
-                var p1 = this.applyMatrix(new Point(x + rx, y), svgTransform);
+                var p1 = applyMatrix(new Point(x + rx, y), svgTransform);
                 path += "M " + p1;
                 // perform an absolute horizontal lineto operation to location (x+width-rx,y), where width is the ‘rect’ element's ‘width’ attribute converted to user space
-                var p2 = this.applyMatrix(new Point(x + width - rx, y), svgTransform);
+                var p2 = applyMatrix(new Point(x + width - rx, y), svgTransform);
                 path += "L " + p2;
                 // perform an absolute elliptical arc operation to coordinate (x+width,y+ry), where the effective values for the ‘rx’ and ‘ry’ attributes on the ‘rect’ element converted to user space are used as the rx and ry attributes on the elliptical arc command, respectively, the x-axis-rotation is set to zero, the large-arc-flag is set to zero, and the sweep-flag is set to one
-                var p3c1 = this.applyMatrix(new Point(x + width - rx + factor * rx, y), svgTransform);
-                var p3c2 = this.applyMatrix(new Point(x + width, y + factor * ry), svgTransform);
-                var p3 = this.applyMatrix(new Point(x + width, y + ry), svgTransform);
+                var p3c1 = applyMatrix(new Point(x + width - rx + factor * rx, y), svgTransform);
+                var p3c2 = applyMatrix(new Point(x + width, y + factor * ry), svgTransform);
+                var p3 = applyMatrix(new Point(x + width, y + ry), svgTransform);
                 path += "C " + p3c1 + " " + p3c2 + " " + p3; // We cannot use the arc command, since we no longer draw in the expected coordinates. So approximate everything with lines and béziers
                 // perform a absolute vertical lineto to location (x+width,y+height-ry), where height is the ‘rect’ element's ‘height’ attribute converted to user space
-                var p4 = this.applyMatrix(new Point(x + width, y + height - ry), svgTransform);
+                var p4 = applyMatrix(new Point(x + width, y + height - ry), svgTransform);
                 path += "L " + p4;
                 // perform an absolute elliptical arc operation to coordinate (x+width-rx,y+height)
-                var p5c1 = this.applyMatrix(new Point(x + width, y + height - ry + factor * ry), svgTransform);
-                var p5c2 = this.applyMatrix(new Point(x + width - factor * rx, y + height), svgTransform);
-                var p5 = this.applyMatrix(new Point(x + width - rx, y + height), svgTransform);
+                var p5c1 = applyMatrix(new Point(x + width, y + height - ry + factor * ry), svgTransform);
+                var p5c2 = applyMatrix(new Point(x + width - factor * rx, y + height), svgTransform);
+                var p5 = applyMatrix(new Point(x + width - rx, y + height), svgTransform);
                 path += "C " + p5c1 + " " + p5c2 + " " + p5;
                 // perform an absolute horizontal lineto to location (x+rx,y+height)
-                var p6 = this.applyMatrix(new Point(x + rx, y + height), svgTransform);
+                var p6 = applyMatrix(new Point(x + rx, y + height), svgTransform);
                 path += "L " + p6;
                 // perform an absolute elliptical arc operation to coordinate (x,y+height-ry)
-                var p7c1 = this.applyMatrix(new Point(x + rx - factor * rx, y + height), svgTransform);
-                var p7c2 = this.applyMatrix(new Point(x, y + height - factor * ry), svgTransform);
-                var p7 = this.applyMatrix(new Point(x, y + height - ry), svgTransform);
+                var p7c1 = applyMatrix(new Point(x + rx - factor * rx, y + height), svgTransform);
+                var p7c2 = applyMatrix(new Point(x, y + height - factor * ry), svgTransform);
+                var p7 = applyMatrix(new Point(x, y + height - ry), svgTransform);
                 path += "C " + p7c1 + " " + p7c2 + " " + p7;
                 // perform an absolute absolute vertical lineto to location (x,y+ry)
-                var p8 = this.applyMatrix(new Point(x, y + ry), svgTransform);
+                var p8 = applyMatrix(new Point(x, y + ry), svgTransform);
                 path += "L " + p8;
                 // perform an absolute elliptical arc operation to coordinate (x+rx,y)
-                var p9c1 = this.applyMatrix(new Point(x, y + factor * ry), svgTransform);
-                var p9c2 = this.applyMatrix(new Point(x + factor * rx, y), svgTransform);
+                var p9c1 = applyMatrix(new Point(x, y + factor * ry), svgTransform);
+                var p9c2 = applyMatrix(new Point(x + factor * rx, y), svgTransform);
                 path += "C " + p9c1 + " " + p9c2 + " " + p1;
                 path += 'z';
             }
