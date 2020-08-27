@@ -74,6 +74,59 @@ var SvgTextures = /** @class */ (function () {
     return SvgTextures;
 }());
 
+/**
+ * Calculates the average color of the colors in the given array.
+ * @returns The average color
+ */
+function averageColor(colorArray) {
+    var count = colorArray.length;
+    var r = 0;
+    var g = 0;
+    var b = 0;
+    var a = 0;
+    colorArray.forEach(function (tinycolor) {
+        var color = tinycolor.toRgb();
+        r += color.r * color.r;
+        g += color.g * color.g;
+        b += color.b * color.b;
+        a += color.a;
+    });
+    return tinycolor({
+        r: Math.sqrt(r / count),
+        g: Math.sqrt(g / count),
+        b: Math.sqrt(b / count),
+        a: a / count
+    });
+}
+/**
+ * Returns the Node's children, since Node.prototype.children is not available on all browsers.
+ * https://developer.mozilla.org/en-US/docs/Web/API/ParentNode/children
+ */
+function getNodeChildren(element) {
+    if (typeof element.children !== 'undefined') {
+        return element.children;
+    }
+    var i = 0;
+    var node;
+    var nodes = element.childNodes;
+    var children = [];
+    while ((node = nodes[i++])) {
+        if (node.nodeType === 1) {
+            children.push(node);
+        }
+    }
+    return children;
+}
+/**
+ * @return length in pixels
+ */
+function getLengthInPx(svgLengthList) {
+    if (svgLengthList && svgLengthList.baseVal.numberOfItems > 0) {
+        return svgLengthList.baseVal.getItem(0).value;
+    }
+    return 0;
+}
+
 var units = require('units-css');
 /**
  * Svg2Roughjs parses a given SVG and draws it with Rough.js
@@ -454,7 +507,7 @@ var Svg2Roughjs = /** @class */ (function () {
                 : rootTransform;
             svgTransform = this.svg.createSVGTransformFromMatrix(combinedMatrix);
             // don't put the SVG itself into the stack, so start with the children of it
-            var children = this.getNodeChildren(root);
+            var children = getNodeChildren(root);
             for (var i = children.length - 1; i >= 0; i--) {
                 var child = children[i];
                 if (child instanceof SVGSymbolElement || child instanceof SVGMarkerElement) {
@@ -486,7 +539,7 @@ var Svg2Roughjs = /** @class */ (function () {
                 continue;
             }
             // process childs
-            var children = this.getNodeChildren(element);
+            var children = getNodeChildren(element);
             for (var i = children.length - 1; i >= 0; i--) {
                 var childElement = children[i];
                 var newTransform = transform
@@ -681,9 +734,7 @@ var Svg2Roughjs = /** @class */ (function () {
                 var currentColor = this.getStopColor(stops[i]);
                 var currentOffset = this.getStopOffset(stops[i]);
                 // combine the adjacent colors
-                var combinedColor = lastColor
-                    ? this.averageColor([lastColor, currentColor])
-                    : currentColor;
+                var combinedColor = lastColor ? averageColor([lastColor, currentColor]) : currentColor;
                 // fill the discrete color array depending on the offset size
                 var entries = Math.max(1, (currentOffset / resolution) | 0);
                 while (entries > 0) {
@@ -693,7 +744,7 @@ var Svg2Roughjs = /** @class */ (function () {
                 lastColor = currentColor;
             }
             // average the discrete colors again for the final result
-            var mixedColor = this.averageColor(discreteColors);
+            var mixedColor = averageColor(discreteColors);
             mixedColor.setAlpha(opacity);
             return mixedColor.toString();
         }
@@ -980,7 +1031,7 @@ var Svg2Roughjs = /** @class */ (function () {
         }
         // traverse clip-path elements in DFS
         var stack = [];
-        var children = this.getNodeChildren(clipPath);
+        var children = getNodeChildren(clipPath);
         for (var i = children.length - 1; i >= 0; i--) {
             var childElement = children[i];
             var childTransform = svgTransform
@@ -999,7 +1050,7 @@ var Svg2Roughjs = /** @class */ (function () {
                 continue;
             }
             // process childs
-            var children_1 = this.getNodeChildren(element);
+            var children_1 = getNodeChildren(element);
             for (var i = children_1.length - 1; i >= 0; i--) {
                 var childElement = children_1[i];
                 var childTransform = transform
@@ -1770,7 +1821,7 @@ var Svg2Roughjs = /** @class */ (function () {
             return;
         }
         this.ctx.save();
-        var textLocation = new Point(this.getLengthInPx(text.x), this.getLengthInPx(text.y));
+        var textLocation = new Point(getLengthInPx(text.x), getLengthInPx(text.y));
         // text style
         this.ctx.font = this.getCssFont(text);
         var style = this.parseStyleConfig(text, svgTransform);
@@ -1790,8 +1841,8 @@ var Svg2Roughjs = /** @class */ (function () {
         // apply the global transform
         this.applyGlobalTransform(svgTransform);
         // consider dx/dy of the text element
-        var dx = this.getLengthInPx(text.dx);
-        var dy = this.getLengthInPx(text.dy);
+        var dx = getLengthInPx(text.dx);
+        var dy = getLengthInPx(text.dy);
         this.ctx.translate(dx, dy);
         if (text.childElementCount === 0) {
             this.ctx.fillText(this.getTextContent(text), textLocation.x, textLocation.y, text.getComputedTextLength());
@@ -1800,13 +1851,13 @@ var Svg2Roughjs = /** @class */ (function () {
             }
         }
         else {
-            var children = this.getNodeChildren(text);
+            var children = getNodeChildren(text);
             for (var i = 0; i < children.length; i++) {
                 var child = children[i];
                 if (child instanceof SVGTSpanElement) {
-                    textLocation = new Point(this.getLengthInPx(child.x), this.getLengthInPx(child.y));
-                    var dx_2 = this.getLengthInPx(child.dx);
-                    var dy_2 = this.getLengthInPx(child.dy);
+                    textLocation = new Point(getLengthInPx(child.x), getLengthInPx(child.y));
+                    var dx_2 = getLengthInPx(child.dx);
+                    var dy_2 = getLengthInPx(child.dy);
                     this.ctx.translate(dx_2, dy_2);
                     this.ctx.fillText(this.getTextContent(child), textLocation.x, textLocation.y);
                     if (hasStroke) {
@@ -1846,15 +1897,6 @@ var Svg2Roughjs = /** @class */ (function () {
         return xmlSpaceAttribute !== 'preserve'; // no attribute is also default handling
     };
     /**
-     * @return length in pixels
-     */
-    Svg2Roughjs.prototype.getLengthInPx = function (svgLengthList) {
-        if (svgLengthList && svgLengthList.baseVal.numberOfItems > 0) {
-            return svgLengthList.baseVal.getItem(0).value;
-        }
-        return 0;
-    };
-    /**
      * @param asStyleString Formats the return value as inline style string
      */
     Svg2Roughjs.prototype.getCssFont = function (text, asStyleString) {
@@ -1883,49 +1925,6 @@ var Svg2Roughjs = /** @class */ (function () {
         }
         cssFont = cssFont.trim();
         return cssFont;
-    };
-    /**
-     * Returns the Node's children, since Node.prototype.children is not available on all browsers.
-     * https://developer.mozilla.org/en-US/docs/Web/API/ParentNode/children
-     */
-    Svg2Roughjs.prototype.getNodeChildren = function (element) {
-        if (typeof element.children !== 'undefined') {
-            return element.children;
-        }
-        var i = 0;
-        var node;
-        var nodes = element.childNodes;
-        var children = [];
-        while ((node = nodes[i++])) {
-            if (node.nodeType === 1) {
-                children.push(node);
-            }
-        }
-        return children;
-    };
-    /**
-     * Calculates the average color of the colors in the given array.
-     * @returns The average color
-     */
-    Svg2Roughjs.prototype.averageColor = function (colorArray) {
-        var count = colorArray.length;
-        var r = 0;
-        var g = 0;
-        var b = 0;
-        var a = 0;
-        colorArray.forEach(function (tinycolor) {
-            var color = tinycolor.toRgb();
-            r += color.r * color.r;
-            g += color.g * color.g;
-            b += color.b * color.b;
-            a += color.a;
-        });
-        return tinycolor({
-            r: Math.sqrt(r / count),
-            g: Math.sqrt(g / count),
-            b: Math.sqrt(b / count),
-            a: a / count
-        });
     };
     return Svg2Roughjs;
 }());

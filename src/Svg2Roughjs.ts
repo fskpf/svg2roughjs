@@ -6,6 +6,7 @@ import { Point } from './point'
 import { RenderMode } from './RenderMode'
 var units = require('units-css')
 import { SvgTextures } from './SvgTextures'
+import { getNodeChildren, averageColor, getLengthInPx } from './utils'
 
 type Color = tinycolor.Instance
 
@@ -437,7 +438,7 @@ export class Svg2Roughjs {
       svgTransform = this.svg.createSVGTransformFromMatrix(combinedMatrix)
 
       // don't put the SVG itself into the stack, so start with the children of it
-      const children = this.getNodeChildren(root)
+      const children = getNodeChildren(root)
       for (let i = children.length - 1; i >= 0; i--) {
         const child = children[i] as SVGGraphicsElement
         if (child instanceof SVGSymbolElement || child instanceof SVGMarkerElement) {
@@ -473,7 +474,7 @@ export class Svg2Roughjs {
         continue
       }
       // process childs
-      const children = this.getNodeChildren(element)
+      const children = getNodeChildren(element)
       for (let i = children.length - 1; i >= 0; i--) {
         const childElement = children[i] as SVGGraphicsElement
         const newTransform = transform
@@ -507,7 +508,7 @@ export class Svg2Roughjs {
   /**
    * Combines the given transform with the element's transform.
    */
-  getCombinedTransform(element: SVGGraphicsElement, transform: SVGTransform): SVGTransform {
+  private getCombinedTransform(element: SVGGraphicsElement, transform: SVGTransform): SVGTransform {
     const elementTransform = this.getSvgTransform(element)
     if (elementTransform) {
       const elementTransformMatrix = elementTransform.matrix
@@ -687,9 +688,7 @@ export class Svg2Roughjs {
         const currentOffset = this.getStopOffset(stops[i])
 
         // combine the adjacent colors
-        const combinedColor = lastColor
-          ? this.averageColor([lastColor, currentColor])
-          : currentColor
+        const combinedColor = lastColor ? averageColor([lastColor, currentColor]) : currentColor
 
         // fill the discrete color array depending on the offset size
         let entries = Math.max(1, (currentOffset / resolution) | 0)
@@ -702,7 +701,7 @@ export class Svg2Roughjs {
       }
 
       // average the discrete colors again for the final result
-      const mixedColor = this.averageColor(discreteColors)
+      const mixedColor = averageColor(discreteColors)
       mixedColor.setAlpha(opacity)
       return mixedColor.toString()
     }
@@ -1031,7 +1030,7 @@ export class Svg2Roughjs {
 
     // traverse clip-path elements in DFS
     const stack: { element: any; transform: SVGTransform | null }[] = []
-    const children = this.getNodeChildren(clipPath)
+    const children = getNodeChildren(clipPath)
     for (let i = children.length - 1; i >= 0; i--) {
       const childElement = children[i] as SVGGraphicsElement
       const childTransform = svgTransform
@@ -1055,7 +1054,7 @@ export class Svg2Roughjs {
         continue
       }
       // process childs
-      const children = this.getNodeChildren(element)
+      const children = getNodeChildren(element)
       for (let i = children.length - 1; i >= 0; i--) {
         const childElement = children[i] as SVGGraphicsElement
         const childTransform = transform
@@ -1984,7 +1983,7 @@ export class Svg2Roughjs {
 
     this.ctx.save()
 
-    let textLocation = new Point(this.getLengthInPx(text.x), this.getLengthInPx(text.y))
+    let textLocation = new Point(getLengthInPx(text.x), getLengthInPx(text.y))
 
     // text style
     this.ctx.font = this.getCssFont(text)
@@ -2010,8 +2009,8 @@ export class Svg2Roughjs {
     this.applyGlobalTransform(svgTransform)
 
     // consider dx/dy of the text element
-    const dx = this.getLengthInPx(text.dx)
-    const dy = this.getLengthInPx(text.dy)
+    const dx = getLengthInPx(text.dx)
+    const dy = getLengthInPx(text.dy)
     this.ctx.translate(dx, dy)
 
     if (text.childElementCount === 0) {
@@ -2030,13 +2029,13 @@ export class Svg2Roughjs {
         )
       }
     } else {
-      const children = this.getNodeChildren(text)
+      const children = getNodeChildren(text)
       for (let i = 0; i < children.length; i++) {
         const child = children[i]
         if (child instanceof SVGTSpanElement) {
-          textLocation = new Point(this.getLengthInPx(child.x), this.getLengthInPx(child.y))
-          const dx = this.getLengthInPx(child.dx)
-          const dy = this.getLengthInPx(child.dy)
+          textLocation = new Point(getLengthInPx(child.x), getLengthInPx(child.y))
+          const dx = getLengthInPx(child.dx)
+          const dy = getLengthInPx(child.dy)
           this.ctx.translate(dx, dy)
           this.ctx.fillText(this.getTextContent(child), textLocation.x, textLocation.y)
           if (hasStroke) {
@@ -2078,16 +2077,6 @@ export class Svg2Roughjs {
   }
 
   /**
-   * @return length in pixels
-   */
-  private getLengthInPx(svgLengthList: SVGAnimatedLengthList): number {
-    if (svgLengthList && svgLengthList.baseVal.numberOfItems > 0) {
-      return svgLengthList.baseVal.getItem(0).value
-    }
-    return 0
-  }
-
-  /**
    * @param asStyleString Formats the return value as inline style string
    */
   private getCssFont(text: SVGTextElement, asStyleString: boolean = false): string {
@@ -2115,50 +2104,5 @@ export class Svg2Roughjs {
 
     cssFont = cssFont.trim()
     return cssFont
-  }
-
-  /**
-   * Returns the Node's children, since Node.prototype.children is not available on all browsers.
-   * https://developer.mozilla.org/en-US/docs/Web/API/ParentNode/children
-   */
-  private getNodeChildren(element: Element): Element[] {
-    if (typeof element.children !== 'undefined') {
-      return (element.children as unknown) as Element[]
-    }
-    let i = 0
-    let node
-    const nodes = element.childNodes
-    const children = []
-    while ((node = nodes[i++])) {
-      if (node.nodeType === 1) {
-        children.push(node)
-      }
-    }
-    return children as Element[]
-  }
-
-  /**
-   * Calculates the average color of the colors in the given array.
-   * @returns The average color
-   */
-  averageColor(colorArray: tinycolor.Instance[]): tinycolor.Instance {
-    const count = colorArray.length
-    let r = 0
-    let g = 0
-    let b = 0
-    let a = 0
-    colorArray.forEach(tinycolor => {
-      const color = tinycolor.toRgb()
-      r += color.r * color.r
-      g += color.g * color.g
-      b += color.b * color.b
-      a += color.a
-    })
-    return tinycolor({
-      r: Math.sqrt(r / count),
-      g: Math.sqrt(g / count),
-      b: Math.sqrt(b / count),
-      a: a / count
-    })
   }
 }

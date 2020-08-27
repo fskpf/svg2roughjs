@@ -1,5 +1,3 @@
-import tinycolor from 'tinycolor2';
-
 declare enum RenderMode {
     SVG = 0,
     CANVAS = 1
@@ -144,7 +142,7 @@ declare class Svg2Roughjs {
     /**
      * Combines the given transform with the element's transform.
      */
-    getCombinedTransform(element: SVGGraphicsElement, transform: SVGTransform): SVGTransform;
+    private getCombinedTransform;
     /**
      * Returns the consolidated of the given element.
      */
@@ -286,23 +284,9 @@ declare class Svg2Roughjs {
      */
     private shouldNormalizeWhitespace;
     /**
-     * @return length in pixels
-     */
-    private getLengthInPx;
-    /**
      * @param asStyleString Formats the return value as inline style string
      */
     private getCssFont;
-    /**
-     * Returns the Node's children, since Node.prototype.children is not available on all browsers.
-     * https://developer.mozilla.org/en-US/docs/Web/API/ParentNode/children
-     */
-    private getNodeChildren;
-    /**
-     * Calculates the average color of the colors in the given array.
-     * @returns The average color
-     */
-    averageColor(colorArray: tinycolor.Instance[]): tinycolor.Instance;
 }
 
 export { RenderMode, Svg2Roughjs };
