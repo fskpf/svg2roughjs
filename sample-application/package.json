@@ -14,7 +14,7 @@
   "author": "Fabian Schwarzkopf",
   "license": "MIT",
   "dependencies": {
-    "codemirror": "^5.54.0",
+    "codemirror": "^5.58.2",
     "core-js": "^3.6.5",
     "svg2roughjs": "file:../svg2roughjs-2.1.6.tgz"
   },
