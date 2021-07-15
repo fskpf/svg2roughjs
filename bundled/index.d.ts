@@ -34,7 +34,7 @@ declare class Svg2Roughjs {
     get svg(): SVGSVGElement;
     /**
      * Rough.js config object that is provided to Rough.js for drawing
-     * any SVG element.
+     * any SVG element. By default, `preserveVertices` is enabled.
      * Changing this property triggers a repaint.
      */
     set roughConfig(config: Options);

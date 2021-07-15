@@ -101,21 +101,21 @@ export class Svg2Roughjs {
 
   /**
    * Rough.js config object that is provided to Rough.js for drawing
-   * any SVG element.
+   * any SVG element. By default, `preserveVertices` is enabled.
    * Changing this property triggers a repaint.
    */
   set roughConfig(config: Options) {
     this.$roughConfig = config
     if (this.renderMode === RenderMode.CANVAS && this.ctx) {
-      this.rc = rough.canvas(this.canvas as HTMLCanvasElement, { options: this.$roughConfig }) // TODO is this new nesting new?
+      this.rc = rough.canvas(this.canvas as HTMLCanvasElement, { options: this.roughConfig })
     } else {
-      this.rc = rough.svg(this.canvas as SVGSVGElement, { options: this.$roughConfig })
+      this.rc = rough.svg(this.canvas as SVGSVGElement, { options: this.roughConfig })
     }
     this.redraw()
   }
 
   get roughConfig(): Options {
-    return this.$roughConfig
+    return { preserveVertices: true, ...this.$roughConfig }
   }
 
   /**
@@ -195,9 +195,9 @@ export class Svg2Roughjs {
     this.canvas = target
 
     if (mode === RenderMode.CANVAS) {
-      this.rc = rough.canvas(this.canvas as HTMLCanvasElement, { options: this.$roughConfig }) // TODO is this new nesting new?
+      this.rc = rough.canvas(this.canvas as HTMLCanvasElement, { options: this.roughConfig })
     } else {
-      this.rc = rough.svg(this.canvas as SVGSVGElement, { options: this.$roughConfig })
+      this.rc = rough.svg(this.canvas as SVGSVGElement, { options: this.roughConfig })
     }
 
     this.redraw()
@@ -266,16 +266,17 @@ export class Svg2Roughjs {
       container.appendChild(this.canvas)
     }
 
+    this.$roughConfig = roughjsOptions
+
     // the Rough.js instance to draw the SVG elements
     if (this.renderMode === RenderMode.CANVAS) {
       const canvas = this.canvas as HTMLCanvasElement
-      this.rc = rough.canvas(canvas, { options: roughjsOptions }) // TODO necessary nesting?
+      this.rc = rough.canvas(canvas, { options: this.roughConfig })
       // canvas context for convenient access
       this.ctx = canvas.getContext('2d')
     } else {
-      this.rc = rough.svg(this.canvas as SVGSVGElement, { options: roughjsOptions })
+      this.rc = rough.svg(this.canvas as SVGSVGElement, { options: this.roughConfig })
     }
-    this.$roughConfig = roughjsOptions
 
     // default font family
     this.$fontFamily = 'Comic Sans MS, cursive'
@@ -685,7 +686,7 @@ export class Svg2Roughjs {
    * @return config for Rough.js drawing
    */
   private parseStyleConfig(element: SVGElement, svgTransform: SVGTransform | null): Options {
-    const config = Object.assign({}, this.$roughConfig)
+    const config = Object.assign({}, this.roughConfig)
 
     // Scalefactor for certain style attributes. For lack of a better option here, use the determinant
     let scaleFactor = 1

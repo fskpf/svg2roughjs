@@ -354,6 +354,17 @@ function getPointsArray(element) {
     return points;
 }
 
+var __assign = (undefined && undefined.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 var units = require('units-css');
 /**
@@ -412,17 +423,17 @@ var Svg2Roughjs = /** @class */ (function () {
             this.$renderMode = renderMode;
             container.appendChild(this.canvas);
         }
+        this.$roughConfig = roughjsOptions;
         // the Rough.js instance to draw the SVG elements
         if (this.renderMode === RenderMode.CANVAS) {
             var canvas = this.canvas;
-            this.rc = rough.canvas(canvas, { options: roughjsOptions }); // TODO necessary nesting?
+            this.rc = rough.canvas(canvas, { options: this.roughConfig });
             // canvas context for convenient access
             this.ctx = canvas.getContext('2d');
         }
         else {
-            this.rc = rough.svg(this.canvas, { options: roughjsOptions });
+            this.rc = rough.svg(this.canvas, { options: this.roughConfig });
         }
-        this.$roughConfig = roughjsOptions;
         // default font family
         this.$fontFamily = 'Comic Sans MS, cursive';
         // we randomize the visualization per element by default
@@ -479,20 +490,20 @@ var Svg2Roughjs = /** @class */ (function () {
     });
     Object.defineProperty(Svg2Roughjs.prototype, "roughConfig", {
         get: function () {
-            return this.$roughConfig;
+            return __assign({ preserveVertices: true }, this.$roughConfig);
         },
         /**
          * Rough.js config object that is provided to Rough.js for drawing
-         * any SVG element.
+         * any SVG element. By default, `preserveVertices` is enabled.
          * Changing this property triggers a repaint.
          */
         set: function (config) {
             this.$roughConfig = config;
             if (this.renderMode === RenderMode.CANVAS && this.ctx) {
-                this.rc = rough.canvas(this.canvas, { options: this.$roughConfig }); // TODO is this new nesting new?
+                this.rc = rough.canvas(this.canvas, { options: this.roughConfig });
             }
             else {
-                this.rc = rough.svg(this.canvas, { options: this.$roughConfig });
+                this.rc = rough.svg(this.canvas, { options: this.roughConfig });
             }
             this.redraw();
         },
@@ -584,10 +595,10 @@ var Svg2Roughjs = /** @class */ (function () {
             parent.appendChild(target);
             this.canvas = target;
             if (mode === RenderMode.CANVAS) {
-                this.rc = rough.canvas(this.canvas, { options: this.$roughConfig }); // TODO is this new nesting new?
+                this.rc = rough.canvas(this.canvas, { options: this.roughConfig });
             }
             else {
-                this.rc = rough.svg(this.canvas, { options: this.$roughConfig });
+                this.rc = rough.svg(this.canvas, { options: this.roughConfig });
             }
             this.redraw();
         },
@@ -955,7 +966,7 @@ var Svg2Roughjs = /** @class */ (function () {
      */
     Svg2Roughjs.prototype.parseStyleConfig = function (element, svgTransform) {
         var _this = this;
-        var config = Object.assign({}, this.$roughConfig);
+        var config = Object.assign({}, this.roughConfig);
         // Scalefactor for certain style attributes. For lack of a better option here, use the determinant
         var scaleFactor = 1;
         if (!isIdentityTransform(svgTransform)) {
