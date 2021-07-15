@@ -1,33 +1,10 @@
+import { Options } from 'roughjs/bin/core';
+
 declare enum RenderMode {
     SVG = 0,
     CANVAS = 1
 }
 
-declare type RoughConfig = {
-    roughness?: number;
-    bowing?: number;
-    seed?: number;
-    stroke?: string;
-    strokeWidth?: number;
-    fill?: string;
-    fillStyle?: 'hachure' | 'solid' | 'zigzag' | 'cross-hatch' | 'dots' | 'dashed' | 'zigzag-line';
-    fillWeight?: number;
-    hachureAngle?: number;
-    hachureGap?: number;
-    curveStepCount?: number;
-    curveFitting?: number;
-    strokeLineDash?: number[];
-    strokeLineDashOffset?: number;
-    fillLineDash?: number[];
-    fillLineDashOffset?: number;
-    disableMultiStroke?: boolean;
-    disableMultiStrokeFill?: boolean;
-    simplification?: number;
-    dashOffset?: number;
-    dashGap?: number;
-    zigzagOffset?: number;
-    combineNestedSvgPaths?: boolean;
-};
 /**
  * Svg2Roughjs parses a given SVG and draws it with Rough.js
  * in a canvas.
@@ -46,7 +23,7 @@ declare class Svg2Roughjs {
     private ctx;
     private $pencilFilter;
     private idElements;
-    private $useElementContext?;
+    private $useElementContext;
     /**
      * The SVG that should be converted.
      * Changing this property triggers drawing of the SVG into
@@ -60,8 +37,8 @@ declare class Svg2Roughjs {
      * any SVG element.
      * Changing this property triggers a repaint.
      */
-    set roughConfig(config: RoughConfig);
-    get roughConfig(): RoughConfig;
+    set roughConfig(config: Options);
+    get roughConfig(): Options;
     /**
      * Set a font-family for the rendering of text elements.
      * If set to `null`, then the font-family of the SVGTextElement is used.
@@ -105,13 +82,13 @@ declare class Svg2Roughjs {
      * @param renderMode Whether the output should be an SVG or drawn to an HTML canvas.
      * Defaults to SVG or CANVAS depending if the given target is of type `HTMLCanvasElement` or `SVGSVGElement`,
      * otherwise it defaults to SVG.
-     * @param roughConfig Config object this passed to the Rough.js ctor and
+     * @param roughjsOptions Config object this passed to the Rough.js ctor and
      * also used while parsing the styles for `SVGElement`s.
      */
-    constructor(target: string | HTMLCanvasElement | SVGSVGElement, renderMode?: RenderMode, roughConfig?: RoughConfig);
+    constructor(target: string | HTMLCanvasElement | SVGSVGElement, renderMode?: RenderMode, roughjsOptions?: Options);
     /**
-     * Triggers an entire redraw of the SVG which also
-     * processes it anew.
+     * Triggers an entire redraw of the SVG which
+     * processes the input element anew.
      */
     redraw(): void;
     /**
@@ -136,10 +113,11 @@ declare class Svg2Roughjs {
     private postProcessElement;
     /**
      * Combines the given transform with the element's transform.
+     * If no transform is given, it returns the SVGTransform of the element.
      */
     private getCombinedTransform;
     /**
-     * Applies the given svgTransform to the canvas context.
+     * Applies the given svgTransform to the canvas context or the given element when in SVG mode.
      * @param element The element to which the transform should be applied
      * when in SVG mode.
      */
@@ -152,6 +130,7 @@ declare class Svg2Roughjs {
      * Parses a `fill` url by looking in the SVG `defs` element.
      * When a gradient is found, it is converted to a color and stored
      * in the internal defs store for this url.
+     * @returns The parsed color
      */
     private parseFillUrl;
     /**

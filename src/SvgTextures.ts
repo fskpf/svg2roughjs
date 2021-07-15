@@ -1,5 +1,5 @@
 export class SvgTextures {
-  static get pencilTextureFilter() {
+  static get pencilTextureFilter(): SVGFilterElement {
     const filter = document.createElementNS('http://www.w3.org/2000/svg', 'filter')
     filter.setAttribute('id', 'pencilTextureFilter')
     filter.setAttribute('x', '0%')

@@ -7,34 +7,34 @@
     "preinstall": "cd ../ && npm pack",
     "update-svg2roughjs": "grunt update-svg2roughjs",
     "watch-svg2roughjs": "grunt watch",
-    "start": "concurrently --kill-others \"npm run update-svg2roughjs && npm run watch-svg2roughjs\" \"webpack-dev-server --open\"",
+    "start": "concurrently --kill-others \"npm run update-svg2roughjs && npm run watch-svg2roughjs\" \"webpack serve\"",
     "build": "npm run update-svg2roughjs && webpack",
     "deploy": "npm run update-svg2roughjs && webpack --mode production"
   },
   "author": "Fabian Schwarzkopf",
   "license": "MIT",
   "dependencies": {
-    "codemirror": "^5.54.0",
-    "core-js": "^3.6.5",
-    "svg2roughjs": "file:../svg2roughjs-2.1.6.tgz"
+    "codemirror": "^5.62.0",
+    "core-js": "^3.15.2",
+    "svg2roughjs": "file:../svg2roughjs-2.2.0.tgz"
   },
   "devDependencies": {
-    "@babel/core": "^7.9.6",
-    "@babel/preset-env": "^7.9.6",
-    "babel-loader": "^8.1.0",
+    "@babel/core": "^7.14.6",
+    "@babel/preset-env": "^7.14.7",
+    "babel-loader": "^8.2.2",
     "clean-webpack-plugin": "^3.0.0",
-    "concurrently": "^5.2.0",
-    "copy-webpack-plugin": "^6.0.3",
-    "css-loader": "^3.5.3",
-    "grunt": "^1.1.0",
+    "concurrently": "^6.2.0",
+    "copy-webpack-plugin": "^9.0.1",
+    "css-loader": "^6.0.0",
+    "grunt": "^1.4.1",
     "grunt-contrib-copy": "^1.0.0",
     "grunt-contrib-watch": "^1.1.0",
-    "html-webpack-plugin": "^3.2.0",
-    "prettier": "^1.19.1",
-    "raw-loader": "^4.0.0",
-    "style-loader": "^1.2.1",
-    "webpack": "^4.43.0",
-    "webpack-cli": "^3.3.11",
-    "webpack-dev-server": "^3.11.0"
+    "html-webpack-plugin": "^5.3.2",
+    "prettier": "2.3.2",
+    "raw-loader": "^4.0.2",
+    "style-loader": "^3.1.0",
+    "webpack": "^5.44.0",
+    "webpack-cli": "^4.7.2",
+    "webpack-dev-server": "^3.11.2"
   }
 }

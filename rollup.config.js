@@ -4,16 +4,16 @@ export default [
   {
     input: 'dist/index.js',
     output: {
-      file: 'index.js',
+      file: 'bundled/index.js',
       format: 'es',
       sourcemap: true
     },
-    external: ['tinycolor2', 'svg-pathdata', 'roughjs/bundled/rough.esm']
+    external: ['tinycolor2', 'svg-pathdata', 'roughjs/bin/rough']
   },
   {
     input: 'dist/index.d.ts',
     output: {
-      file: 'index.d.ts'
+      file: 'bundled/index.d.ts'
     },
     plugins: [dts()]
   }

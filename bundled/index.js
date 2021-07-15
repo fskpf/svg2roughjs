@@ -1,6 +1,6 @@
 import tinycolor from 'tinycolor2';
 import { SVGPathData, SVGPathDataTransformer, encodeSVGPath } from 'svg-pathdata';
-import rough from 'roughjs/bundled/rough.esm';
+import rough from 'roughjs/bin/rough';
 
 /**
  * A small helper class that represents a point.
@@ -274,7 +274,7 @@ function getIdFromUrl(url) {
  * Converts SVG opacity attributes to a [0, 1] range.
  */
 function getOpacity(element, attribute) {
-    //@ts-ignore
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     var attr = getComputedStyle(element)[attribute] || element.getAttribute(attribute);
     if (attr) {
         if (attr.indexOf('%') !== -1) {
@@ -354,6 +354,7 @@ function getPointsArray(element) {
     return points;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 var units = require('units-css');
 /**
  * Svg2Roughjs parses a given SVG and draws it with Rough.js
@@ -367,18 +368,19 @@ var Svg2Roughjs = /** @class */ (function () {
      * @param renderMode Whether the output should be an SVG or drawn to an HTML canvas.
      * Defaults to SVG or CANVAS depending if the given target is of type `HTMLCanvasElement` or `SVGSVGElement`,
      * otherwise it defaults to SVG.
-     * @param roughConfig Config object this passed to the Rough.js ctor and
+     * @param roughjsOptions Config object this passed to the Rough.js ctor and
      * also used while parsing the styles for `SVGElement`s.
      */
-    function Svg2Roughjs(target, renderMode, roughConfig) {
+    function Svg2Roughjs(target, renderMode, roughjsOptions) {
         if (renderMode === void 0) { renderMode = RenderMode.SVG; }
-        if (roughConfig === void 0) { roughConfig = {}; }
+        if (roughjsOptions === void 0) { roughjsOptions = {}; }
         this.width = 0;
         this.height = 0;
         this.$backgroundColor = null;
         this.ctx = null;
         this.$pencilFilter = false;
         this.idElements = {};
+        this.$useElementContext = null;
         if (!target) {
             throw new Error('No target provided');
         }
@@ -392,7 +394,7 @@ var Svg2Roughjs = /** @class */ (function () {
             }
         }
         else {
-            // create a new HTMLCanvasElement as child of the given element
+            // create a new HTMLCanvasElement or SVGSVGElement as child of the given element
             var container = document.querySelector(target);
             if (!container) {
                 throw new Error("No element found with " + target);
@@ -411,16 +413,16 @@ var Svg2Roughjs = /** @class */ (function () {
             container.appendChild(this.canvas);
         }
         // the Rough.js instance to draw the SVG elements
-        if (this.renderMode === RenderMode.CANVAS && this.ctx) {
+        if (this.renderMode === RenderMode.CANVAS) {
             var canvas = this.canvas;
-            this.rc = rough.canvas(canvas, roughConfig);
+            this.rc = rough.canvas(canvas, { options: roughjsOptions }); // TODO necessary nesting?
             // canvas context for convenient access
             this.ctx = canvas.getContext('2d');
         }
         else {
-            this.rc = rough.svg(this.canvas, roughConfig);
+            this.rc = rough.svg(this.canvas, { options: roughjsOptions });
         }
-        this.$roughConfig = roughConfig;
+        this.$roughConfig = roughjsOptions;
         // default font family
         this.$fontFamily = 'Comic Sans MS, cursive';
         // we randomize the visualization per element by default
@@ -487,10 +489,10 @@ var Svg2Roughjs = /** @class */ (function () {
         set: function (config) {
             this.$roughConfig = config;
             if (this.renderMode === RenderMode.CANVAS && this.ctx) {
-                this.rc = rough.canvas(this.canvas, this.$roughConfig);
+                this.rc = rough.canvas(this.canvas, { options: this.$roughConfig }); // TODO is this new nesting new?
             }
             else {
-                this.rc = rough.svg(this.canvas, this.$roughConfig);
+                this.rc = rough.svg(this.canvas, { options: this.$roughConfig });
             }
             this.redraw();
         },
@@ -582,10 +584,10 @@ var Svg2Roughjs = /** @class */ (function () {
             parent.appendChild(target);
             this.canvas = target;
             if (mode === RenderMode.CANVAS) {
-                this.rc = rough.canvas(this.canvas, this.$roughConfig);
+                this.rc = rough.canvas(this.canvas, { options: this.$roughConfig }); // TODO is this new nesting new?
             }
             else {
-                this.rc = rough.svg(this.canvas, this.$roughConfig);
+                this.rc = rough.svg(this.canvas, { options: this.$roughConfig });
             }
             this.redraw();
         },
@@ -610,15 +612,15 @@ var Svg2Roughjs = /** @class */ (function () {
         configurable: true
     });
     /**
-     * Triggers an entire redraw of the SVG which also
-     * processes it anew.
+     * Triggers an entire redraw of the SVG which
+     * processes the input element anew.
      */
     Svg2Roughjs.prototype.redraw = function () {
         if (!this.svg) {
             return;
         }
         // reset target element
-        if (this.renderMode === RenderMode.CANVAS && this.ctx) {
+        if (this.renderMode === RenderMode.CANVAS) {
             this.initializeCanvas(this.canvas);
         }
         else {
@@ -730,9 +732,7 @@ var Svg2Roughjs = /** @class */ (function () {
                     // symbols and marker can only be instantiated by specific elements
                     continue;
                 }
-                var childTransform = svgTransform
-                    ? this.getCombinedTransform(child, svgTransform)
-                    : getSvgTransform(child);
+                var childTransform = this.getCombinedTransform(child, svgTransform);
                 stack.push({ element: child, transform: childTransform });
             }
         }
@@ -758,9 +758,7 @@ var Svg2Roughjs = /** @class */ (function () {
             var children = getNodeChildren(element);
             for (var i = children.length - 1; i >= 0; i--) {
                 var childElement = children[i];
-                var newTransform = transform
-                    ? this.getCombinedTransform(childElement, transform)
-                    : getSvgTransform(childElement);
+                var newTransform = this.getCombinedTransform(childElement, transform);
                 stack.push({ element: childElement, transform: newTransform });
             }
         }
@@ -784,8 +782,12 @@ var Svg2Roughjs = /** @class */ (function () {
     };
     /**
      * Combines the given transform with the element's transform.
+     * If no transform is given, it returns the SVGTransform of the element.
      */
     Svg2Roughjs.prototype.getCombinedTransform = function (element, transform) {
+        if (!transform) {
+            return getSvgTransform(element);
+        }
         var elementTransform = getSvgTransform(element);
         if (elementTransform) {
             var elementTransformMatrix = elementTransform.matrix;
@@ -795,7 +797,7 @@ var Svg2Roughjs = /** @class */ (function () {
         return transform;
     };
     /**
-     * Applies the given svgTransform to the canvas context.
+     * Applies the given svgTransform to the canvas context or the given element when in SVG mode.
      * @param element The element to which the transform should be applied
      * when in SVG mode.
      */
@@ -834,6 +836,7 @@ var Svg2Roughjs = /** @class */ (function () {
      * Parses a `fill` url by looking in the SVG `defs` element.
      * When a gradient is found, it is converted to a color and stored
      * in the internal defs store for this url.
+     * @returns The parsed color
      */
     Svg2Roughjs.prototype.parseFillUrl = function (url, opacity) {
         var id = getIdFromUrl(url);
@@ -854,7 +857,6 @@ var Svg2Roughjs = /** @class */ (function () {
                 }
             }
         }
-        return undefined;
     };
     /**
      * Traverses the given elements hierarchy bottom-up to determine its effective
@@ -906,8 +908,9 @@ var Svg2Roughjs = /** @class */ (function () {
         // getComputedStyle doesn't work for, e.g. <svg fill='rgba(...)'>
         var attr;
         if (!currentUseCtx) {
-            // @ts-ignore
-            attr = getComputedStyle(element)[attributeName] || element.getAttribute(attributeName);
+            attr =
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                getComputedStyle(element)[attributeName] || element.getAttribute(attributeName);
         }
         else {
             // use elements traverse a different parent-hierarchy, thus we cannot use getComputedStyle here
@@ -1054,7 +1057,7 @@ var Svg2Roughjs = /** @class */ (function () {
             return;
         }
         // TODO clipPath: consider clipPathUnits
-        var clipContainer;
+        var clipContainer = null;
         if (this.renderMode === RenderMode.CANVAS && this.ctx) {
             // for a canvas, we just apply a 'ctx.clip()' path
             this.ctx.beginPath();
@@ -1075,9 +1078,7 @@ var Svg2Roughjs = /** @class */ (function () {
         var children = getNodeChildren(clipPath);
         for (var i = children.length - 1; i >= 0; i--) {
             var childElement = children[i];
-            var childTransform = svgTransform
-                ? this.getCombinedTransform(childElement, svgTransform)
-                : getSvgTransform(childElement);
+            var childTransform = this.getCombinedTransform(childElement, svgTransform);
             stack.push({ element: childElement, transform: childTransform });
         }
         while (stack.length > 0) {
@@ -1094,9 +1095,7 @@ var Svg2Roughjs = /** @class */ (function () {
             var children_1 = getNodeChildren(element);
             for (var i = children_1.length - 1; i >= 0; i--) {
                 var childElement = children_1[i];
-                var childTransform = transform
-                    ? this.getCombinedTransform(childElement, transform)
-                    : getSvgTransform(childElement);
+                var childTransform = this.getCombinedTransform(childElement, transform);
                 stack.push({ element: childElement, transform: childTransform });
             }
         }
@@ -1469,7 +1468,7 @@ var Svg2Roughjs = /** @class */ (function () {
         var height = parseFloat(element.getAttribute('height'));
         if (isNaN(width) || isNaN(height)) {
             // use only if both are set
-            width = height = null;
+            width = height = undefined;
         }
         this.processRoot(element, svgTransform, width, height);
     };
@@ -1497,7 +1496,7 @@ var Svg2Roughjs = /** @class */ (function () {
             // use elements must be processed in their context, particularly regarding
             // the styling of them
             if (!this.$useElementContext) {
-                this.$useElementContext = { root: use, referenced: defElement };
+                this.$useElementContext = { root: use, referenced: defElement, parentContext: null };
             }
             else {
                 var newContext = {
@@ -1508,15 +1507,13 @@ var Svg2Roughjs = /** @class */ (function () {
                 this.$useElementContext = newContext;
             }
             // draw the referenced element
-            this.processRoot(
-            // @ts-ignore
-            defElement, this.getCombinedTransform(defElement, elementTransform), useWidth, useHeight);
+            this.processRoot(defElement, this.getCombinedTransform(defElement, elementTransform), useWidth, useHeight);
             // restore default context
             if (this.$useElementContext.parentContext) {
                 this.$useElementContext = this.$useElementContext.parentContext;
             }
             else {
-                this.$useElementContext = undefined;
+                this.$useElementContext = null;
             }
         }
     };
@@ -1541,7 +1538,6 @@ var Svg2Roughjs = /** @class */ (function () {
         if (encodedPathData.indexOf('undefined') !== -1) {
             // DEBUG STUFF
             console.error('broken path data');
-            debugger;
             return;
         }
         this.postProcessElement(path, this.rc.path(encodedPathData, this.parseStyleConfig(path, svgTransform)));
@@ -1553,12 +1549,13 @@ var Svg2Roughjs = /** @class */ (function () {
         var currentSubPathBegin;
         pathData.commands.forEach(function (cmd) {
             switch (cmd.type) {
-                case SVGPathData.MOVE_TO:
+                case SVGPathData.MOVE_TO: {
                     var p = new Point(cmd.x, cmd.y);
                     points.push(p);
                     // each moveto starts a new subpath
                     currentSubPathBegin = p;
                     break;
+                }
                 case SVGPathData.LINE_TO:
                 case SVGPathData.QUAD_TO:
                 case SVGPathData.SMOOTH_QUAD_TO:

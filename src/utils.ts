@@ -40,7 +40,7 @@ export function averageColor(colorArray: Color[]): Color {
  */
 export function getNodeChildren(element: Element): Element[] {
   if (typeof element.children !== 'undefined') {
-    return (element.children as unknown) as Element[]
+    return element.children as unknown as Element[]
   }
   let i = 0
   let node
@@ -69,7 +69,7 @@ export function getLengthInPx(svgLengthList: SVGAnimatedLengthList): number {
  * @returns Whether the transform is an identity transform.
  *  Returns true if transform is undefined.
  */
-export function isIdentityTransform(svgTransform: SVGTransform | null | undefined): boolean {
+export function isIdentityTransform(svgTransform: SVGTransform | null): boolean {
   if (!svgTransform) {
     return true
   }
@@ -221,9 +221,9 @@ export function getIdFromUrl(url: string | null): string | null {
 /**
  * Converts SVG opacity attributes to a [0, 1] range.
  */
-export function getOpacity(element: SVGElement, attribute: string) {
-  //@ts-ignore
-  const attr = getComputedStyle(element)[attribute] || element.getAttribute(attribute)
+export function getOpacity(element: SVGElement, attribute: string): number {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const attr = (getComputedStyle(element) as any)[attribute] || element.getAttribute(attribute)
   if (attr) {
     if (attr.indexOf('%') !== -1) {
       return Math.min(1, Math.max(0, parseFloat(attr.substring(0, attr.length - 1)) / 100))
@@ -256,7 +256,7 @@ export function getDefsElement(svgElement: SVGSVGElement): SVGDefsElement {
   return outputDefs
 }
 
-export function isHidden(element: SVGElement) {
+export function isHidden(element: SVGElement): boolean {
   const style = element.style
   if (!style) {
     return false

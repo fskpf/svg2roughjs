@@ -1,4 +1,5 @@
-module.exports = function(grunt) {
+// eslint-disable-next-line no-undef
+module.exports = function (grunt) {
   grunt.loadNpmTasks('grunt-contrib-copy')
   grunt.loadNpmTasks('grunt-contrib-watch')
 
@@ -12,9 +13,12 @@ module.exports = function(grunt) {
     copy: {
       svg2roughjs: {
         files: [
-          { src: '../index.js', dest: './node_modules/svg2roughjs/index.js' },
-          { src: '../index.js.map', dest: './node_modules/svg2roughjs/index.js.map' },
-          { src: '../index.d.ts', dest: './node_modules/svg2roughjs/index.d.ts' },
+          { src: '../bundled/index.js', dest: './node_modules/svg2roughjs/bundled/index.js' },
+          {
+            src: '../bundled/index.js.map',
+            dest: './node_modules/svg2roughjs/bundled/index.js.map'
+          },
+          { src: '../bundled/index.d.ts', dest: './node_modules/svg2roughjs/bundled/index.d.ts' },
           { src: '../package.json', dest: './node_modules/svg2roughjs/package.json' },
           { src: '../README.md', dest: './node_modules/svg2roughjs/README.md' },
           { src: '../LICENSE.md', dest: './node_modules/svg2roughjs/LICENSE.md' }
@@ -23,7 +27,7 @@ module.exports = function(grunt) {
     },
     watch: {
       scripts: {
-        files: ['../index.js'],
+        files: ['../bundled/index.js'],
         tasks: ['update-svg2roughjs']
       }
     }
