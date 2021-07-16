@@ -1,7 +1,10 @@
 // eslint-disable-next-line no-undef
 module.exports = function (grunt) {
+  grunt.loadNpmTasks('grunt-shell')
   grunt.loadNpmTasks('grunt-contrib-copy')
   grunt.loadNpmTasks('grunt-contrib-watch')
+
+  grunt.registerTask('build-svg2roughjs', ['shell:npmBuildSvg2roughjs'])
 
   grunt.registerTask(
     'update-svg2roughjs',
@@ -10,6 +13,11 @@ module.exports = function (grunt) {
   )
 
   grunt.initConfig({
+    shell: {
+      npmBuildSvg2roughjs: {
+        command: 'npm run build-svg2roughjs'
+      }
+    },
     copy: {
       svg2roughjs: {
         files: [
@@ -26,8 +34,12 @@ module.exports = function (grunt) {
       }
     },
     watch: {
-      scripts: {
-        files: ['../bundled/index.js'],
+      change: {
+        files: ['../src/*'],
+        tasks: ['build-svg2roughjs']
+      },
+      copy: {
+        files: ['../bundled/*'],
         tasks: ['update-svg2roughjs']
       }
     }

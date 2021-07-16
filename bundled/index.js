@@ -364,7 +364,6 @@ class Svg2Roughjs {
         this.$pencilFilter = false;
         this.idElements = {};
         this.$useElementContext = null;
-        console.log('Hello 6');
         if (!target) {
             throw new Error('No target provided');
         }
