@@ -22,8 +22,8 @@
   ],
   "license": "MIT",
   "scripts": {
-    "prepare": "npm run build",
-    "build": "npm run clean && npm run lint && tsc && rollup -c",
+    "prepare": "npm run lint && npm run build",
+    "build": "npm run clean && tsc && rollup -c",
     "clean": "rimraf dist/",
     "lint": "eslint --ext .ts ."
   },

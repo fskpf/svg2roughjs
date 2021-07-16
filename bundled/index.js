@@ -364,6 +364,7 @@ class Svg2Roughjs {
         this.$pencilFilter = false;
         this.idElements = {};
         this.$useElementContext = null;
+        console.log('Hello 6');
         if (!target) {
             throw new Error('No target provided');
         }
@@ -458,7 +459,7 @@ class Svg2Roughjs {
     }
     /**
      * Rough.js config object that is provided to Rough.js for drawing
-     * any SVG element. By default, `preserveVertices` is enabled.
+     * any SVG element.
      * Changing this property triggers a repaint.
      */
     set roughConfig(config) {

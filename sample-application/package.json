@@ -5,12 +5,13 @@
   "private": true,
   "scripts": {
     "preinstall": "cd ../ && npm pack",
-    "update-svg2roughjs": "grunt update-svg2roughjs",
-    "watch-svg2roughjs": "grunt watch",
-    "start": "concurrently --kill-others \"npm run update-svg2roughjs && npm run watch-svg2roughjs\" \"webpack serve\"",
+    "dev": "concurrently --kill-others \"npm run update-svg2roughjs && npm run watch-svg2roughjs\" \"npm run serve\"",
+    "serve": "webpack serve",
     "build": "npm run update-svg2roughjs && webpack",
     "deploy": "npm run update-svg2roughjs && webpack --mode production",
-    "serve": "webpack serve"
+    "build-svg2roughjs": "cd ../ && npm run build",
+    "update-svg2roughjs": "npm run build-svg2roughjs && grunt update-svg2roughjs",
+    "watch-svg2roughjs": "grunt watch"
   },
   "author": "Fabian Schwarzkopf",
   "license": "MIT",

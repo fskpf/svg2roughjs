@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
+/* eslint-disable no-undef */
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const { CleanWebpackPlugin } = require('clean-webpack-plugin')
 const CopyWebpackPlugin = require('copy-webpack-plugin')
@@ -28,6 +30,10 @@ module.exports = {
         }
       }
     }
+  },
+  snapshot: {
+    // automaticall serve changed content in node_modules instead of older snapshots
+    managedPaths: []
   },
   plugins: [
     new CleanWebpackPlugin(),
