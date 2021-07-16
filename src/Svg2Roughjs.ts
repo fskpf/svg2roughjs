@@ -1457,17 +1457,15 @@ export class Svg2Roughjs {
       return
     }
 
-    const rx = rect.hasAttribute('rx') ? rect.rx.baseVal.value : 0
-    const ry = rect.hasAttribute('ry') ? rect.ry.baseVal.value : 0
+    const rx = rect.hasAttribute('rx') ? rect.rx.baseVal.value : null
+    const ry = rect.hasAttribute('ry') ? rect.ry.baseVal.value : null
 
     // in the clip case, we can actually transform the entire
     // canvas without distorting the hand-drawn style
     if (this.renderMode === RenderMode.CANVAS && this.ctx) {
       this.ctx.save()
       this.applyGlobalTransform(svgTransform)
-      if (!rx && !ry) {
-        this.ctx.rect(x, y, width, height)
-      } else {
+      if (rx !== null && ry !== null) {
         // Construct path for the rounded rectangle
         const factor = (4 / 3) * (Math.sqrt(2) - 1)
         this.ctx.moveTo(x + rx, y)
@@ -1501,6 +1499,8 @@ export class Svg2Roughjs {
         this.ctx.lineTo(x, y + ry)
         this.ctx.bezierCurveTo(x, y + factor * ry, x + factor * rx, y, x + rx, y)
         this.ctx.closePath()
+      } else {
+        this.ctx.rect(x, y, width, height)
       }
       this.ctx.restore()
     } else {
@@ -1531,18 +1531,17 @@ export class Svg2Roughjs {
       return
     }
 
-    let rx = rect.hasAttribute('rx') ? rect.rx.baseVal.value : 0
-    let ry = rect.hasAttribute('ry') ? rect.ry.baseVal.value : 0
-    if (rx || ry) {
-      // Negative values are an error and result in the default value
-      rx = rx < 0 ? 0 : rx
-      ry = ry < 0 ? 0 : ry
+    // Negative values are an error and result in the default value, and clamp both values to half their sides' lengths
+    let rx = rect.hasAttribute('rx')
+      ? Math.min(Math.max(0, rect.rx.baseVal.value), width / 2)
+      : null
+    let ry = rect.hasAttribute('ry')
+      ? Math.min(Math.max(0, rect.ry.baseVal.value), height / 2)
+      : null
+    if (rx !== null || ry !== null) {
       // If only one of the two values is specified, the other has the same value
       rx = rx === null ? ry : rx
       ry = ry === null ? rx : ry
-      // Clamp both values to half their sides' lengths
-      rx = Math.min(rx, width / 2)
-      ry = Math.min(ry, height / 2)
     }
 
     if ((isIdentityTransform(svgTransform) || isTranslationTransform(svgTransform)) && !rx && !ry) {
@@ -1563,18 +1562,7 @@ export class Svg2Roughjs {
       )
     } else {
       let path = ''
-      if (!rx && !ry) {
-        const p1 = applyMatrix(new Point(x, y), svgTransform)
-        const p2 = applyMatrix(new Point(x + width, y), svgTransform)
-        const p3 = applyMatrix(new Point(x + width, y + height), svgTransform)
-        const p4 = applyMatrix(new Point(x, y + height), svgTransform)
-        // No rounding, so just construct the respective path as a simple polygon
-        path += `M ${p1}`
-        path += `L ${p2}`
-        path += `L ${p3}`
-        path += `L ${p4}`
-        path += `z`
-      } else {
+      if (rx !== null && ry !== null) {
         const factor = (4 / 3) * (Math.sqrt(2) - 1)
 
         // Construct path for the rounded rectangle
@@ -1614,6 +1602,17 @@ export class Svg2Roughjs {
         const p9c2 = applyMatrix(new Point(x + factor * rx, y), svgTransform)
         path += `C ${p9c1} ${p9c2} ${p1}`
         path += 'z'
+      } else {
+        // No rounding, so just construct the respective path as a simple polygon
+        const p1 = applyMatrix(new Point(x, y), svgTransform)
+        const p2 = applyMatrix(new Point(x + width, y), svgTransform)
+        const p3 = applyMatrix(new Point(x + width, y + height), svgTransform)
+        const p4 = applyMatrix(new Point(x, y + height), svgTransform)
+        path += `M ${p1}`
+        path += `L ${p2}`
+        path += `L ${p3}`
+        path += `L ${p4}`
+        path += `z`
       }
 
       // must use square line cap here so it looks like a rectangle. Default seems to be butt.

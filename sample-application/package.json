@@ -9,7 +9,8 @@
     "watch-svg2roughjs": "grunt watch",
     "start": "concurrently --kill-others \"npm run update-svg2roughjs && npm run watch-svg2roughjs\" \"webpack serve\"",
     "build": "npm run update-svg2roughjs && webpack",
-    "deploy": "npm run update-svg2roughjs && webpack --mode production"
+    "deploy": "npm run update-svg2roughjs && webpack --mode production",
+    "serve": "webpack serve"
   },
   "author": "Fabian Schwarzkopf",
   "license": "MIT",
