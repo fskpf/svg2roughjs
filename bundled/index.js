@@ -340,6 +340,7 @@ function getPointsArray(element) {
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const units = require('units-css');
+const PATH_CURVES_REGEX = /[acsqt]/i;
 /**
  * Svg2Roughjs parses a given SVG and draws it with Rough.js
  * in a canvas.
@@ -471,7 +472,7 @@ class Svg2Roughjs {
         this.redraw();
     }
     get roughConfig() {
-        return Object.assign({ preserveVertices: true }, this.$roughConfig);
+        return this.$roughConfig;
     }
     /**
      * Set a font-family for the rendering of text elements.
@@ -997,6 +998,18 @@ class Svg2Roughjs {
         return config;
     }
     /**
+     * Helper method to sketch a path.
+     * Paths with curves should utilize the preserverVertices option to avoid line disjoints.
+     * For non-curved paths it looks nicer to actually allow these diskoints.
+     * @returns Returns the SVGElement for the SVG render mode, or undefined otherwise
+     */
+    sketchPath(path, options) {
+        if (PATH_CURVES_REGEX.test(path)) {
+            options = options ? Object.assign(Object.assign({}, options), { preserveVertices: true }) : { preserveVertices: true };
+        }
+        return this.rc.path(path, options);
+    }
+    /**
      * Applies the clip-path to the CanvasContext.
      */
     applyClipPath(owner, clipPathAttr, svgTransform) {
@@ -1326,7 +1339,7 @@ class Svg2Roughjs {
             const radiusPoint = applyMatrix(new Point(cx + rx, cy + ry), svgTransform);
             const transformedWidth = 2 * (radiusPoint.x - center.x);
             const transformedHeight = 2 * (radiusPoint.y - center.y);
-            result = this.rc.ellipse(center.x, center.y, transformedWidth, transformedHeight, this.parseStyleConfig(ellipse, svgTransform));
+            result = this.rc.ellipse(center.x, center.y, transformedWidth, transformedHeight, Object.assign(Object.assign({}, this.parseStyleConfig(ellipse, svgTransform)), { preserveVertices: true }));
         }
         else {
             // in other cases we need to construct the path manually.
@@ -1341,7 +1354,7 @@ class Svg2Roughjs {
             const c6 = applyMatrix(new Point(cx - factor * rx, cy - ry), svgTransform);
             const c8 = applyMatrix(new Point(cx + rx, cy - factor * ry), svgTransform);
             const path = `M ${p1} C ${c1} ${c2} ${p2} S ${c4} ${p3} S ${c6} ${p4} S ${c8} ${p1}z`;
-            result = this.rc.path(path, this.parseStyleConfig(ellipse, svgTransform));
+            result = this.sketchPath(path, this.parseStyleConfig(ellipse, svgTransform));
         }
         this.postProcessElement(ellipse, result);
     }
@@ -1384,7 +1397,7 @@ class Svg2Roughjs {
             // transform a point on the ellipse to get the transformed radius
             const radiusPoint = applyMatrix(new Point(cx + r, cy + r), svgTransform);
             const transformedWidth = 2 * (radiusPoint.x - center.x);
-            result = this.rc.circle(center.x, center.y, transformedWidth, this.parseStyleConfig(circle, svgTransform));
+            result = this.rc.circle(center.x, center.y, transformedWidth, Object.assign(Object.assign({}, this.parseStyleConfig(circle, svgTransform)), { preserveVertices: true }));
         }
         else {
             // in other cases we need to construct the path manually.
@@ -1399,7 +1412,7 @@ class Svg2Roughjs {
             const c6 = applyMatrix(new Point(cx - factor * r, cy - r), svgTransform);
             const c8 = applyMatrix(new Point(cx + r, cy - factor * r), svgTransform);
             const path = `M ${p1} C ${c1} ${c2} ${p2} S ${c4} ${p3} S ${c6} ${p4} S ${c8} ${p1}z`;
-            result = this.rc.path(path, this.parseStyleConfig(circle, svgTransform));
+            result = this.sketchPath(path, this.parseStyleConfig(circle, svgTransform));
         }
         this.postProcessElement(circle, result);
     }
@@ -1492,7 +1505,7 @@ class Svg2Roughjs {
             console.error('broken path data');
             return;
         }
-        this.postProcessElement(path, this.rc.path(encodedPathData, this.parseStyleConfig(path, svgTransform)));
+        this.postProcessElement(path, this.sketchPath(encodedPathData, this.parseStyleConfig(path, svgTransform)));
         // https://www.w3.org/TR/SVG11/painting.html#MarkerProperties
         // Note that for a ‘path’ element which ends with a closed sub-path,
         // the last vertex is the same as the initial vertex on the given
@@ -1669,7 +1682,7 @@ class Svg2Roughjs {
                 this.ctx.save();
                 this.ctx.lineCap = 'square';
             }
-            const result = this.rc.path(path, this.parseStyleConfig(rect, svgTransform));
+            const result = this.sketchPath(path, this.parseStyleConfig(rect, svgTransform));
             if (this.renderMode === RenderMode.SVG && result) {
                 // same as for the canvas context, use square line-cap instead of default butt here
                 result.setAttribute('stroke-linecap', 'square');

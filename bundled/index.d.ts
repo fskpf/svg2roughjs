@@ -163,6 +163,13 @@ declare class Svg2Roughjs {
      */
     private parseStyleConfig;
     /**
+     * Helper method to sketch a path.
+     * Paths with curves should utilize the preserverVertices option to avoid line disjoints.
+     * For non-curved paths it looks nicer to actually allow these diskoints.
+     * @returns Returns the SVGElement for the SVG render mode, or undefined otherwise
+     */
+    private sketchPath;
+    /**
      * Applies the clip-path to the CanvasContext.
      */
     private applyClipPath;
