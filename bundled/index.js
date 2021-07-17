@@ -1257,7 +1257,7 @@ function drawText(context, text, svgTransform) {
         }
         const style = textClone.getAttribute('style');
         const cssFont = getCssFont(context, text, true);
-        textClone.setAttribute('style', style ? cssFont + style : cssFont);
+        textClone.setAttribute('style', style ? `${style}${style[style.length - 1] === ';' ? '' : ';'}${cssFont}` : cssFont);
         if (hasStroke(stroke)) {
             textClone.setAttribute('stroke', stroke);
         }
