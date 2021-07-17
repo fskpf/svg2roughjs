@@ -530,15 +530,18 @@ function parseStyleConfig(context, element, svgTransform) {
 function postProcessElement(context, element, sketchElement) {
     if (context.renderMode === RenderMode.SVG && context.targetSvg && sketchElement) {
         sketchElement = sketchElement;
+        // wrap it in another container to safely apply post-processing attributes
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.appendChild(sketchElement);
         // maybe apply a clip-path
         const sketchClipPathId = element.getAttribute('data-sketchy-clip-path');
         if (sketchClipPathId) {
-            sketchElement.setAttribute('clip-path', `url(#${sketchClipPathId})`);
+            g.setAttribute('clip-path', `url(#${sketchClipPathId})`);
         }
         if (context.pencilFilter && element.tagName !== 'text') {
-            sketchElement.setAttribute('filter', 'url(#pencilTextureFilter)');
+            g.setAttribute('filter', 'url(#pencilTextureFilter)');
         }
-        context.targetSvg.appendChild(sketchElement);
+        context.targetSvg.appendChild(g);
     }
 }
 /**
