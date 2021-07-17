@@ -1048,7 +1048,12 @@ function applyClipPath(context, owner, clipPathAttr, svgTransform) {
     }
     while (stack.length > 0) {
         const { element, transform } = stack.pop();
-        applyElementClip(context, element, clipContainer, transform);
+        try {
+            applyElementClip(context, element, clipContainer, transform);
+        }
+        catch (e) {
+            console.error(e);
+        }
         if (element.tagName === 'defs' ||
             element.tagName === 'svg' ||
             element.tagName === 'clipPath' ||
@@ -1505,7 +1510,12 @@ function processRoot(context, root, svgTransform, width, height) {
     while (stack.length > 0) {
         const { element, transform } = stack.pop();
         // maybe draw the element
-        drawElement(context, element, transform);
+        try {
+            drawElement(context, element, transform);
+        }
+        catch (e) {
+            console.error(e);
+        }
         if (element.tagName === 'defs' ||
             element.tagName === 'symbol' ||
             element.tagName === 'marker' ||

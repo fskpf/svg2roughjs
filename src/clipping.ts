@@ -60,7 +60,11 @@ export function applyClipPath(
   while (stack.length > 0) {
     const { element, transform } = stack.pop()!
 
-    applyElementClip(context, element, clipContainer, transform)
+    try {
+      applyElementClip(context, element, clipContainer, transform)
+    } catch (e) {
+      console.error(e)
+    }
 
     if (
       element.tagName === 'defs' ||

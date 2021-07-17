@@ -105,7 +105,11 @@ export function processRoot(
     const { element, transform } = stack.pop()!
 
     // maybe draw the element
-    drawElement(context, element, transform)
+    try {
+      drawElement(context, element, transform)
+    } catch (e) {
+      console.error(e)
+    }
 
     if (
       element.tagName === 'defs' ||
