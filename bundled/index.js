@@ -529,19 +529,25 @@ function parseStyleConfig(context, element, svgTransform) {
  */
 function postProcessElement(context, element, sketchElement) {
     if (context.renderMode === RenderMode.SVG && context.targetSvg && sketchElement) {
-        sketchElement = sketchElement;
-        // wrap it in another container to safely apply post-processing attributes
-        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-        g.appendChild(sketchElement);
-        // maybe apply a clip-path
+        let sketch = sketchElement;
+        // original element may have a clip-path
         const sketchClipPathId = element.getAttribute('data-sketchy-clip-path');
+        const applyPencilFilter = context.pencilFilter && element.tagName !== 'text';
+        // wrap it in another container to safely apply post-processing attributes,
+        // though avoid no-op <g> containers
+        const isPlainContainer = sketch.tagName === 'g' && sketch.attributes.length === 0;
+        if (!isPlainContainer && (sketchClipPathId || applyPencilFilter)) {
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.appendChild(sketch);
+            sketch = g;
+        }
         if (sketchClipPathId) {
-            g.setAttribute('clip-path', `url(#${sketchClipPathId})`);
+            sketch.setAttribute('clip-path', `url(#${sketchClipPathId})`);
         }
-        if (context.pencilFilter && element.tagName !== 'text') {
-            g.setAttribute('filter', 'url(#pencilTextureFilter)');
+        if (applyPencilFilter) {
+            sketch.setAttribute('filter', 'url(#pencilTextureFilter)');
         }
-        context.targetSvg.appendChild(g);
+        context.targetSvg.appendChild(sketch);
     }
 }
 /**
