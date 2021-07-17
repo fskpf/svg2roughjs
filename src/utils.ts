@@ -1,7 +1,19 @@
+import { RoughCanvas } from 'roughjs/bin/canvas'
+import { Drawable, Options } from 'roughjs/bin/core'
+import { RoughSVG } from 'roughjs/bin/svg'
 import tinycolor from 'tinycolor2'
-import { Point } from './point'
+import { Point } from './geom/point'
+import { RenderMode } from './RenderMode'
+import { UseContext } from './Svg2Roughjs'
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const units = require('units-css')
 
 type Color = tinycolor.Instance
+
+/**
+ * Regexp that detects curved commands in path data.
+ */
+export const PATH_CURVES_REGEX = /[acsqt]/i
 
 /**
  * A simple regexp which is used to test whether a given string value
@@ -304,4 +316,379 @@ export function getPointsArray(element: SVGPolygonElement | SVGPolylineElement):
     }
   }
   return points
+}
+
+/**
+ * Traverses the given elements hierarchy bottom-up to determine its effective
+ * opacity attribute.
+ * @param currentUseCtx Consider different DOM hierarchy for use elements
+ */
+export function getEffectiveElementOpacity(
+  context: RenderContext,
+  element: SVGElement,
+  currentOpacity: number,
+  currentUseCtx?: UseContext | null
+): number {
+  let attr
+  if (!currentUseCtx) {
+    attr = getComputedStyle(element)['opacity'] || element.getAttribute('opacity')
+  } else {
+    // use elements traverse a different parent-hierarchy, thus we cannot use getComputedStyle here
+    attr = element.getAttribute('opacity')
+  }
+  if (attr) {
+    let elementOpacity = 1
+    if (attr.indexOf('%') !== -1) {
+      elementOpacity = Math.min(
+        1,
+        Math.max(0, parseFloat(attr.substring(0, attr.length - 1)) / 100)
+      )
+    } else {
+      elementOpacity = Math.min(1, Math.max(0, parseFloat(attr)))
+    }
+    // combine opacities
+    currentOpacity *= elementOpacity
+  }
+  // traverse upwards to combine parent opacities as well
+  let parent: Element | null = element.parentElement
+
+  const useCtx = currentUseCtx
+  let nextUseCtx = useCtx
+
+  if (useCtx && useCtx.referenced === element) {
+    // switch context and traverse the use-element parent now
+    parent = useCtx.root
+    nextUseCtx = useCtx.parentContext
+  }
+
+  if (!parent || parent === context.sourceSvg) {
+    return currentOpacity
+  }
+
+  return getEffectiveElementOpacity(context, parent as SVGElement, currentOpacity, nextUseCtx)
+}
+
+/**
+ * Returns the attribute value of an element under consideration
+ * of inherited attributes from the `parentElement`.
+ * @param attributeName Name of the attribute to look up
+ * @param currentUseCtx Consider different DOM hierarchy for use elements
+ * @return attribute value if it exists
+ */
+export function getEffectiveAttribute(
+  context: RenderContext,
+  element: SVGElement,
+  attributeName: string,
+  currentUseCtx?: UseContext | null
+): string | null {
+  // getComputedStyle doesn't work for, e.g. <svg fill='rgba(...)'>
+  let attr
+  if (!currentUseCtx) {
+    attr =
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (getComputedStyle(element) as any)[attributeName] || element.getAttribute(attributeName)
+  } else {
+    // use elements traverse a different parent-hierarchy, thus we cannot use getComputedStyle here
+    attr = element.getAttribute(attributeName)
+  }
+
+  if (!attr) {
+    let parent: Element | null = element.parentElement
+
+    const useCtx = currentUseCtx
+    let nextCtx = useCtx
+
+    if (useCtx && useCtx.referenced === element) {
+      // switch context and traverse the use-element parent now
+      parent = useCtx.root
+      nextCtx = useCtx.parentContext
+    }
+
+    if (!parent || parent === context.sourceSvg) {
+      return null
+    }
+    return getEffectiveAttribute(context, parent as SVGElement, attributeName, nextCtx)
+  }
+  return attr
+}
+
+/**
+ * Parses a `fill` url by looking in the SVG `defs` element.
+ * When a gradient is found, it is converted to a color and stored
+ * in the internal defs store for this url.
+ * @returns The parsed color
+ */
+export function parseFillUrl(
+  context: RenderContext,
+  url: string,
+  opacity: number
+): string | undefined {
+  const id = getIdFromUrl(url)
+  if (!id) {
+    return 'transparent'
+  }
+  const fill = context.idElements[id]
+  if (fill) {
+    if (typeof fill === 'string') {
+      // maybe it was already parsed and replaced with a color
+      return fill
+    } else {
+      if (fill instanceof SVGLinearGradientElement || fill instanceof SVGRadialGradientElement) {
+        const color = gradientToColor(fill, opacity)
+        context.idElements[id] = color
+        return color
+      }
+    }
+  }
+}
+
+/**
+ * Converts the given string to px unit. May be either a <length>
+ * (https://developer.mozilla.org/de/docs/Web/SVG/Content_type#Length)
+ * or a <percentage>
+ * (https://developer.mozilla.org/de/docs/Web/SVG/Content_type#Percentage).
+ * @returns The value in px unit
+ */
+export function convertToPixelUnit(context: RenderContext, value: string): number {
+  // css-units fails for converting from unit-less to 'px' in IE11,
+  // thus we only apply it to non-px values
+  if (value.match(CONTAINS_UNIT_REGEXP) !== null) {
+    return units.convert('px', value, context.sourceSvg)
+  }
+  return parseFloat(value)
+}
+
+/**
+ * Converts the effective style attributes of the given `SVGElement`
+ * to a Rough.js config object that is used to draw the element with
+ * Rough.js.
+ * @return config for Rough.js drawing
+ */
+export function parseStyleConfig(
+  context: RenderContext,
+  element: SVGElement,
+  svgTransform: SVGTransform | null
+): Options {
+  const config = Object.assign({}, context.roughConfig)
+
+  // Scalefactor for certain style attributes. For lack of a better option here, use the determinant
+  let scaleFactor = 1
+  if (!isIdentityTransform(svgTransform)) {
+    const m = svgTransform!.matrix
+    const det = m.a * m.d - m.c * m.b
+    scaleFactor = Math.sqrt(det)
+  }
+
+  // incorporate the elements base opacity
+  const elementOpacity = getEffectiveElementOpacity(context, element, 1, context.useElementContext)
+
+  const fill = getEffectiveAttribute(context, element, 'fill', context.useElementContext) || 'black'
+  const fillOpacity = elementOpacity * getOpacity(element, 'fill-opacity')
+  if (fill) {
+    if (fill.indexOf('url') !== -1) {
+      config.fill = parseFillUrl(context, fill, fillOpacity)
+    } else if (fill === 'none') {
+      delete config.fill
+    } else {
+      const color = tinycolor(fill)
+      color.setAlpha(fillOpacity)
+      config.fill = color.toString()
+    }
+  }
+
+  const stroke = getEffectiveAttribute(context, element, 'stroke', context.useElementContext)
+  const strokeOpacity = elementOpacity * getOpacity(element, 'stroke-opacity')
+  if (stroke) {
+    if (stroke.indexOf('url') !== -1) {
+      config.stroke = parseFillUrl(context, fill, strokeOpacity)
+    } else if (stroke === 'none') {
+      config.stroke = 'none'
+    } else {
+      const color = tinycolor(stroke)
+      color.setAlpha(strokeOpacity)
+      config.stroke = color.toString()
+    }
+  } else {
+    config.stroke = 'none'
+  }
+
+  const strokeWidth = getEffectiveAttribute(
+    context,
+    element,
+    'stroke-width',
+    context.useElementContext
+  )
+  if (strokeWidth) {
+    // Convert to user space units (px)
+    config.strokeWidth = convertToPixelUnit(context, strokeWidth) * scaleFactor
+  } else {
+    config.strokeWidth = 0
+  }
+
+  const strokeDashArray = getEffectiveAttribute(
+    context,
+    element,
+    'stroke-dasharray',
+    context.useElementContext
+  )
+  if (strokeDashArray && strokeDashArray !== 'none') {
+    config.strokeLineDash = strokeDashArray
+      .split(/[\s,]+/)
+      .filter(entry => entry.length > 0)
+      // make sure that dashes/dots are at least somewhat visible
+      .map(dash => Math.max(0.5, convertToPixelUnit(context, dash) * scaleFactor))
+  }
+
+  const strokeDashOffset = getEffectiveAttribute(
+    context,
+    element,
+    'stroke-dashoffset',
+    context.useElementContext
+  )
+  if (strokeDashOffset) {
+    config.strokeLineDashOffset = convertToPixelUnit(context, strokeDashOffset) * scaleFactor
+  }
+
+  // unstroked but filled shapes look weird, so always apply a stroke if we fill something
+  if (config.fill && config.stroke === 'none') {
+    config.stroke = config.fill
+    config.strokeWidth = 1
+  }
+
+  // nested paths should be filled twice, see
+  // https://github.com/rough-stuff/rough/issues/158
+  // however, fill-rule is still problematic, see
+  // https://github.com/rough-stuff/rough/issues/131
+  if (typeof config.combineNestedSvgPaths === 'undefined') {
+    config.combineNestedSvgPaths = true
+  }
+
+  if (context.randomize) {
+    // Rough.js default is 0.5 * strokeWidth
+    config.fillWeight = getRandomNumber(0.5, 3)
+    // Rough.js default is -41deg
+    config.hachureAngle = getRandomNumber(-30, -50)
+    // Rough.js default is 4 * strokeWidth
+    config.hachureGap = getRandomNumber(3, 5)
+    // randomize double stroke effect if not explicitly set through user config
+    if (typeof config.disableMultiStroke === 'undefined') {
+      config.disableMultiStroke = Math.random() > 0.3
+    }
+  }
+
+  return config
+}
+
+/**
+ * TODO: This could also be an actual class, e.g. with helper functions like createSVGMatrix
+ */
+export type RenderContext = {
+  rc: RoughCanvas | RoughSVG
+  roughConfig: Options
+  renderMode: RenderMode
+  fontFamily: string | null
+  pencilFilter: boolean
+  randomize: boolean
+  idElements: Record<string, SVGElement | string>
+  sourceSvg: SVGSVGElement // this.$svg
+  targetCanvas?: HTMLCanvasElement // this.canvas
+  targetCanvasContext?: CanvasRenderingContext2D
+  targetSvg?: SVGSVGElement // this.canvas
+  useElementContext?: UseContext | null // this.$useElementContext
+}
+
+/**
+ * Helper method to append the returned `SVGGElement` from
+ * Rough.js when drawing in SVG mode.
+ */
+export function postProcessElement(
+  context: RenderContext,
+  element: SVGElement,
+  sketchElement?: Drawable | SVGElement
+): void {
+  if (context.renderMode === RenderMode.SVG && context.targetSvg && sketchElement) {
+    sketchElement = sketchElement as SVGElement
+    // maybe apply a clip-path
+    const sketchClipPathId = element.getAttribute('data-sketchy-clip-path')
+    if (sketchClipPathId) {
+      sketchElement.setAttribute('clip-path', `url(#${sketchClipPathId})`)
+    }
+
+    if (context.pencilFilter && element.tagName !== 'text') {
+      sketchElement.setAttribute('filter', 'url(#pencilTextureFilter)')
+    }
+
+    context.targetSvg.appendChild(sketchElement)
+  }
+}
+
+/**
+ * Helper method to sketch a path.
+ * Paths with curves should utilize the preserverVertices option to avoid line disjoints.
+ * For non-curved paths it looks nicer to actually allow these diskoints.
+ * @returns Returns the SVGElement for the SVG render mode, or undefined otherwise
+ */
+export function sketchPath(
+  context: RenderContext,
+  path: string,
+  options?: Options
+): Drawable | SVGElement {
+  if (PATH_CURVES_REGEX.test(path)) {
+    options = options ? { ...options, preserveVertices: true } : { preserveVertices: true }
+  }
+  return context.rc.path(path, options)
+}
+
+/**
+ * Combines the given transform with the element's transform.
+ * If no transform is given, it returns the SVGTransform of the element.
+ */
+export function getCombinedTransform(
+  context: RenderContext,
+  element: SVGGraphicsElement,
+  transform: SVGTransform | null
+): SVGTransform | null {
+  if (!transform) {
+    return getSvgTransform(element)
+  }
+
+  const elementTransform = getSvgTransform(element)
+  if (elementTransform) {
+    const elementTransformMatrix = elementTransform.matrix
+    const combinedMatrix = transform.matrix.multiply(elementTransformMatrix)
+    return context.sourceSvg.createSVGTransformFromMatrix(combinedMatrix)
+  }
+  return transform
+}
+
+/**
+ * Applies the given svgTransform to the canvas context or the given element when in SVG mode.
+ * @param element The element to which the transform should be applied
+ * when in SVG mode.
+ */
+export function applyGlobalTransform(
+  context: RenderContext,
+  svgTransform: SVGTransform | null,
+  element?: SVGGraphicsElement | null
+): void {
+  if (svgTransform && svgTransform.matrix) {
+    const matrix = svgTransform.matrix
+    if (context.renderMode === RenderMode.CANVAS && context.targetCanvasContext) {
+      // IE11 doesn't support SVGMatrix as parameter for setTransform
+      context.targetCanvasContext.setTransform(
+        matrix.a,
+        matrix.b,
+        matrix.c,
+        matrix.d,
+        matrix.e,
+        matrix.f
+      )
+    } else if (context.renderMode === RenderMode.SVG && element) {
+      if (element.transform.baseVal.numberOfItems > 0) {
+        element.transform.baseVal.getItem(0).setMatrix(matrix)
+      } else {
+        element.transform.baseVal.appendItem(svgTransform)
+      }
+    }
+  }
 }

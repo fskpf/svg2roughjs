@@ -1,10 +1,35 @@
 import { Options } from 'roughjs/bin/core';
+import { RoughCanvas } from 'roughjs/bin/canvas';
+import { RoughSVG } from 'roughjs/bin/svg';
 
 declare enum RenderMode {
     SVG = 0,
     CANVAS = 1
 }
 
+/**
+ * TODO: This could also be an actual class, e.g. with helper functions like createSVGMatrix
+ */
+declare type RenderContext = {
+    rc: RoughCanvas | RoughSVG;
+    roughConfig: Options;
+    renderMode: RenderMode;
+    fontFamily: string | null;
+    pencilFilter: boolean;
+    randomize: boolean;
+    idElements: Record<string, SVGElement | string>;
+    sourceSvg: SVGSVGElement;
+    targetCanvas?: HTMLCanvasElement;
+    targetCanvasContext?: CanvasRenderingContext2D;
+    targetSvg?: SVGSVGElement;
+    useElementContext?: UseContext | null;
+};
+
+declare type UseContext = {
+    referenced: SVGElement;
+    root: Element | null;
+    parentContext: UseContext | null;
+};
 /**
  * Svg2Roughjs parses a given SVG and draws it with Rough.js
  * in a canvas.
@@ -23,7 +48,6 @@ declare class Svg2Roughjs {
     private ctx;
     private $pencilFilter;
     private idElements;
-    private $useElementContext;
     /**
      * The SVG that should be converted.
      * Changing this property triggers drawing of the SVG into
@@ -76,6 +100,12 @@ declare class Svg2Roughjs {
     set pencilFilter(value: boolean);
     get pencilFilter(): boolean;
     /**
+     * Creates a new context which contains the current state of the
+     * Svg2Roughs instance for rendering.
+     * @returns A new context.
+     */
+    createRenderContext(): RenderContext;
+    /**
      * Creates a new instance of Svg2roughjs.
      * @param target Either a selector for the container to which a canvas should be added
      * or an `HTMLCanvasElement` or `SVGSVGElement` that should be used as output target.
@@ -100,117 +130,9 @@ declare class Svg2Roughjs {
      */
     private initializeSvg;
     /**
-     * Traverses the SVG in DFS and draws each element to the canvas.
-     * @param root either an SVG- or g-element
-     * @param width Use elements can overwrite width
-     * @param height Use elements can overwrite height
-     */
-    private processRoot;
-    /**
-     * Helper method to append the returned `SVGGElement` from
-     * Rough.js when drawing in SVG mode.
-     */
-    private postProcessElement;
-    /**
-     * Combines the given transform with the element's transform.
-     * If no transform is given, it returns the SVGTransform of the element.
-     */
-    private getCombinedTransform;
-    /**
-     * Applies the given svgTransform to the canvas context or the given element when in SVG mode.
-     * @param element The element to which the transform should be applied
-     * when in SVG mode.
-     */
-    private applyGlobalTransform;
-    /**
      * Stores elements with IDs for later use.
      */
     private collectElementsWithID;
-    /**
-     * Parses a `fill` url by looking in the SVG `defs` element.
-     * When a gradient is found, it is converted to a color and stored
-     * in the internal defs store for this url.
-     * @returns The parsed color
-     */
-    private parseFillUrl;
-    /**
-     * Traverses the given elements hierarchy bottom-up to determine its effective
-     * opacity attribute.
-     * @param currentUseCtx Consider different DOM hierarchy for use elements
-     */
-    private getEffectiveElementOpacity;
-    /**
-     * Returns the attribute value of an element under consideration
-     * of inherited attributes from the `parentElement`.
-     * @param attributeName Name of the attribute to look up
-     * @param currentUseCtx Consider different DOM hierarchy for use elements
-     * @return attribute value if it exists
-     */
-    private getEffectiveAttribute;
-    /**
-     * Converts the given string to px unit. May be either a <length>
-     * (https://developer.mozilla.org/de/docs/Web/SVG/Content_type#Length)
-     * or a <percentage>
-     * (https://developer.mozilla.org/de/docs/Web/SVG/Content_type#Percentage).
-     * @returns The value in px unit
-     */
-    private convertToPixelUnit;
-    /**
-     * Converts the effective style attributes of the given `SVGElement`
-     * to a Rough.js config object that is used to draw the element with
-     * Rough.js.
-     * @return config for Rough.js drawing
-     */
-    private parseStyleConfig;
-    /**
-     * Helper method to sketch a path.
-     * Paths with curves should utilize the preserverVertices option to avoid line disjoints.
-     * For non-curved paths it looks nicer to actually allow these diskoints.
-     * @returns Returns the SVGElement for the SVG render mode, or undefined otherwise
-     */
-    private sketchPath;
-    /**
-     * Applies the clip-path to the CanvasContext.
-     */
-    private applyClipPath;
-    /**
-     * Applies the element as clip to the CanvasContext.
-     */
-    private applyElementClip;
-    /**
-     * The main switch to delegate drawing of `SVGElement`s
-     * to different subroutines.
-     */
-    private drawElement;
-    private drawMarkers;
-    private drawPolyline;
-    private applyPolygonClip;
-    private drawPolygon;
-    private applyEllipseClip;
-    private drawEllipse;
-    private applyCircleClip;
-    private drawCircle;
-    private drawLine;
-    private drawRoot;
-    private drawUse;
-    private drawPath;
-    private applyRectClip;
-    private drawRect;
-    private drawImage;
-    private drawText;
-    /**
-     * Retrieves the text content from a text content element (text, tspan, ...)
-     */
-    private getTextContent;
-    /**
-     * Determines whether the given element has default white-space handling, i.e. normalization.
-     * Returns false if the element (or an ancestor) has xml:space='preserve'
-     */
-    private shouldNormalizeWhitespace;
-    /**
-     * @param asStyleString Formats the return value as inline style string
-     */
-    private getCssFont;
 }
 
-export { RenderMode, Svg2Roughjs };
+export { RenderMode, Svg2Roughjs, UseContext };
