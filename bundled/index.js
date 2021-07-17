@@ -1241,6 +1241,11 @@ function drawPolyline(context, polyline, svgTransform) {
 }
 
 function drawText(context, text, svgTransform) {
+    const stroke = getEffectiveAttribute(context, text, 'stroke');
+    const strokeWidth = hasStroke(stroke)
+        ? getEffectiveAttribute(context, text, 'stroke-width')
+        : null;
+    const textAnchor = getEffectiveAttribute(context, text, 'text-anchor', context.useElementContext);
     if (context.renderMode === RenderMode.SVG) {
         const container = document.createElementNS('http://www.w3.org/2000/svg', 'g');
         container.setAttribute('class', 'text-container');
@@ -1253,6 +1258,15 @@ function drawText(context, text, svgTransform) {
         const style = textClone.getAttribute('style');
         const cssFont = getCssFont(context, text, true);
         textClone.setAttribute('style', style ? cssFont + style : cssFont);
+        if (hasStroke(stroke)) {
+            textClone.setAttribute('stroke', stroke);
+        }
+        if (strokeWidth) {
+            textClone.setAttribute('stroke-width', strokeWidth);
+        }
+        if (textAnchor) {
+            textClone.setAttribute('text-anchor', textAnchor);
+        }
         container.appendChild(textClone);
         postProcessElement(context, text, container);
         return;
@@ -1269,13 +1283,12 @@ function drawText(context, text, svgTransform) {
     if (style.fill) {
         targetCtx.fillStyle = style.fill;
     }
-    const stroke = getEffectiveAttribute(context, text, 'stroke');
-    const hasStroke = stroke && stroke != 'none';
-    if (hasStroke) {
+    if (hasStroke(stroke)) {
         targetCtx.strokeStyle = stroke;
-        targetCtx.lineWidth = convertToPixelUnit(context, getEffectiveAttribute(context, text, 'stroke-width'));
     }
-    const textAnchor = getEffectiveAttribute(context, text, 'text-anchor', context.useElementContext);
+    if (strokeWidth) {
+        targetCtx.lineWidth = convertToPixelUnit(context, strokeWidth);
+    }
     if (textAnchor) {
         targetCtx.textAlign = textAnchor !== 'middle' ? textAnchor : 'center';
     }
@@ -1287,7 +1300,7 @@ function drawText(context, text, svgTransform) {
     targetCtx.translate(dx, dy);
     if (text.childElementCount === 0) {
         targetCtx.fillText(getTextContent(context, text), textLocation.x, textLocation.y, text.getComputedTextLength());
-        if (hasStroke) {
+        if (hasStroke(stroke)) {
             targetCtx.strokeText(getTextContent(context, text), textLocation.x, textLocation.y, text.getComputedTextLength());
         }
     }
@@ -1301,7 +1314,7 @@ function drawText(context, text, svgTransform) {
                 const dy = getLengthInPx(child.dy);
                 targetCtx.translate(dx, dy);
                 targetCtx.fillText(getTextContent(context, child), textLocation.x, textLocation.y);
-                if (hasStroke) {
+                if (hasStroke(stroke)) {
                     targetCtx.strokeText(getTextContent(context, child), textLocation.x, textLocation.y);
                 }
             }
@@ -1365,6 +1378,9 @@ function shouldNormalizeWhitespace(context, element) {
         }
     }
     return xmlSpaceAttribute !== 'preserve'; // no attribute is also default handling
+}
+function hasStroke(stroke) {
+    return stroke !== null && stroke !== '';
 }
 
 function drawUse(context, use, svgTransform) {

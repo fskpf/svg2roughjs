@@ -35,7 +35,7 @@ module.exports = function (grunt) {
     },
     watch: {
       change: {
-        files: ['../src/*'],
+        files: ['../src/**/*'],
         tasks: ['build-svg2roughjs']
       },
       copy: {
