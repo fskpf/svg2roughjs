@@ -179,7 +179,7 @@ function run() {
   })
 
   let debouncedTimer = null
-  codeMirrorInstance.on('keyup', () => {
+  codeMirrorInstance.on('change', () => {
     if (debouncedTimer) {
       clearTimeout(debouncedTimer)
     }
