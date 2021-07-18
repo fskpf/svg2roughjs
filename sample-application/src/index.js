@@ -18,8 +18,33 @@ import SAMPLE_VENN from '../public/venn.svg'
 
 import { RenderMode, Svg2Roughjs } from 'svg2roughjs'
 
+let svg2roughjs
 let loadingSvg = false
 let scheduledLoad
+let debouncedTimer = null
+let codeMirrorInstance
+
+const onCodeMirrorChange = () => {
+  if (debouncedTimer) {
+    clearTimeout(debouncedTimer)
+  }
+  debouncedTimer = setTimeout(() => {
+    debouncedTimer = null
+    try {
+      loadSvgString(svg2roughjs, codeMirrorInstance.getValue())
+    } catch (e) {}
+  }, 500)
+}
+
+/**
+ * Sets CodeMirror content without triggering the change listener
+ * @param {string} value
+ */
+function setCodeMirrorValue(value) {
+  codeMirrorInstance.off('change', onCodeMirrorChange)
+  codeMirrorInstance.setValue(value)
+  codeMirrorInstance.on('change', onCodeMirrorChange)
+}
 
 /**
  * @param {SVGSVGElement} svg
@@ -143,15 +168,13 @@ function loadSample(svg2roughjs, sample) {
       break
   }
 
-  codeMirrorInstance.setValue(sampleString)
+  setCodeMirrorValue(sampleString)
 
   loadSvgString(svg2roughjs, sampleString)
 }
 
-let codeMirrorInstance
-
 function run() {
-  const svg2roughjs = new Svg2Roughjs('#output', RenderMode.SVG)
+  svg2roughjs = new Svg2Roughjs('#output', RenderMode.SVG)
   svg2roughjs.backgroundColor = 'white'
   svg2roughjs.pencilFilter = !!document.getElementById('pencilFilter').checked
   const sampleSelect = document.getElementById('sample-select')
@@ -176,19 +199,6 @@ function run() {
   codeMirrorInstance = CodeMirror(codeContainer, {
     mode: 'xml',
     lineNumbers: 'true'
-  })
-
-  let debouncedTimer = null
-  codeMirrorInstance.on('change', () => {
-    if (debouncedTimer) {
-      clearTimeout(debouncedTimer)
-    }
-    debouncedTimer = setTimeout(() => {
-      debouncedTimer = null
-      try {
-        loadSvgString(svg2roughjs, codeMirrorInstance.getValue())
-      } catch (e) {}
-    }, 500)
   })
 
   // make sure codemirror is rendered when the expand animation has finished
@@ -253,7 +263,7 @@ function run() {
     reader.readAsText(file)
     reader.addEventListener('load', () => {
       const fileContent = reader.result
-      codeMirrorInstance.setValue(fileContent)
+      setCodeMirrorValue(fileContent)
       loadSvgString(svg2roughjs, fileContent)
     })
   }
