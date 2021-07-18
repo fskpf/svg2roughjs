@@ -945,17 +945,9 @@ function drawRect(context, rect, svgTransform) {
             path += `L ${p4}`;
             path += `z`;
         }
-        const canvasCtx = context.targetCanvasContext;
-        // must use square line cap here so it looks like a rectangle. Default seems to be butt.
-        if (context.renderMode === RenderMode.CANVAS && canvasCtx) {
-            canvasCtx.save();
-            canvasCtx.lineCap = 'square';
-        }
         const result = sketchPath(context, path, parseStyleConfig(context, rect, svgTransform));
-        if (context.renderMode === RenderMode.SVG && result) {
-            result.setAttribute('stroke-linecap', 'square');
-        }
         postProcessElement(context, rect, result);
+        const canvasCtx = context.targetCanvasContext;
         if (context.renderMode === RenderMode.CANVAS && canvasCtx) {
             canvasCtx.restore();
         }
@@ -1931,6 +1923,8 @@ class Svg2Roughjs {
                 this.ctx.fillStyle = this.backgroundColor;
                 this.ctx.fillRect(0, 0, this.width, this.height);
             }
+            // use round linecap to emphasize a ballpoint pen like drawing
+            this.ctx.lineCap = 'round';
         }
     }
     /**
@@ -1957,6 +1951,8 @@ class Svg2Roughjs {
             const defs = getDefsElement(svgElement);
             defs.appendChild(SvgTextures.pencilTextureFilter);
         }
+        // use round linecap to emphasize a ballpoint pen like drawing
+        svgElement.setAttribute('stroke-linecap', 'round');
     }
     /**
      * Stores elements with IDs for later use.

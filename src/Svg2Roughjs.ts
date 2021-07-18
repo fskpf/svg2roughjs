@@ -325,6 +325,8 @@ export class Svg2Roughjs {
         this.ctx.fillStyle = this.backgroundColor
         this.ctx.fillRect(0, 0, this.width, this.height)
       }
+      // use round linecap to emphasize a ballpoint pen like drawing
+      this.ctx.lineCap = 'round'
     }
   }
 
@@ -355,6 +357,9 @@ export class Svg2Roughjs {
       const defs = getDefsElement(svgElement)
       defs.appendChild(SvgTextures.pencilTextureFilter)
     }
+
+    // use round linecap to emphasize a ballpoint pen like drawing
+    svgElement.setAttribute('stroke-linecap', 'round')
   }
 
   /**
