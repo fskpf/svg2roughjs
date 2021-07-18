@@ -32,20 +32,20 @@ export function applyClipPath(
 
   // TODO clipPath: consider clipPathUnits
   let clipContainer: SVGClipPathElement | null = null
+  // for canvas rendering, we just apply the clip to the CanvasContext
   const targetCtx = context.targetCanvasContext
+  // for SVG output, we create clipPath defs
+  const targetDefs = context.targetSvg ? getDefsElement(context.targetSvg) : null
   if (context.renderMode === RenderMode.CANVAS && targetCtx) {
     // for a canvas, we just apply a 'ctx.clip()' path
     targetCtx.beginPath()
-  } else if (context.targetSvg) {
-    // for SVG output we create clipPath defs
-    const targetDefs = getDefsElement(context.targetSvg)
+  } else if (targetDefs) {
     // unfortunately, we cannot reuse clip-paths due to the 'global transform' approach
     const sketchClipPathId = `${id}_${targetDefs.childElementCount}`
     clipContainer = document.createElementNS('http://www.w3.org/2000/svg', 'clipPath')
     clipContainer.id = sketchClipPathId
     // remember the new id by storing it on the owner element
     owner.setAttribute('data-sketchy-clip-path', sketchClipPathId)
-    targetDefs.appendChild(clipContainer)
   }
 
   // traverse clip-path elements in DFS
@@ -86,6 +86,12 @@ export function applyClipPath(
 
   if (context.renderMode === RenderMode.CANVAS && targetCtx) {
     targetCtx.clip()
+  } else if (targetDefs && clipContainer) {
+    if (clipContainer.childNodes.length > 0) {
+      // add the clip-path only if it contains converted elements
+      // some elements are not yet supported
+      targetDefs.appendChild(clipContainer)
+    }
   }
 }
 
