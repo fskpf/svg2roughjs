@@ -4,7 +4,6 @@ import { RoughSVG } from 'roughjs/bin/svg'
 import tinycolor from 'tinycolor2'
 import { Point } from './geom/point'
 import { RenderMode } from './RenderMode'
-import { UseContext } from './Svg2Roughjs'
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const units = require('units-css')
 
@@ -580,7 +579,8 @@ export function parseStyleConfig(
 }
 
 /**
- * TODO: This could also be an actual class, e.g. with helper functions like createSVGMatrix
+ * A context that represents the current state of the rendering,
+ * which is used in the rendering functions.
  */
 export type RenderContext = {
   rc: RoughCanvas | RoughSVG
@@ -590,11 +590,20 @@ export type RenderContext = {
   pencilFilter: boolean
   randomize: boolean
   idElements: Record<string, SVGElement | string>
-  sourceSvg: SVGSVGElement // this.$svg
-  targetCanvas?: HTMLCanvasElement // this.canvas
+  sourceSvg: SVGSVGElement
+  targetCanvas?: HTMLCanvasElement
   targetCanvasContext?: CanvasRenderingContext2D
-  targetSvg?: SVGSVGElement // this.canvas
-  useElementContext?: UseContext | null // this.$useElementContext
+  targetSvg?: SVGSVGElement
+  useElementContext?: UseContext | null
+}
+
+/**
+ * The context for rendering use elements.
+ */
+export type UseContext = {
+  referenced: SVGElement
+  root: Element | null
+  parentContext: UseContext | null
 }
 
 /**

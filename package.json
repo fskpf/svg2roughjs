@@ -25,7 +25,7 @@
     "prepare": "npm run lint && npm run build",
     "build": "npm run clean && tsc && rollup -c",
     "clean": "rimraf dist/",
-    "lint": "eslint --ext .ts ."
+    "lint": "eslint --ext .ts ./src"
   },
   "files": [
     "bundled/index.js",

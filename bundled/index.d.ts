@@ -8,7 +8,8 @@ declare enum RenderMode {
 }
 
 /**
- * TODO: This could also be an actual class, e.g. with helper functions like createSVGMatrix
+ * A context that represents the current state of the rendering,
+ * which is used in the rendering functions.
  */
 declare type RenderContext = {
     rc: RoughCanvas | RoughSVG;
@@ -24,12 +25,15 @@ declare type RenderContext = {
     targetSvg?: SVGSVGElement;
     useElementContext?: UseContext | null;
 };
-
+/**
+ * The context for rendering use elements.
+ */
 declare type UseContext = {
     referenced: SVGElement;
     root: Element | null;
     parentContext: UseContext | null;
 };
+
 /**
  * Svg2Roughjs parses a given SVG and draws it with Rough.js
  * in a canvas.
@@ -135,4 +139,4 @@ declare class Svg2Roughjs {
     private collectElementsWithID;
 }
 
-export { RenderMode, Svg2Roughjs, UseContext };
+export { RenderMode, Svg2Roughjs };

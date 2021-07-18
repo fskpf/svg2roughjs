@@ -7,12 +7,6 @@ import { RenderMode } from './RenderMode'
 import { SvgTextures } from './SvgTextures'
 import { getDefsElement, RenderContext } from './utils'
 
-export type UseContext = {
-  referenced: SVGElement
-  root: Element | null
-  parentContext: UseContext | null
-}
-
 /**
  * Svg2Roughjs parses a given SVG and draws it with Rough.js
  * in a canvas.
