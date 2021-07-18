@@ -32,7 +32,9 @@ const onCodeMirrorChange = () => {
     debouncedTimer = null
     try {
       loadSvgString(svg2roughjs, codeMirrorInstance.getValue())
-    } catch (e) {}
+    } catch (e) {
+      /* do nothing */
+    }
   }, 500)
 }
 
@@ -269,7 +271,7 @@ function run() {
   }
 
   const fileInput = document.getElementById('file-chooser')
-  fileInput.addEventListener('change', e => {
+  fileInput.addEventListener('change', () => {
     const files = fileInput.files
     if (files.length > 0) {
       loadFile(files[0])
@@ -283,7 +285,7 @@ function run() {
   body.addEventListener('drop', e => {
     e.preventDefault()
     if (e.dataTransfer.items) {
-      for (var i = 0; i < e.dataTransfer.items.length; i++) {
+      for (let i = 0; i < e.dataTransfer.items.length; i++) {
         if (e.dataTransfer.items[i].kind === 'file') {
           const file = e.dataTransfer.items[i].getAsFile()
           loadFile(file)
@@ -292,7 +294,7 @@ function run() {
       }
     } else {
       // Use DataTransfer interface to access the file(s)
-      for (var i = 0; i < ev.dataTransfer.files.length; i++) {
+      for (let i = 0; i < e.dataTransfer.files.length; i++) {
         loadFile(e.dataTransfer.files[i])
         return
       }
@@ -321,7 +323,7 @@ function run() {
   })
 
   const originalFontCheckbox = document.getElementById('original-font')
-  originalFontCheckbox.addEventListener('change', e => {
+  originalFontCheckbox.addEventListener('change', () => {
     if (originalFontCheckbox.checked) {
       svg2roughjs.fontFamily = null
     } else {
@@ -329,11 +331,11 @@ function run() {
     }
   })
   const randomizeCheckbox = document.getElementById('randomize')
-  randomizeCheckbox.addEventListener('change', e => {
+  randomizeCheckbox.addEventListener('change', () => {
     svg2roughjs.randomize = !!randomizeCheckbox.checked
   })
   const pencilCheckbox = document.getElementById('pencilFilter')
-  pencilCheckbox.addEventListener('change', e => {
+  pencilCheckbox.addEventListener('change', () => {
     svg2roughjs.pencilFilter = !!pencilCheckbox.checked
   })
 }

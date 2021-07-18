@@ -8,10 +8,15 @@
     "plugin:@typescript-eslint/recommended",
     "prettier"
   ],
+  "env": {
+    "node": true,
+    "browser": true
+  },
   "rules": {
     "prettier/prettier": "warn",
     "@typescript-eslint/no-non-null-assertion": "off",
     "@typescript-eslint/no-inferrable-types": "off",
-    "@typescript-eslint/ban-ts-comment": "off"
+    "@typescript-eslint/ban-ts-comment": "off",
+    "@typescript-eslint/no-var-requires": "off"
   }
 }

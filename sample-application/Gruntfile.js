@@ -7,7 +7,7 @@ module.exports = function (grunt) {
   grunt.registerTask('build-svg2roughjs', ['shell:npmBuildSvg2roughjs'])
 
   grunt.registerTask(
-    'update-svg2roughjs',
+    'copy-svg2roughjs',
     'Copies the current local svg2roughjs content to the /node_modules/',
     ['copy:svg2roughjs']
   )
@@ -21,15 +21,19 @@ module.exports = function (grunt) {
     copy: {
       svg2roughjs: {
         files: [
-          { src: '../bundled/index.js', dest: './node_modules/svg2roughjs/bundled/index.js' },
           {
-            src: '../bundled/index.js.map',
-            dest: './node_modules/svg2roughjs/bundled/index.js.map'
+            expand: true,
+            src: '../dist/**',
+            dest: './node_modules/svg2roughjs/dist/'
           },
-          { src: '../bundled/index.d.ts', dest: './node_modules/svg2roughjs/bundled/index.d.ts' },
-          { src: '../package.json', dest: './node_modules/svg2roughjs/package.json' },
+          {
+            expand: true,
+            src: '../src/**',
+            dest: './node_modules/svg2roughjs/src/'
+          },
           { src: '../README.md', dest: './node_modules/svg2roughjs/README.md' },
-          { src: '../LICENSE.md', dest: './node_modules/svg2roughjs/LICENSE.md' }
+          { src: '../LICENSE.md', dest: './node_modules/svg2roughjs/LICENSE.md' },
+          { src: '../package.json', dest: './node_modules/svg2roughjs/package.json' }
         ]
       }
     },
@@ -38,9 +42,9 @@ module.exports = function (grunt) {
         files: ['../src/**/*'],
         tasks: ['build-svg2roughjs']
       },
-      copy: {
-        files: ['../bundled/*'],
-        tasks: ['update-svg2roughjs']
+      update: {
+        files: ['../dist/*'],
+        tasks: ['copy-svg2roughjs']
       }
     }
   })
