@@ -1,5 +1,4 @@
 import { Point } from './point'
-import { processRoot } from '../processor'
 import {
   convertToPixelUnit,
   getAngle,
@@ -53,7 +52,7 @@ export function drawMarkers(
     const combinedMatrix = svgTransform ? svgTransform.matrix.multiply(matrix) : matrix
     const markerTransform = context.sourceSvg.createSVGTransformFromMatrix(combinedMatrix)
 
-    processRoot(context, markerStartElement, markerTransform)
+    context.processElement(context, markerStartElement, markerTransform)
   }
 
   // end marker
@@ -80,7 +79,7 @@ export function drawMarkers(
     const combinedMatrix = svgTransform ? svgTransform.matrix.multiply(matrix) : matrix
     const markerTransform = context.sourceSvg.createSVGTransformFromMatrix(combinedMatrix)
 
-    processRoot(context, markerEndElement, markerTransform)
+    context.processElement(context, markerEndElement, markerTransform)
   }
 
   // mid marker(s)
@@ -118,7 +117,7 @@ export function drawMarkers(
       const combinedMatrix = svgTransform ? svgTransform.matrix.multiply(matrix) : matrix
       const markerTransform = context.sourceSvg.createSVGTransformFromMatrix(combinedMatrix)
 
-      processRoot(context, markerMidElement, markerTransform)
+      context.processElement(context, markerMidElement, markerTransform)
     }
   }
 }

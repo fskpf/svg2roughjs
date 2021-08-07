@@ -1,4 +1,3 @@
-import { processRoot } from '../processor'
 import { getCombinedTransform, RenderContext } from '../utils'
 
 export function drawUse(
@@ -42,7 +41,7 @@ export function drawUse(
     }
 
     // draw the referenced element
-    processRoot(
+    context.processElement(
       context,
       defElement,
       getCombinedTransform(context, defElement as SVGGraphicsElement, elementTransform),

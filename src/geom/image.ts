@@ -1,4 +1,3 @@
-import { processRoot } from '../processor'
 import { RenderMode } from '../RenderMode'
 import { applyGlobalTransform, postProcessElement, RenderContext } from '../utils'
 
@@ -37,7 +36,7 @@ export function drawImage(
       let matrix = context.sourceSvg.createSVGMatrix().translate(x, y)
       matrix = svgTransform ? svgTransform.matrix.multiply(matrix) : matrix
 
-      processRoot(
+      context.processElement(
         context,
         svg,
         context.sourceSvg.createSVGTransformFromMatrix(matrix),

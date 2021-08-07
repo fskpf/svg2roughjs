@@ -6,7 +6,8 @@ import { RenderMode } from './RenderMode'
 const tinycolor = require('tinycolor2')
 const units = require('units-css')
 
-type Color = tinycolor.Instance
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Color = any // type alias for tinycolor
 
 /**
  * Regexp that detects curved commands in path data.
@@ -594,6 +595,13 @@ export type RenderContext = {
   targetCanvasContext?: CanvasRenderingContext2D
   targetSvg?: SVGSVGElement
   useElementContext?: UseContext | null
+  processElement: (
+    context: RenderContext,
+    root: SVGSVGElement | SVGGElement | SVGSymbolElement | SVGMarkerElement | SVGElement,
+    svgTransform: SVGTransform | null,
+    width?: number,
+    height?: number
+  ) => void
 }
 
 /**

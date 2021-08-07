@@ -8,7 +8,7 @@
     "allowSyntheticDefaultImports": true,
     "moduleResolution": "node",
     "lib": ["dom", "es2015"],
-    "outDir": "dist",
+    "outDir": "out-tsc",
     "declaration": true
   },
   "include": ["src/**/*.ts"]

@@ -213,7 +213,8 @@ export class Svg2Roughjs {
       pencilFilter: this.pencilFilter,
       randomize: this.randomize,
       idElements: this.idElements,
-      sourceSvg: this.$svg
+      sourceSvg: this.$svg,
+      processElement: processRoot
     }
 
     if (this.renderMode === RenderMode.CANVAS && this.ctx) {
@@ -305,7 +306,8 @@ export class Svg2Roughjs {
       this.initializeSvg(this.canvas as SVGSVGElement)
     }
 
-    processRoot(this.createRenderContext(), this.svg, null, this.width, this.height)
+    const renderContext = this.createRenderContext()
+    renderContext.processElement(renderContext, this.svg, null, this.width, this.height)
   }
 
   /**

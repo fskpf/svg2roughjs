@@ -6,7 +6,8 @@
   "contributors": [
     "Johannes Rössel"
   ],
-  "main": "dist/index.js",
+  "main": "dist/svg2roughjs.es.js",
+  "module": "dist/svg2roughjs.es.min.js",
   "types": "dist/index.d.ts",
   "homepage": "https://github.com/fskpf/svg2roughjs#readme",
   "repository": {
@@ -23,7 +24,7 @@
   "license": "MIT",
   "scripts": {
     "prepare": "npm run lint && npm run build",
-    "build": "npm run clean && tsc",
+    "build": "npm run clean && tsc && rollup -c rollup.config.js",
     "clean": "rimraf dist/",
     "lint": "eslint --ext .ts ./src"
   },
@@ -47,6 +48,9 @@
     "eslint-plugin-prettier": "^3.4.0",
     "prettier": "2.3.2",
     "rimraf": "^3.0.2",
+    "rollup": "^2.56.0",
+    "rollup-plugin-dts": "^3.0.2",
+    "rollup-plugin-terser": "^7.0.2",
     "typescript": "^4.3.5"
   }
 }

@@ -4,3 +4,4 @@ svg2roughjs-*.tgz
 .idea
 dist
 debug.log
+out-tsc

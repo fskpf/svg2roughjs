@@ -26,11 +26,6 @@ module.exports = function (grunt) {
             src: '../dist/**',
             dest: './node_modules/svg2roughjs/dist/'
           },
-          {
-            expand: true,
-            src: '../src/**',
-            dest: './node_modules/svg2roughjs/src/'
-          },
           { src: '../README.md', dest: './node_modules/svg2roughjs/README.md' },
           { src: '../LICENSE.md', dest: './node_modules/svg2roughjs/LICENSE.md' },
           { src: '../package.json', dest: './node_modules/svg2roughjs/package.json' }
