@@ -1,6 +1,6 @@
 {
   "name": "svg2roughjs",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "Leverages Rough.js to convert SVGs to a hand-drawn, sketchy representation",
   "author": "Fabian Schwarzkopf",
   "contributors": [
@@ -41,7 +41,6 @@
   },
   "devDependencies": {
     "@types/node": "^16.3.2",
-    "@types/tinycolor2": "^1.4.3",
     "@typescript-eslint/eslint-plugin": "^4.28.3",
     "@typescript-eslint/parser": "^4.28.3",
     "eslint": "^7.30.0",

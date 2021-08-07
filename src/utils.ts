@@ -1,10 +1,9 @@
 import { RoughCanvas } from 'roughjs/bin/canvas'
 import { Drawable, Options } from 'roughjs/bin/core'
 import { RoughSVG } from 'roughjs/bin/svg'
-import tinycolor from 'tinycolor2'
 import { Point } from './geom/point'
 import { RenderMode } from './RenderMode'
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+const tinycolor = require('tinycolor2')
 const units = require('units-css')
 
 type Color = tinycolor.Instance
