@@ -24,7 +24,7 @@ export function drawImage(
       const isBase64 = meta.indexOf('base64') !== -1
       const isUtf8 = meta.indexOf('utf8') !== -1
       if (isBase64) {
-        svgString = btoa(svgString)
+        svgString = atob(svgString)
       }
       if (!isUtf8) {
         svgString = decodeURIComponent(svgString)
