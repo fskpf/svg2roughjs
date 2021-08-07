@@ -18,7 +18,7 @@
   "dependencies": {
     "codemirror": "^5.62.0",
     "core-js": "^3.15.2",
-    "svg2roughjs": "file:../svg2roughjs-2.2.0.tgz"
+    "svg2roughjs": "file:../svg2roughjs-2.2.1.tgz"
   },
   "devDependencies": {
     "@babel/core": "^7.14.6",
