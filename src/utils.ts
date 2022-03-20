@@ -554,14 +554,6 @@ export function parseStyleConfig(
     config.strokeWidth = 1
   }
 
-  // nested paths should be filled twice, see
-  // https://github.com/rough-stuff/rough/issues/158
-  // however, fill-rule is still problematic, see
-  // https://github.com/rough-stuff/rough/issues/131
-  if (typeof config.combineNestedSvgPaths === 'undefined') {
-    config.combineNestedSvgPaths = true
-  }
-
   if (context.randomize) {
     // Rough.js default is 0.5 * strokeWidth
     config.fillWeight = getRandomNumber(0.5, 3)
