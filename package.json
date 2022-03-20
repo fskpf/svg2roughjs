@@ -34,6 +34,7 @@
     "README.md"
   ],
   "dependencies": {
+    "canvg": "^3.0.7",
     "roughjs": "^4.4.1",
     "svg-pathdata": "^6.0.0",
     "tinycolor2": "^1.4.2",

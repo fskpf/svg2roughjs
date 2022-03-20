@@ -16,7 +16,7 @@ import SAMPLE_ORGANIC2 from '../public/organic2.svg'
 import SAMPLE_TREE from '../public/tree1.svg'
 import SAMPLE_VENN from '../public/venn.svg'
 
-import { RenderMode, Svg2Roughjs } from 'svg2roughjs'
+import { RenderMode, Svg2Roughjs, Svg2RoughjsCanvg } from 'svg2roughjs'
 
 let svg2roughjs
 let loadingSvg = false
@@ -176,7 +176,7 @@ function loadSample(svg2roughjs, sample) {
 }
 
 function run() {
-  svg2roughjs = new Svg2Roughjs('#output', RenderMode.SVG)
+  svg2roughjs = new Svg2RoughjsCanvg('#output')
   svg2roughjs.backgroundColor = 'white'
   svg2roughjs.pencilFilter = !!document.getElementById('pencilFilter').checked
   const sampleSelect = document.getElementById('sample-select')

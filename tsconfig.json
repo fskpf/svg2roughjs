@@ -3,7 +3,7 @@
     "strict": true,
     "noImplicitAny": true,
     "module": "es6",
-    "target": "es2015",
+    "target": "esnext",
     "allowJs": true,
     "allowSyntheticDefaultImports": true,
     "moduleResolution": "node",
