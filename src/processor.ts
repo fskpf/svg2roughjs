@@ -1,6 +1,7 @@
 import { applyClipPath } from './clipping'
 import { drawCircle } from './geom/circle'
 import { drawEllipse } from './geom/ellipse'
+import { drawForeignObject } from './geom/foreign-object'
 import { drawImage } from './geom/image'
 import { drawLine } from './geom/line'
 import { drawPath } from './geom/path'
@@ -219,6 +220,9 @@ function drawElement(
       break
     case 'image':
       drawImage(context, element as SVGImageElement, svgTransform)
+      break
+    case 'foreignObject':
+      drawForeignObject(context, element as SVGForeignObjectElement, svgTransform)
       break
   }
 
