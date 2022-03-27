@@ -36,16 +36,20 @@ export function processRoot(
     let rootX = 0
     let rootY = 0
     if (root instanceof SVGSymbolElement) {
+      // Is x/y on the SVGSymbolElement actually specified?
+      // test-images/symbols3.svg utilizes it, but I'm not sure about the specification
       rootX = parseFloat(root.getAttribute('x') ?? '') || 0
       rootY = parseFloat(root.getAttribute('y') ?? '') || 0
-      width = width || parseFloat(root.getAttribute('width')!) || void 0
-      height = height || parseFloat(root.getAttribute('height')!) || void 0
+      width = width ?? (parseFloat(root.getAttribute('width')!) || void 0)
+      height = height ?? (parseFloat(root.getAttribute('height')!) || void 0)
     } else if (root instanceof SVGMarkerElement) {
-      rootX = -root.refX.baseVal.value
-      rootY = -root.refY.baseVal.value
-      width = width || parseFloat(root.getAttribute('markerWidth')!) || void 0
-      height = height || parseFloat(root.getAttribute('markerHeight')!) || void 0
-    } else {
+      // Same as for SVGSymbolElement, is x/y on those elements a thing?
+      rootX = parseFloat(root.getAttribute('x') ?? '') || 0
+      rootY = parseFloat(root.getAttribute('y') ?? '') || 0
+      width = width ?? (parseFloat(root.getAttribute('markerWidth')!) || void 0)
+      height = height ?? (parseFloat(root.getAttribute('markerHeight')!) || void 0)
+    } else if (root !== context.sourceSvg) {
+      // apply translation of nested elements
       rootX = root.x.baseVal.value
       rootY = root.y.baseVal.value
     }
@@ -65,17 +69,26 @@ export function processRoot(
       } = root.viewBox.baseVal
 
       // viewBox values might scale the SVGs content
-      if (root.tagName === 'marker') {
-        // refX / refY works differently on markers than the x / y attribute
-        rootTransform = rootTransform
-          .translate(-viewBoxX * (width! / viewBoxWidth), -viewBoxY * (height! / viewBoxHeight))
-          .scaleNonUniform(width! / viewBoxWidth, height! / viewBoxHeight)
-          .translate(rootX, rootY)
+      const sx = width / viewBoxWidth
+      const sy = height / viewBoxHeight
+      const centerviewportX = rootX + width * 0.5
+      const centerviewportY = rootY + height * 0.5
+      const centerViewBoxX = viewBoxX + viewBoxWidth * 0.5
+      const centerViewBoxY = viewBoxY + viewBoxHeight * 0.5
+      // only support scaling from the center, e.g. xMidYMid
+      rootTransform = rootTransform.translate(centerviewportX, centerviewportY)
+      if (root.getAttribute('preserveAspectRatio') === 'none') {
+        rootTransform = rootTransform.scaleNonUniform(sx, sy)
       } else {
-        rootTransform = rootTransform
-          .translate(-viewBoxX * (width! / viewBoxWidth), -viewBoxY * (height! / viewBoxHeight))
-          .translate(rootX, rootY)
-          .scaleNonUniform(width! / viewBoxWidth, height! / viewBoxHeight)
+        rootTransform = rootTransform.scale(Math.min(sx, sy))
+      }
+      rootTransform = rootTransform.translate(-centerViewBoxX, -centerViewBoxY)
+
+      if (root instanceof SVGMarkerElement) {
+        // https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/refX#symbol
+        // ref coordinates are interpreted as being in the coordinate system of the element contents,
+        // after application of the viewBox and preserveAspectRatio attributes.
+        rootTransform = rootTransform.translate(-root.refX.baseVal.value, -root.refY.baseVal.value)
       }
     } else {
       rootTransform = rootTransform.translate(rootX, rootY)
