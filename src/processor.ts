@@ -37,18 +37,16 @@ export function processRoot(
     let rootX = 0
     let rootY = 0
     if (root instanceof SVGSymbolElement) {
-      // Is x/y on the SVGSymbolElement actually specified?
-      // test-images/symbols3.svg utilizes it, but I'm not sure about the specification
       rootX = parseFloat(root.getAttribute('x') ?? '') || 0
       rootY = parseFloat(root.getAttribute('y') ?? '') || 0
       width = width ?? (parseFloat(root.getAttribute('width')!) || void 0)
       height = height ?? (parseFloat(root.getAttribute('height')!) || void 0)
     } else if (root instanceof SVGMarkerElement) {
-      // Same as for SVGSymbolElement, is x/y on those elements a thing?
-      rootX = parseFloat(root.getAttribute('x') ?? '') || 0
-      rootY = parseFloat(root.getAttribute('y') ?? '') || 0
-      width = width ?? (parseFloat(root.getAttribute('markerWidth')!) || void 0)
-      height = height ?? (parseFloat(root.getAttribute('markerHeight')!) || void 0)
+      // markers use refX / refY which is applied after user-space transformation
+      const mw = root.getAttribute('markerWidth')
+      const mh = root.getAttribute('markerHeight')
+      width = mw !== null ? parseFloat(mw) : 3 // marker-size is 3 by SVG spec
+      height = mh !== null ? parseFloat(mh) : 3
     } else if (root !== context.sourceSvg) {
       // apply translation of nested elements
       rootX = root.x.baseVal.value
@@ -84,15 +82,15 @@ export function processRoot(
         rootTransform = rootTransform.scale(Math.min(sx, sy))
       }
       rootTransform = rootTransform.translate(-centerViewBoxX, -centerViewBoxY)
-
-      if (root instanceof SVGMarkerElement) {
-        // https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/refX#symbol
-        // ref coordinates are interpreted as being in the coordinate system of the element contents,
-        // after application of the viewBox and preserveAspectRatio attributes.
-        rootTransform = rootTransform.translate(-root.refX.baseVal.value, -root.refY.baseVal.value)
-      }
     } else {
       rootTransform = rootTransform.translate(rootX, rootY)
+    }
+
+    if (root instanceof SVGMarkerElement) {
+      // https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/refX#symbol
+      // ref coordinates are interpreted as being in the coordinate system of the element contents,
+      // after application of the viewBox and preserveAspectRatio attributes.
+      rootTransform = rootTransform.translate(-root.refX.baseVal.value, -root.refY.baseVal.value)
     }
 
     const combinedMatrix = svgTransform

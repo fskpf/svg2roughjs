@@ -38,6 +38,9 @@ export function drawForeignObject(
       container.style.setProperty(prop, style.getPropertyValue(prop))
     }
 
+    // transform is already considered in svgTransform
+    foreignObjectClone.transform.baseVal.clear()
+
     // transform the foreignObject to its destination location
     applyGlobalTransform(context, svgTransform, container)
     container.appendChild(foreignObjectClone)

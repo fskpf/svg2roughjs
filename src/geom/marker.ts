@@ -17,16 +17,6 @@ export function drawMarkers(
     return
   }
 
-  // consider scaled coordinate system for markerWidth/markerHeight
-  const markerUnits = element.getAttribute('markerUnits')
-  let scaleFactor = 1
-  if (!markerUnits || markerUnits === 'strokeWidth') {
-    const strokeWidth = getEffectiveAttribute(context, element, 'stroke-width')
-    if (strokeWidth) {
-      scaleFactor = convertToPixelUnit(context, strokeWidth)
-    }
-  }
-
   // start marker
   const markerStartId = getIdFromUrl(element.getAttribute('marker-start'))
   const markerStartElement = markerStartId
@@ -47,7 +37,7 @@ export function drawMarkers(
       .createSVGMatrix()
       .translate(location.x, location.y)
       .rotate(angle)
-      .scale(scaleFactor)
+      .scale(getScaleFactor(context, markerStartElement, element))
 
     const combinedMatrix = svgTransform ? svgTransform.matrix.multiply(matrix) : matrix
     const markerTransform = context.sourceSvg.createSVGTransformFromMatrix(combinedMatrix)
@@ -74,7 +64,7 @@ export function drawMarkers(
       .createSVGMatrix()
       .translate(location.x, location.y)
       .rotate(angle)
-      .scale(scaleFactor)
+      .scale(getScaleFactor(context, markerEndElement, element))
 
     const combinedMatrix = svgTransform ? svgTransform.matrix.multiply(matrix) : matrix
     const markerTransform = context.sourceSvg.createSVGTransformFromMatrix(combinedMatrix)
@@ -112,7 +102,7 @@ export function drawMarkers(
         .createSVGMatrix()
         .translate(loc.x, loc.y)
         .rotate(angle)
-        .scale(scaleFactor)
+        .scale(getScaleFactor(context, markerMidElement, element))
 
       const combinedMatrix = svgTransform ? svgTransform.matrix.multiply(matrix) : matrix
       const markerTransform = context.sourceSvg.createSVGTransformFromMatrix(combinedMatrix)
@@ -120,4 +110,24 @@ export function drawMarkers(
       context.processElement(context, markerMidElement, markerTransform)
     }
   }
+}
+
+/**
+ * Consider scaled coordinate system for markerWidth/markerHeight.
+ */
+function getScaleFactor(
+  context: RenderContext,
+  marker: SVGMarkerElement,
+  referrer: SVGElement
+): number {
+  const markerUnits = marker.getAttribute('markerUnits')
+  let scaleFactor = 1
+  if (!markerUnits || markerUnits === 'strokeWidth') {
+    // default is strokeWidth by SVG spec
+    const strokeWidth = getEffectiveAttribute(context, referrer, 'stroke-width')
+    if (strokeWidth) {
+      scaleFactor = convertToPixelUnit(context, strokeWidth)
+    }
+  }
+  return scaleFactor
 }

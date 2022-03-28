@@ -16,7 +16,7 @@ import SAMPLE_ORGANIC2 from '../public/organic2.svg'
 import SAMPLE_TREE from '../public/tree1.svg'
 import SAMPLE_VENN from '../public/venn.svg'
 
-import { RenderMode, Svg2Roughjs } from 'svg2roughjs'
+import { RenderMode, Svg2Roughjs } from 'svg2roughjs/dist/svg2roughjs.es'
 
 let svg2roughjs
 let loadingSvg = false
@@ -50,15 +50,37 @@ function setCodeMirrorValue(value) {
 
 /**
  * @param {SVGSVGElement} svg
- * @returns {{width:number, height:number} | null}
+ * @returns {{width:number, height:number}}
  */
 function getSvgSize(svg) {
-  let width = parseInt(svg.getAttribute('width'))
-  let height = parseInt(svg.getAttribute('height'))
-  let viewBox = svg.getAttribute('viewBox')
-  if (isNaN(width) || isNaN(height)) {
-    return viewBox ? { width: svg.viewBox.baseVal.width, height: svg.viewBox.baseVal.height } : null
+  let width, height
+  const hasViewbox = svg.hasAttribute('viewBox')
+  if (svg.hasAttribute('width')) {
+    // percantage sizes for the root SVG are unclear, thus use viewBox if available
+    if (svg.width.baseVal.unitType === SVGLength.SVG_LENGTHTYPE_PERCENTAGE && hasViewbox) {
+      width = svg.viewBox.baseVal.width
+    } else {
+      width = svg.width.baseVal.value
+    }
+  } else if (hasViewbox) {
+    width = svg.viewBox.baseVal.width
+  } else {
+    width = 300
   }
+
+  if (svg.hasAttribute('height')) {
+    // percantage sizes for the root SVG are unclear, thus use viewBox if available
+    if (svg.height.baseVal.unitType === SVGLength.SVG_LENGTHTYPE_PERCENTAGE && hasViewbox) {
+      height = svg.viewBox.baseVal.height
+    } else {
+      height = svg.height.baseVal.value
+    }
+  } else if (hasViewbox) {
+    height = svg.viewBox.baseVal.height
+  } else {
+    height = 150
+  }
+
   return { width, height }
 }
 
@@ -175,6 +197,13 @@ function loadSample(svg2roughjs, sample) {
   loadSvgString(svg2roughjs, sampleString)
 }
 
+function updateOpacity(inputContainerOpacity) {
+  const inputContainer = document.getElementById('input')
+  const outputContainer = document.getElementById('output')
+  inputContainer.style.opacity = inputContainerOpacity
+  outputContainer.style.opacity = 1 - inputContainerOpacity
+}
+
 function run() {
   svg2roughjs = new Svg2Roughjs('#output', RenderMode.SVG)
   svg2roughjs.backgroundColor = 'white'
@@ -248,16 +277,14 @@ function run() {
 
   const opacityInput = document.getElementById('opacity')
   opacityInput.addEventListener('change', () => {
-    document.getElementById('input').style.opacity = opacityInput.value
-    document.getElementById('output').style.opacity = 1 - parseFloat(opacityInput.value)
+    updateOpacity(opacityInput.value)
   })
   const opacityLabel = document.querySelector('label[for=opacity]')
   opacityLabel.addEventListener('click', () => {
     const currentOpacity = opacityInput.value
     const newOpacity = currentOpacity < 1 ? 1 : 0
-    document.getElementById('input').style.opacity = newOpacity
     opacityInput.value = newOpacity
-    document.getElementById('output').style.opacity = 1 - newOpacity
+    updateOpacity(newOpacity)
   })
 
   function loadFile(file) {

@@ -36,21 +36,8 @@ export class Svg2Roughjs {
     if (this.$svg !== svg) {
       this.$svg = svg
 
-      if (svg.hasAttribute('width')) {
-        this.width = svg.width.baseVal.value
-      } else if (svg.hasAttribute('viewBox')) {
-        this.width = svg.viewBox.baseVal.width
-      } else {
-        this.width = 300
-      }
-
-      if (svg.hasAttribute('height')) {
-        this.height = svg.height.baseVal.value
-      } else if (svg.hasAttribute('viewBox')) {
-        this.height = svg.viewBox.baseVal.height
-      } else {
-        this.height = 150
-      }
+      this.width = this.coerceSize(svg, 'width', 300)
+      this.height = this.coerceSize(svg, 'height', 150)
 
       if (this.renderMode === RenderMode.CANVAS && this.ctx) {
         const canvas = this.canvas as HTMLCanvasElement
@@ -372,5 +359,24 @@ export class Svg2Roughjs {
         this.idElements[id] = elt
       }
     }
+  }
+
+  /**
+   * Helper to handle percentage values for width / height of the input SVG.
+   */
+  private coerceSize(svg: SVGSVGElement, property: 'width' | 'height', fallback: number): number {
+    let size = fallback
+    const hasViewbox = svg.hasAttribute('viewBox')
+    if (svg.hasAttribute(property)) {
+      // percentage sizes for the root SVG are unclear, thus use viewBox if available
+      if (svg[property].baseVal.unitType === SVGLength.SVG_LENGTHTYPE_PERCENTAGE && hasViewbox) {
+        size = svg.viewBox.baseVal[property]
+      } else {
+        size = svg[property].baseVal.value
+      }
+    } else if (hasViewbox) {
+      size = svg.viewBox.baseVal[property]
+    }
+    return size
   }
 }
