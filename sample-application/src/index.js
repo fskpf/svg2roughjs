@@ -1,5 +1,6 @@
 import 'core-js'
 import 'core-js/es/symbol'
+import 'regenerator-runtime/runtime'
 
 import CodeMirror from 'codemirror'
 import 'codemirror/lib/codemirror.css'

@@ -2,7 +2,6 @@
 /* eslint-disable no-undef */
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const CopyWebpackPlugin = require('copy-webpack-plugin')
-const path = require('path')
 
 module.exports = {
   mode: 'development',
@@ -42,7 +41,11 @@ module.exports = {
     rules: [
       {
         test: /\.m?js$/,
-        exclude: /node_modules\/(?![svg2roughjs|roughjs])/,
+        exclude: [
+          // \\ for Windows, \/ for Mac OS and Linux
+          /node_modules[\\/]core-js/,
+          /node_modules[\\/]webpack[\\/]buildin/
+        ],
         use: {
           loader: 'babel-loader',
           options: {
