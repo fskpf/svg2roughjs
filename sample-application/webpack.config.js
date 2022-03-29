@@ -8,7 +8,8 @@ module.exports = {
   mode: 'development',
   entry: './src/index.js',
   output: {
-    filename: '[name].[contenthash].js'
+    filename: '[name].[contenthash].js',
+    clean: true
   },
   optimization: {
     splitChunks: {
@@ -28,7 +29,7 @@ module.exports = {
     }
   },
   snapshot: {
-    // automaticall serve changed content in node_modules instead of older snapshots
+    // automatically serve changed content in node_modules instead of older snapshots
     managedPaths: []
   },
   plugins: [
@@ -41,12 +42,7 @@ module.exports = {
     rules: [
       {
         test: /\.m?js$/,
-        include: [
-          path.resolve(__dirname, 'src'),
-          // These dependencies have es6 syntax which ie11 doesn't like.
-          path.resolve(__dirname, 'node_modules/svg2roughjs'),
-          path.resolve(__dirname, 'node_modules/roughjs')
-        ],
+        exclude: /node_modules\/(?![svg2roughjs|roughjs])/,
         use: {
           loader: 'babel-loader',
           options: {

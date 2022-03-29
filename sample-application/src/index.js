@@ -1,4 +1,5 @@
-import 'core-js/stable'
+import 'core-js'
+import 'core-js/es/symbol'
 
 import CodeMirror from 'codemirror'
 import 'codemirror/lib/codemirror.css'

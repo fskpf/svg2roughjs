@@ -588,6 +588,7 @@ export type RenderContext = {
   targetCanvasContext?: CanvasRenderingContext2D
   targetSvg?: SVGSVGElement
   useElementContext?: UseContext | null
+  styleSheets: CSSStyleSheet[]
   processElement: (
     context: RenderContext,
     root: SVGSVGElement | SVGGElement | SVGSymbolElement | SVGMarkerElement | SVGElement,
@@ -712,4 +713,45 @@ export function applyGlobalTransform(
       }
     }
   }
+}
+
+/**
+ * Returns the CSS rules that apply to the given element (ignoring inheritance).
+ *
+ * Based on https://stackoverflow.com/a/22638396
+ */
+export function getMatchedCssRules(context: RenderContext, el: Element): CSSStyleRule[] {
+  const ret: CSSStyleRule[] = []
+  el.matches =
+    el.matches ||
+    el.webkitMatchesSelector ||
+    // @ts-ignore
+    el.mozMatchesSelector ||
+    // @ts-ignore
+    el.msMatchesSelector ||
+    // @ts-ignore
+    el.oMatchesSelector
+
+  context.styleSheets.forEach(sheet => {
+    const rules = sheet.rules || sheet.cssRules
+    for (const r in rules) {
+      const rule = rules[r] as CSSStyleRule
+      if (el.matches(rule.selectorText)) {
+        ret.push(rule)
+      }
+    }
+  })
+  return ret
+}
+
+export function concatStyleStrings(...args: (string | null)[]): string {
+  let ret = ''
+  args = args.filter(s => s !== null)
+  for (const style of args) {
+    if (ret.length > 0 && ret[ret.length - 1] !== ';') {
+      ret += ';'
+    }
+    ret += style
+  }
+  return ret
 }

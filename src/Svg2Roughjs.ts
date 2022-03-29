@@ -201,6 +201,9 @@ export class Svg2Roughjs {
       randomize: this.randomize,
       idElements: this.idElements,
       sourceSvg: this.$svg,
+      styleSheets: Array.from(this.$svg.querySelectorAll('style'))
+        .map(s => s.sheet)
+        .filter(s => s !== null) as CSSStyleSheet[],
       processElement: processRoot
     }
 

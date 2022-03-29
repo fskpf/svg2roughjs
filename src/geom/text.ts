@@ -5,10 +5,10 @@ import {
   getLengthInPx,
   getNodeChildren,
   postProcessElement,
-  parseStyleConfig,
   getEffectiveAttribute,
   applyGlobalTransform,
-  convertToPixelUnit
+  convertToPixelUnit,
+  concatStyleStrings
 } from '../utils'
 
 export function drawText(
@@ -16,12 +16,6 @@ export function drawText(
   text: SVGTextElement,
   svgTransform: SVGTransform | null
 ): void {
-  const stroke = getEffectiveAttribute(context, text, 'stroke')
-  const strokeWidth = hasStroke(stroke)
-    ? getEffectiveAttribute(context, text, 'stroke-width')
-    : null
-  const textAnchor = getEffectiveAttribute(context, text, 'text-anchor', context.useElementContext)
-
   if (context.renderMode === RenderMode.SVG) {
     const container = document.createElementNS('http://www.w3.org/2000/svg', 'g')
     container.setAttribute('class', 'text-container')
@@ -32,21 +26,20 @@ export function drawText(
       textClone.transform.baseVal.clear()
     }
 
-    const style = textClone.getAttribute('style')
     const cssFont = getCssFont(context, text, true)
-    textClone.setAttribute(
-      'style',
-      style ? `${style}${style[style.length - 1] === ';' ? '' : ';'}${cssFont}` : cssFont
-    )
+    textClone.setAttribute('style', concatStyleStrings(textClone.getAttribute('style'), cssFont))
+    copyTextStyleAttributes(context, text, textClone)
 
-    if (hasStroke(stroke)) {
-      textClone.setAttribute('stroke', stroke)
-    }
-    if (strokeWidth) {
-      textClone.setAttribute('stroke-width', strokeWidth)
-    }
-    if (textAnchor) {
-      textClone.setAttribute('text-anchor', textAnchor)
+    // apply styling to any tspan
+    if (textClone.childElementCount > 0) {
+      const children = getNodeChildren(textClone)
+      const origChildren = getNodeChildren(text) as SVGElement[]
+      for (let i = 0; i < children.length; i++) {
+        const child = children[i]
+        if (child instanceof SVGTSpanElement) {
+          copyTextStyleAttributes(context, origChildren[i] as SVGTSpanElement, child)
+        }
+      }
     }
 
     container.appendChild(textClone)
@@ -61,60 +54,73 @@ export function drawText(
 
   targetCtx.save()
 
-  let textLocation = new Point(getLengthInPx(text.x), getLengthInPx(text.y))
+  const textLocation = new Point(getLengthInPx(text.x), getLengthInPx(text.y))
 
   // text style
   targetCtx.font = getCssFont(context, text)
-  const style = parseStyleConfig(context, text, svgTransform)
-  if (style.fill) {
-    targetCtx.fillStyle = style.fill
-  }
-  if (hasStroke(stroke)) {
-    targetCtx.strokeStyle = stroke
-  }
-  if (strokeWidth) {
-    targetCtx.lineWidth = convertToPixelUnit(context, strokeWidth)
-  }
-  if (textAnchor) {
-    targetCtx.textAlign = textAnchor !== 'middle' ? (textAnchor as CanvasTextAlign) : 'center'
-  }
+  const { stroke } = applyTextStyleAttributes(context, text, targetCtx)
 
   // apply the global transform
   applyGlobalTransform(context, svgTransform)
 
-  // consider dx/dy of the text element
-  const dx = getLengthInPx(text.dx)
-  const dy = getLengthInPx(text.dy)
-  targetCtx.translate(dx, dy)
-
   if (text.childElementCount === 0) {
-    targetCtx.fillText(
-      getTextContent(context, text),
-      textLocation.x,
-      textLocation.y,
-      text.getComputedTextLength()
-    )
+    targetCtx.translate(textLocation.x, textLocation.y)
+    const dx = getLengthInPx(text.dx)
+    const dy = getLengthInPx(text.dy)
+    const textContent = getTextContent(context, text)
+    const textLength = text.getComputedTextLength()
+    targetCtx.fillText(textContent, dx, dy, textLength)
     if (hasStroke(stroke)) {
-      targetCtx.strokeText(
-        getTextContent(context, text),
-        textLocation.x,
-        textLocation.y,
-        text.getComputedTextLength()
-      )
+      targetCtx.strokeText(textContent, dx, dy, textLength)
     }
   } else {
+    // TODO: This is still just an approximation of proper text-rendering with many missing cases...
     const children = getNodeChildren(text)
+    let lastLocation = [0, 0]
+    let lastTextWidth = 0
     for (let i = 0; i < children.length; i++) {
       const child = children[i]
       if (child instanceof SVGTSpanElement) {
-        textLocation = new Point(getLengthInPx(child.x), getLengthInPx(child.y))
+        const textContent = getTextContent(context, child)
         const dx = getLengthInPx(child.dx)
         const dy = getLengthInPx(child.dy)
-        targetCtx.translate(dx, dy)
-        targetCtx.fillText(getTextContent(context, child), textLocation.x, textLocation.y)
-        if (hasStroke(stroke)) {
-          targetCtx.strokeText(getTextContent(context, child), textLocation.x, textLocation.y)
+        const [lastX, lastY] = lastLocation
+
+        // tspan x/y location is global for the given container, i.e.
+        // it *overwrites* any x,y location of the parent text element
+        let spanX = 0
+        if (child.x.baseVal.length > 0) {
+          // tspan x/y location is global for the given container
+          spanX = getLengthInPx(child.x) + dx
+        } else if (i === 0) {
+          spanX = textLocation.x + dx
+        } else {
+          // tspans block each other on the same line if not placed with x/y
+          spanX = lastX + lastTextWidth + dx
         }
+
+        let spanY = 0
+        if (child.y.baseVal.length > 0) {
+          // tspan x/y location is global for the given container
+          spanY = getLengthInPx(child.y) + dy
+        } else if (i === 0) {
+          // tspans block each other on the same line if not placed with x/y
+          spanY = textLocation.y + lastY + dy
+        } else {
+          spanY = lastY + dy
+        }
+
+        // consider styles on sibling tspans
+        targetCtx.save()
+        const { stroke } = applyTextStyleAttributes(context, child, targetCtx)
+        targetCtx.fillText(textContent, spanX, spanY)
+        if (hasStroke(stroke)) {
+          targetCtx.strokeText(textContent, spanX, spanY)
+        }
+        targetCtx.restore()
+
+        lastLocation = [spanX, spanY]
+        lastTextWidth = child.getComputedTextLength()
       }
     }
   }
@@ -189,6 +195,120 @@ function shouldNormalizeWhitespace(context: RenderContext, element: SVGElement):
   return xmlSpaceAttribute !== 'preserve' // no attribute is also default handling
 }
 
-function hasStroke(stroke: string | null): stroke is string {
-  return stroke !== null && stroke !== ''
+function hasStroke(stroke: string | null): boolean {
+  return !!stroke && stroke !== 'none'
+}
+
+function copyTextStyleAttributes(
+  context: RenderContext,
+  srcElement: SVGTextElement | SVGTSpanElement,
+  tgtElement: SVGTextElement | SVGTSpanElement
+): {
+  fill: string | null
+  stroke: string | null
+  strokeWidth: string | null
+  textAnchor: string | null
+  dominantBaseline: string | null
+} {
+  const stroke = getEffectiveAttribute(context, srcElement, 'stroke')
+  const strokeWidth = stroke ? getEffectiveAttribute(context, srcElement, 'stroke-width') : null
+  const fill = getEffectiveAttribute(context, srcElement, 'fill')
+  const dominantBaseline = getEffectiveAttribute(context, srcElement, 'dominant-baseline')
+  const textAnchor = getEffectiveAttribute(
+    context,
+    srcElement,
+    'text-anchor',
+    context.useElementContext
+  )
+
+  if (stroke) {
+    tgtElement.setAttribute('stroke', stroke)
+  }
+  if (strokeWidth) {
+    tgtElement.setAttribute('stroke-width', strokeWidth)
+  }
+  if (fill) {
+    tgtElement.setAttribute('fill', fill)
+  }
+  if (textAnchor) {
+    tgtElement.setAttribute('text-anchor', textAnchor)
+  }
+  if (dominantBaseline) {
+    tgtElement.setAttribute('dominant-baseline', dominantBaseline)
+  }
+  return { fill, stroke, strokeWidth, textAnchor, dominantBaseline }
+}
+
+function applyTextStyleAttributes(
+  context: RenderContext,
+  srcElement: SVGTextElement | SVGTSpanElement,
+  tgtCanvasCtx: CanvasRenderingContext2D
+): {
+  fill: string | null
+  stroke: string | null
+  strokeWidth: string | null
+  textAnchor: string | null
+  dominantBaseline: string | null
+} {
+  const stroke = getEffectiveAttribute(context, srcElement, 'stroke')
+  const strokeWidth = stroke ? getEffectiveAttribute(context, srcElement, 'stroke-width') : null
+  const fill = getEffectiveAttribute(context, srcElement, 'fill')
+  const dominantBaseline = getEffectiveAttribute(context, srcElement, 'dominant-baseline')
+  const textAnchor = getEffectiveAttribute(
+    context,
+    srcElement,
+    'text-anchor',
+    context.useElementContext
+  )
+  if (fill) {
+    tgtCanvasCtx.fillStyle = fill
+  }
+  if (stroke) {
+    tgtCanvasCtx.strokeStyle = stroke === 'none' ? 'transparent' : stroke
+  }
+  if (strokeWidth) {
+    tgtCanvasCtx.lineWidth = convertToPixelUnit(context, strokeWidth)
+  }
+  if (textAnchor) {
+    tgtCanvasCtx.textAlign = textAnchor !== 'middle' ? (textAnchor as CanvasTextAlign) : 'center'
+  }
+
+  tgtCanvasCtx.textBaseline = svgBaselineToCanvasBaseline(
+    dominantBaseline as SvgDominantBaseline | null
+  )
+
+  return { fill, stroke, strokeWidth, textAnchor, dominantBaseline }
+}
+
+type SvgDominantBaseline =
+  | 'auto'
+  | 'text-bottom'
+  | 'alphabetic'
+  | 'ideographic'
+  | 'middle'
+  | 'central'
+  | 'mathematical'
+  | 'hanging'
+  | 'text-top'
+function svgBaselineToCanvasBaseline(value: SvgDominantBaseline | null): CanvasTextBaseline {
+  if (!value) {
+    // default is auto
+    return svgBaselineToCanvasBaseline('auto')
+  }
+  switch (value) {
+    case 'auto':
+      return 'alphabetic'
+    case 'central':
+      return 'middle'
+    case 'text-bottom':
+      return 'bottom'
+    case 'mathematical':
+    case 'text-top':
+      return 'top'
+    case 'ideographic':
+    case 'alphabetic':
+    case 'hanging':
+    case 'middle':
+      return value
+  }
 }
