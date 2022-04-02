@@ -2,7 +2,6 @@ import { applyCircleClip } from './geom/circle'
 import { applyEllipseClip } from './geom/ellipse'
 import { applyPolygonClip } from './geom/polygon'
 import { applyRectClip } from './geom/rect'
-import { RenderMode } from './RenderMode'
 import {
   getCombinedTransform,
   getDefsElement,
@@ -32,14 +31,9 @@ export function applyClipPath(
 
   // TODO clipPath: consider clipPathUnits
   let clipContainer: SVGClipPathElement | null = null
-  // for canvas rendering, we just apply the clip to the CanvasContext
-  const targetCtx = context.targetCanvasContext
   // for SVG output, we create clipPath defs
-  const targetDefs = context.targetSvg ? getDefsElement(context.targetSvg) : null
-  if (context.renderMode === RenderMode.CANVAS && targetCtx) {
-    // for a canvas, we just apply a 'ctx.clip()' path
-    targetCtx.beginPath()
-  } else if (targetDefs) {
+  const targetDefs = context.svgSketch ? getDefsElement(context.svgSketch) : null
+  if (targetDefs) {
     // unfortunately, we cannot reuse clip-paths due to the 'global transform' approach
     const sketchClipPathId = `${id}_${targetDefs.childElementCount}`
     clipContainer = document.createElementNS('http://www.w3.org/2000/svg', 'clipPath')
@@ -84,9 +78,7 @@ export function applyClipPath(
     }
   }
 
-  if (context.renderMode === RenderMode.CANVAS && targetCtx) {
-    targetCtx.clip()
-  } else if (targetDefs && clipContainer) {
+  if (targetDefs && clipContainer) {
     if (clipContainer.childNodes.length > 0) {
       // add the clip-path only if it contains converted elements
       // some elements are not yet supported

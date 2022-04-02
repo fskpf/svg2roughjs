@@ -1,5 +1,4 @@
 import { Point } from 'roughjs/bin/geometry'
-import { RenderMode } from '../RenderMode'
 import {
   RenderContext,
   getPointsArray,
@@ -44,27 +43,8 @@ export function applyPolygonClip(
   container: SVGClipPathElement | null,
   svgTransform: SVGTransform | null
 ): void {
-  const targetCtx = context.targetCanvasContext
-  if (context.renderMode === RenderMode.CANVAS && targetCtx) {
-    const points = getPointsArray(polygon)
-    // in the clip case, we can actually transform the entire
-    // canvas without distorting the hand-drawn style
-    if (points.length > 0) {
-      targetCtx.save()
-      applyGlobalTransform(context, svgTransform)
-      const startPt = points[0]
-      targetCtx.moveTo(startPt.x, startPt.y)
-      for (let i = 1; i < points.length; i++) {
-        const pt = points[i]
-        targetCtx.lineTo(pt.x, pt.y)
-      }
-      targetCtx.closePath()
-      targetCtx.restore()
-    }
-  } else {
-    const clip = document.createElementNS('http://www.w3.org/2000/svg', 'polygon')
-    clip.setAttribute('points', polygon.getAttribute('points')!)
-    applyGlobalTransform(context, svgTransform, clip)
-    container!.appendChild(clip)
-  }
+  const clip = document.createElementNS('http://www.w3.org/2000/svg', 'polygon')
+  clip.setAttribute('points', polygon.getAttribute('points')!)
+  applyGlobalTransform(context, svgTransform, clip)
+  container!.appendChild(clip)
 }

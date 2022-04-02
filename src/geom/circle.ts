@@ -1,5 +1,4 @@
 import { Point } from './point'
-import { RenderMode } from '../RenderMode'
 import {
   applyGlobalTransform,
   applyMatrix,
@@ -70,20 +69,10 @@ export function applyCircleClip(
     return
   }
 
-  const targetCtx = context.targetCanvasContext
-  if (context.renderMode === RenderMode.CANVAS && targetCtx) {
-    // in the clip case, we can actually transform the entire
-    // canvas without distorting the hand-drawn style
-    targetCtx.save()
-    applyGlobalTransform(context, svgTransform)
-    targetCtx.ellipse(cx, cy, r, r, 0, 0, 2 * Math.PI)
-    targetCtx.restore()
-  } else {
-    const clip = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
-    clip.cx.baseVal.value = cx
-    clip.cy.baseVal.value = cy
-    clip.r.baseVal.value = r
-    applyGlobalTransform(context, svgTransform, clip)
-    container!.appendChild(clip)
-  }
+  const clip = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
+  clip.cx.baseVal.value = cx
+  clip.cy.baseVal.value = cy
+  clip.r.baseVal.value = r
+  applyGlobalTransform(context, svgTransform, clip)
+  container!.appendChild(clip)
 }

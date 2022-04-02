@@ -18,7 +18,7 @@ import SAMPLE_ORGANIC2 from '../public/organic2.svg'
 import SAMPLE_TREE from '../public/tree1.svg'
 import SAMPLE_VENN from '../public/venn.svg'
 
-import { RenderMode, Svg2Roughjs } from 'svg2roughjs/dist/svg2roughjs.es'
+import { OutputType, Svg2Roughjs } from 'svg2roughjs/dist/svg2roughjs.es'
 
 let svg2roughjs
 let loadingSvg = false
@@ -207,7 +207,7 @@ function updateOpacity(inputContainerOpacity) {
 }
 
 function run() {
-  svg2roughjs = new Svg2Roughjs('#output', RenderMode.SVG)
+  svg2roughjs = new Svg2Roughjs('#output', OutputType.SVG)
   svg2roughjs.backgroundColor = 'white'
   svg2roughjs.pencilFilter = !!document.getElementById('pencilFilter').checked
   const sampleSelect = document.getElementById('sample-select')
@@ -252,7 +252,7 @@ function run() {
   const bowingInput = document.getElementById('bowing-input')
 
   outputFormatSelect.addEventListener('change', () => {
-    svg2roughjs.renderMode = outputFormatSelect.value === 'svg' ? RenderMode.SVG : RenderMode.CANVAS
+    svg2roughjs.renderMode = outputFormatSelect.value === 'svg' ? OutputType.SVG : OutputType.CANVAS
     document.getElementById('pencilFilter').disabled = outputFormatSelect.value !== 'svg'
   })
   fillStyleSelect.addEventListener('change', () => {
@@ -334,7 +334,7 @@ function run() {
   downloadBtn.addEventListener('click', () => {
     const link = document.createElement('a')
 
-    if (svg2roughjs.renderMode === RenderMode.CANVAS) {
+    if (svg2roughjs.renderMode === OutputType.CANVAS) {
       const canvas = document.querySelector('#output canvas')
       const image = canvas.toDataURL('image/png', 1.0).replace('image/png', 'image/octet-stream')
       link.download = 'svg2roughjs.png'

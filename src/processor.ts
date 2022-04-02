@@ -10,7 +10,6 @@ import { drawPolyline } from './geom/polyline'
 import { drawRect } from './geom/rect'
 import { drawText } from './geom/text'
 import { drawUse } from './geom/use'
-import { RenderMode } from './RenderMode'
 import { getCombinedTransform, getNodeChildren, isHidden, RenderContext } from './utils'
 
 /**
@@ -177,10 +176,6 @@ function drawElement(
   // possibly apply a clip on the canvas before drawing on it
   const clipPath = element.getAttribute('clip-path')
   if (clipPath) {
-    const targetCtx = context.targetCanvasContext
-    if (context.renderMode === RenderMode.CANVAS && targetCtx) {
-      targetCtx.save()
-    }
     applyClipPath(context, element, clipPath, svgTransform)
   }
 
@@ -222,12 +217,5 @@ function drawElement(
     case 'foreignObject':
       drawForeignObject(context, element as SVGForeignObjectElement, svgTransform)
       break
-  }
-
-  // re-set the clip for the next element
-  if (clipPath) {
-    if (context.renderMode === RenderMode.CANVAS && context.targetCanvasContext) {
-      context.targetCanvasContext.restore()
-    }
   }
 }

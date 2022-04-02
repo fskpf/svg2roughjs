@@ -1,5 +1,4 @@
 import { Point } from './point'
-import { RenderMode } from '../RenderMode'
 import {
   applyGlobalTransform,
   applyMatrix,
@@ -106,11 +105,6 @@ export function drawRect(
 
     const result = sketchPath(context, path, parseStyleConfig(context, rect, svgTransform))
     postProcessElement(context, rect, result)
-
-    const canvasCtx = context.targetCanvasContext
-    if (context.renderMode === RenderMode.CANVAS && canvasCtx) {
-      canvasCtx.restore()
-    }
   }
 }
 
@@ -133,63 +127,17 @@ export function applyRectClip(
   const rx = rect.hasAttribute('rx') ? rect.rx.baseVal.value : null
   const ry = rect.hasAttribute('ry') ? rect.ry.baseVal.value : null
 
-  // in the clip case, we can actually transform the entire
-  // canvas without distorting the hand-drawn style
-  const targetCtx = context.targetCanvasContext
-  if (context.renderMode === RenderMode.CANVAS && targetCtx) {
-    targetCtx.save()
-    applyGlobalTransform(context, svgTransform)
-    if (rx !== null && ry !== null) {
-      // Construct path for the rounded rectangle
-      const factor = (4 / 3) * (Math.sqrt(2) - 1)
-      targetCtx.moveTo(x + rx, y)
-      targetCtx.lineTo(x + width - rx, y)
-      targetCtx.bezierCurveTo(
-        x + width - rx + factor * rx,
-        y,
-        x + width,
-        y + factor * ry,
-        x + width,
-        y + ry
-      )
-      targetCtx.lineTo(x + width, y + height - ry)
-      targetCtx.bezierCurveTo(
-        x + width,
-        y + height - ry + factor * ry,
-        x + width - factor * rx,
-        y + height,
-        x + width - rx,
-        y + height
-      )
-      targetCtx.lineTo(x + rx, y + height)
-      targetCtx.bezierCurveTo(
-        x + rx - factor * rx,
-        y + height,
-        x,
-        y + height - factor * ry,
-        x,
-        y + height - ry
-      )
-      targetCtx.lineTo(x, y + ry)
-      targetCtx.bezierCurveTo(x, y + factor * ry, x + factor * rx, y, x + rx, y)
-      targetCtx.closePath()
-    } else {
-      targetCtx.rect(x, y, width, height)
-    }
-    targetCtx.restore()
-  } else {
-    const clip = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
-    clip.x.baseVal.value = x
-    clip.y.baseVal.value = y
-    clip.width.baseVal.value = width
-    clip.height.baseVal.value = height
-    if (rx) {
-      clip.rx.baseVal.value = rx
-    }
-    if (ry) {
-      clip.ry.baseVal.value = ry
-    }
-    applyGlobalTransform(context, svgTransform, clip)
-    container!.appendChild(clip)
+  const clip = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
+  clip.x.baseVal.value = x
+  clip.y.baseVal.value = y
+  clip.width.baseVal.value = width
+  clip.height.baseVal.value = height
+  if (rx) {
+    clip.rx.baseVal.value = rx
   }
+  if (ry) {
+    clip.ry.baseVal.value = ry
+  }
+  applyGlobalTransform(context, svgTransform, clip)
+  container!.appendChild(clip)
 }

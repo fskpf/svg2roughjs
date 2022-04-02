@@ -1,4 +1,3 @@
-import { RenderMode } from '../RenderMode'
 import { applyGlobalTransform, postProcessElement, RenderContext } from '../utils'
 
 export function drawImage(
@@ -46,25 +45,10 @@ export function drawImage(
       return
     }
   } else {
-    let matrix = context.sourceSvg.createSVGMatrix().translate(x, y)
-    matrix = svgTransform ? svgTransform.matrix.multiply(matrix) : matrix
-    if (context.renderMode === RenderMode.CANVAS) {
-      // we just draw the image 'as is' into the canvas
-      const dx = matrix.e
-      const dy = matrix.f
-      const img = new Image()
-      img.onload = () => {
-        if (context.targetCanvasContext) {
-          context.targetCanvasContext.drawImage(img, dx, dy)
-        }
-      }
-      img.src = href
-    } else {
-      const imageClone = svgImage.cloneNode()
-      const container = document.createElementNS('http://www.w3.org/2000/svg', 'g')
-      applyGlobalTransform(context, svgTransform, container)
-      container.appendChild(imageClone)
-      postProcessElement(context, svgImage, container)
-    }
+    const imageClone = svgImage.cloneNode()
+    const container = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+    applyGlobalTransform(context, svgTransform, container)
+    container.appendChild(imageClone)
+    postProcessElement(context, svgImage, container)
   }
 }

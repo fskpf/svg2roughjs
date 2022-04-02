@@ -1,8 +1,6 @@
-import { RoughCanvas } from 'roughjs/bin/canvas'
 import { Drawable, Options } from 'roughjs/bin/core'
 import { RoughSVG } from 'roughjs/bin/svg'
 import { Point } from './geom/point'
-import { RenderMode } from './RenderMode'
 import tinycolor from 'tinycolor2'
 // @ts-ignore
 import units from 'units-css'
@@ -576,17 +574,14 @@ export function parseStyleConfig(
  * which is used in the rendering functions.
  */
 export type RenderContext = {
-  rc: RoughCanvas | RoughSVG
+  rc: RoughSVG
   roughConfig: Options
-  renderMode: RenderMode
   fontFamily: string | null
   pencilFilter: boolean
   randomize: boolean
   idElements: Record<string, SVGElement | string>
   sourceSvg: SVGSVGElement
-  targetCanvas?: HTMLCanvasElement
-  targetCanvasContext?: CanvasRenderingContext2D
-  targetSvg?: SVGSVGElement
+  svgSketch: SVGSVGElement
   useElementContext?: UseContext | null
   styleSheets: CSSStyleSheet[]
   processElement: (
@@ -616,7 +611,7 @@ export function postProcessElement(
   element: SVGElement,
   sketchElement?: Drawable | SVGElement
 ): void {
-  if (context.renderMode === RenderMode.SVG && context.targetSvg && sketchElement) {
+  if (sketchElement) {
     let sketch = sketchElement as SVGElement
 
     // original element may have a clip-path
@@ -640,7 +635,7 @@ export function postProcessElement(
       sketch.setAttribute('filter', 'url(#pencilTextureFilter)')
     }
 
-    context.targetSvg.appendChild(sketch)
+    context.svgSketch.appendChild(sketch)
   }
 }
 
@@ -695,17 +690,7 @@ export function applyGlobalTransform(
 ): void {
   if (svgTransform && svgTransform.matrix) {
     const matrix = svgTransform.matrix
-    if (context.renderMode === RenderMode.CANVAS && context.targetCanvasContext) {
-      // IE11 doesn't support SVGMatrix as parameter for setTransform
-      context.targetCanvasContext.setTransform(
-        matrix.a,
-        matrix.b,
-        matrix.c,
-        matrix.d,
-        matrix.e,
-        matrix.f
-      )
-    } else if (context.renderMode === RenderMode.SVG && element) {
+    if (element) {
       if (element.transform.baseVal.numberOfItems > 0) {
         element.transform.baseVal.getItem(0).setMatrix(matrix)
       } else {
