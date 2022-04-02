@@ -130,7 +130,7 @@ export class Svg2Roughjs {
   /**
    * Triggers an entire redraw of the SVG which
    * processes the input element anew.
-   * @returns A promise that resolved to the sketched output element
+   * @returns A promise that resolved to the sketched output element or null if no {@link svg} is set.
    */
   sketch(): Promise<SVGSVGElement | HTMLCanvasElement | null> {
     if (!this.svg) {

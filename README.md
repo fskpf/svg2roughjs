@@ -32,12 +32,13 @@ Then you can import it as usual
 import Svg2Roughjs from 'svg2roughjs'
 ```
 
-and instantiate it with an output div in which the canvas should be created. Setting an `SVGSVGElement` as `svg` triggers the drawing.
+and instantiate it with an output div in which the canvas should be created. Calling `sketch()` outputs the current `svg` to the given element as hand-drawn sketch.
 
 ```javascript
 const svg2roughjs = new Svg2Roughjs('#output')
 const svg = document.getElementById('some-svg-element')
 svg2roughjs.svg = svg // or maybe use the DOMParser to load an SVG file instead
+svg2roughs.sketch()
 ```
 
 ## API
@@ -45,33 +46,33 @@ svg2roughjs.svg = svg // or maybe use the DOMParser to load an SVG file instead
 ### Exports
 
 - `Svg2Roughjs`: The main class for the conversion.
-- `RenderMode`: An enum that is used to switch between `SVG` and `CANVAS` rendering.
+- `OutputType`: An enum that is used to switch between `SVG` and `CANVAS` output when targetting an `HTMLDivElement` as output container.
 
 ### Methods
 
-- `constructor(target, renderMode?, roughConfig?)`
+- `constructor(target, outputType?, roughConfig?)`
 
   Creates a new Svg2Rough.js instance.
 
-  `target` may either be a selector for a parent HTML element into which a new canvas or SVG should be created, or directly an `HTMLCanvasElement` or `SVGSVGElement` that should be used for the output.
+  `target` may either be a selector for a parent HTML element into which a new canvas or SVG should be created, or directly an `SVGSVGElement` or `HTMLCanvasElement` that should be used for the output.
 
-  The optional `renderMode` defaults to `RenderMode.SVG` if the `target` is a parent element selector, otherwise defaults to the respective mode.
+  The optional `outputType` defaults to the respective mode if `target` is either `SVGSVGElement` or `HTMLCanvasElement`. If targetting an HTML container element, then `OutputType.SVG` is used by default.
 
-- `redraw()`
+- `sketch()`
 
-  Clears the output canvas or SVG and processes the input `svg` anew.
+  Clears the targetted output `SVGSVGElement` or `HTMLCanvasElement` and converts the set `svg` to a hand-drawn sketch.
 
 ### Properties
 
 | Property          | Description                                                                                                          | Default                    |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------- | -------------------------- |
-| `svg`             | The input SVG that should be converted.<br>Changing this property triggers `redraw()`.                               | `undefined`                |
-| `renderMode`      | Switch between canvas or SVG output.                                                                                 | `RenderMode.SVG`           |
+| `svg`             | The input SVG that should be converted.                                                                              | `undefined`                |
+| `outputType`      | Switch between canvas or SVG output.                                                                                 | `OutputType.SVG`           |
 | `roughConfig`     | Rough.js style properties, e.g. to change the fill-style, roughness or bowing.                                       | `{}`                       |
 | `fontFamily`      | Font with which text elements should be drawn.<br>If set to `null`, the text element's original font-family is used. | `'Comic Sans MS, cursive'` |
 | `backgroundColor` | Sets a background color onto which the sketch is drawn.                                                              | `transparent`              |
 | `randomize`       | Randomize Rough.js' fillWeight, hachureAngle and hachureGap.                                                         | `true`                     |
-| `pencilFilter`    | Applies a pencil effect on the SVG rendering.<br>Has no effect on canvas render mode.                                | `false`                    |
+| `pencilFilter`    | Applies a pencil effect on the SVG rendering.                                                                        | `false`                    |
 
 ## Sample Images
 
