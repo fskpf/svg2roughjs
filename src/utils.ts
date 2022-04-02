@@ -476,7 +476,7 @@ export function parseStyleConfig(
   if (!isIdentityTransform(svgTransform)) {
     const m = svgTransform!.matrix
     const det = m.a * m.d - m.c * m.b
-    scaleFactor = Math.sqrt(det)
+    scaleFactor = Math.sqrt(Math.abs(det))
   }
 
   // incorporate the elements base opacity
