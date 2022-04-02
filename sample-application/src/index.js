@@ -91,8 +91,8 @@ function loadSvgString(svg2roughjs, fileContent) {
     scheduledLoad = fileContent
     return
   }
+  setUIState(false)
 
-  document.getElementById('sample-select').disabled = true
   loadingSvg = true
 
   const inputElement = document.getElementById('input')
@@ -109,7 +109,7 @@ function loadSvgString(svg2roughjs, fileContent) {
 
   if (!svg) {
     console.error('Could not load SVG file')
-    document.getElementById('sample-select').disabled = false
+    setUIState(true)
     loadingSvg = false
     return
   }
@@ -123,7 +123,7 @@ function loadSvgString(svg2roughjs, fileContent) {
 
   // make sure the SVG is part of the DOM and rendered, before it is converted by
   // Svg2Rough.js. Otherwise, CSS percentaged width/height might not be applied yet
-  setTimeout(() => {
+  setTimeout(async () => {
     if (svg.tagName === 'HTML') {
       console.error('Error parsing XML')
       inputElement.style.opacity = 1
@@ -139,11 +139,12 @@ function loadSvgString(svg2roughjs, fileContent) {
       }
       try {
         svg2roughjs.svg = svg
+        await svg2roughjs.sketch()
       } catch (e) {
         console.error("Couldn't sketch content")
         throw e // re-throw to show error on console
       } finally {
-        document.getElementById('sample-select').disabled = false
+        setUIState(true)
         loadingSvg = false
       }
 
@@ -251,30 +252,41 @@ function run() {
   const roughnessInput = document.getElementById('roughness-input')
   const bowingInput = document.getElementById('bowing-input')
 
-  outputFormatSelect.addEventListener('change', () => {
-    svg2roughjs.renderMode = outputFormatSelect.value === 'svg' ? OutputType.SVG : OutputType.CANVAS
-    document.getElementById('pencilFilter').disabled = outputFormatSelect.value !== 'svg'
+  outputFormatSelect.addEventListener('change', async () => {
+    setUIState(false)
+    svg2roughjs.outputType = outputFormatSelect.value === 'svg' ? OutputType.SVG : OutputType.CANVAS
+    await svg2roughjs.sketch()
+    setUIState(true)
   })
-  fillStyleSelect.addEventListener('change', () => {
+  fillStyleSelect.addEventListener('change', async () => {
     svg2roughjs.roughConfig = {
       bowing: parseInt(bowingInput.value),
       roughness: parseInt(roughnessInput.value),
       fillStyle: fillStyleSelect.value
     }
+    setUIState(false)
+    await svg2roughjs.sketch()
+    setUIState(true)
   })
-  roughnessInput.addEventListener('change', () => {
+  roughnessInput.addEventListener('change', async () => {
     svg2roughjs.roughConfig = {
       bowing: parseInt(bowingInput.value),
       roughness: parseInt(roughnessInput.value),
       fillStyle: fillStyleSelect.value
     }
+    setUIState(false)
+    await svg2roughjs.sketch()
+    setUIState(true)
   })
-  bowingInput.addEventListener('change', () => {
+  bowingInput.addEventListener('change', async () => {
     svg2roughjs.roughConfig = {
       bowing: parseInt(bowingInput.value),
       roughness: parseInt(roughnessInput.value),
       fillStyle: fillStyleSelect.value
     }
+    setUIState(false)
+    await svg2roughjs.sketch()
+    setUIState(true)
   })
 
   const opacityInput = document.getElementById('opacity')
@@ -334,7 +346,7 @@ function run() {
   downloadBtn.addEventListener('click', () => {
     const link = document.createElement('a')
 
-    if (svg2roughjs.renderMode === OutputType.CANVAS) {
+    if (svg2roughjs.outputType === OutputType.CANVAS) {
       const canvas = document.querySelector('#output canvas')
       const image = canvas.toDataURL('image/png', 1.0).replace('image/png', 'image/octet-stream')
       link.download = 'svg2roughjs.png'
@@ -352,21 +364,47 @@ function run() {
   })
 
   const originalFontCheckbox = document.getElementById('original-font')
-  originalFontCheckbox.addEventListener('change', () => {
+  originalFontCheckbox.addEventListener('change', async () => {
     if (originalFontCheckbox.checked) {
       svg2roughjs.fontFamily = null
     } else {
       svg2roughjs.fontFamily = 'Comic Sans MS, sans-serif'
     }
+    setUIState(false)
+    await svg2roughjs.sketch()
+    setUIState(true)
   })
   const randomizeCheckbox = document.getElementById('randomize')
-  randomizeCheckbox.addEventListener('change', () => {
+  randomizeCheckbox.addEventListener('change', async () => {
     svg2roughjs.randomize = !!randomizeCheckbox.checked
+    setUIState(false)
+    await svg2roughjs.sketch()
+    setUIState(true)
   })
   const pencilCheckbox = document.getElementById('pencilFilter')
-  pencilCheckbox.addEventListener('change', () => {
+  pencilCheckbox.addEventListener('change', async () => {
     svg2roughjs.pencilFilter = !!pencilCheckbox.checked
+    setUIState(false)
+    await svg2roughjs.sketch()
+    setUIState(true)
   })
+}
+
+function setUIState(enabled) {
+  const elements = [
+    document.getElementById('fill-style'),
+    document.getElementById('output-format'),
+    document.getElementById('roughness-input'),
+    document.getElementById('bowing-input'),
+    document.getElementById('original-font'),
+    document.getElementById('randomize'),
+    document.getElementById('pencilFilter'),
+    document.getElementById('sample-select')
+  ]
+
+  for (const ele of elements) {
+    ele.disabled = !enabled
+  }
 }
 
 run()

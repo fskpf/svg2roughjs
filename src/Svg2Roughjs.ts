@@ -6,19 +6,38 @@ import { SvgTextures } from './SvgTextures'
 import { getDefsElement, RenderContext } from './utils'
 
 /**
- * Svg2Roughjs parses a given SVG and draws it with Rough.js
- * in a canvas.
+ * Svg2Roughjs parses an SVG and converts it to a hand-drawn sketch.
  */
 export class Svg2Roughjs {
+  /**
+   * Optional solid background color with which the canvas should be initialized.
+   * It is drawn on a transparent canvas by default.
+   */
+  backgroundColor: string | null = null
+
+  /**
+   * Set a font-family for the rendering of text elements.
+   * If set to `null`, then the font-family of the SVGTextElement is used.
+   * By default, 'Comic Sans MS, cursive' is used.
+   */
+  fontFamily: string | null = 'Comic Sans MS, cursive'
+
+  /**
+   * Whether to randomize Rough.js' fillWeight, hachureAngle and hachureGap.
+   * Also randomizes the disableMultiStroke option of Rough.js.
+   * By default true.
+   */
+  randomize: boolean = true
+
+  /**
+   * Whether to apply a pencil filter.
+   */
+  pencilFilter: boolean = false
+
   private $svg?: SVGSVGElement
   private width: number = 0
   private height: number = 0
-  private $roughConfig: Options
-  private $fontFamily: string | null
-  private $randomize: boolean
-  private $backgroundColor: string | null = null
   private $outputType: OutputType
-  private $pencilFilter: boolean = false
   private idElements: Record<string, SVGElement | string> = {}
 
   private outputElement: Element
@@ -26,9 +45,6 @@ export class Svg2Roughjs {
 
   /**
    * The SVG that should be converted.
-   * Changing this property triggers drawing of the SVG into
-   * the canvas or container element with which Svg2Roughjs
-   * was initialized.
    */
   set svg(svg: SVGSVGElement) {
     if (this.$svg !== svg) {
@@ -39,8 +55,6 @@ export class Svg2Roughjs {
 
       // pre-process defs for subsequent references
       this.collectElementsWithID()
-
-      this.redraw()
     }
   }
 
@@ -49,66 +63,14 @@ export class Svg2Roughjs {
   }
 
   /**
-   * Rough.js config object that is provided to Rough.js for drawing
-   * any SVG element.
-   * Changing this property triggers a repaint.
-   */
-  set roughConfig(config: Options) {
-    this.$roughConfig = config
-    this.redraw()
-  }
-
-  get roughConfig(): Options {
-    return this.$roughConfig
-  }
-
-  /**
-   * Set a font-family for the rendering of text elements.
-   * If set to `null`, then the font-family of the SVGTextElement is used.
-   * By default, 'Comic Sans MS, cursive' is used.
-   * Changing this property triggers a repaint.
-   */
-  set fontFamily(fontFamily: string | null) {
-    if (this.$fontFamily !== fontFamily) {
-      this.$fontFamily = fontFamily
-      this.redraw()
-    }
-  }
-
-  get fontFamily(): string | null {
-    return this.$fontFamily
-  }
-
-  /**
-   * Whether to randomize Rough.js' fillWeight, hachureAngle and hachureGap.
-   * Also randomizes the disableMultiStroke option of Rough.js.
-   * By default true.
-   * Changing this property triggers a repaint.
-   */
-  set randomize(randomize: boolean) {
-    this.$randomize = randomize
-    this.redraw()
-  }
-
-  get randomize(): boolean {
-    return this.$randomize
-  }
-
-  /**
-   * Optional solid background color with which
-   * the canvas should be initialized.
-   * It is drawn on a transparent canvas by default.
-   */
-  set backgroundColor(color: string | null) {
-    this.$backgroundColor = color
-  }
-
-  get backgroundColor(): string | null {
-    return this.$backgroundColor
-  }
-
-  /**
-   * Changes the output format of the converted SVG.
+   * Sets the output format of the sketch.
+   *
+   * Applies only to instances that have been created with a
+   * container as output element instead of an actual SVG or canvas
+   * element.
+   *
+   * Throws when the given mode does not match the output element
+   * with which this instance was created.
    */
   set outputType(type: OutputType) {
     if (this.$outputType === type) {
@@ -125,7 +87,6 @@ export class Svg2Roughjs {
     }
 
     this.$outputType = type
-    this.redraw()
   }
 
   get outputType(): OutputType {
@@ -133,61 +94,19 @@ export class Svg2Roughjs {
   }
 
   /**
-   * Whether to apply a pencil filter.
-   * Only works for SVG render mode.
-   */
-  set pencilFilter(value: boolean) {
-    if (this.$pencilFilter !== value) {
-      this.$pencilFilter = value
-      this.redraw()
-    }
-  }
-
-  get pencilFilter(): boolean {
-    return this.$pencilFilter
-  }
-
-  /**
-   * Creates a new context which contains the current state of the
-   * Svg2Roughs instance for rendering.
-   * @returns A new context.
-   */
-  createRenderContext(sketchContainer: SVGSVGElement): RenderContext {
-    if (!this.svg) {
-      throw new Error('No source SVG set yet.')
-    }
-    const ctx: RenderContext = {
-      rc: rough.svg(sketchContainer, { options: this.roughConfig }),
-      roughConfig: this.roughConfig,
-      fontFamily: this.fontFamily,
-      pencilFilter: this.pencilFilter,
-      randomize: this.randomize,
-      idElements: this.idElements,
-      sourceSvg: this.svg,
-      svgSketch: sketchContainer,
-      styleSheets: Array.from(this.svg.querySelectorAll('style'))
-        .map(s => s.sheet)
-        .filter(s => s !== null) as CSSStyleSheet[],
-      processElement: processRoot
-    }
-
-    return ctx
-  }
-
-  /**
    * Creates a new instance of Svg2roughjs.
    * @param target Either a selector for the container to which a canvas should be added
    * or an `HTMLCanvasElement` or `SVGSVGElement` that should be used as output target.
-   * @param renderMode Whether the output should be an SVG or drawn to an HTML canvas.
+   * @param outputType Whether the output should be an SVG or drawn to an HTML canvas.
    * Defaults to SVG or CANVAS depending if the given target is of type `HTMLCanvasElement` or `SVGSVGElement`,
    * otherwise it defaults to SVG.
-   * @param roughjsOptions Config object this passed to the Rough.js ctor and
+   * @param roughConfig Config object this passed to the Rough.js ctor and
    * also used while parsing the styles for `SVGElement`s.
    */
   constructor(
     target: string | HTMLCanvasElement | SVGSVGElement,
-    renderMode: OutputType = OutputType.SVG,
-    roughjsOptions: Options = {}
+    outputType: OutputType = OutputType.SVG,
+    public roughConfig: Options = {}
   ) {
     if (!target) {
       throw new Error('No target provided')
@@ -204,26 +123,18 @@ export class Svg2Roughjs {
     } else if (targetElement instanceof SVGSVGElement) {
       this.$outputType = OutputType.SVG
     } else {
-      this.$outputType = renderMode // TODO rename to something like 'output type' and make it optional as rendering is always in sVG
+      this.$outputType = outputType
     }
-
-    // the Rough.js instance to draw the SVG elements
-    this.$roughConfig = roughjsOptions
-
-    // default font family
-    this.$fontFamily = 'Comic Sans MS, cursive'
-
-    // we randomize the visualization per element by default
-    this.$randomize = true
   }
 
   /**
    * Triggers an entire redraw of the SVG which
    * processes the input element anew.
+   * @returns A promise that resolved to the sketched output element
    */
-  redraw(): void {
+  sketch(): Promise<SVGSVGElement | HTMLCanvasElement | null> {
     if (!this.svg) {
-      return
+      return Promise.resolve(null)
     }
 
     const sketchContainer = this.prepareRenderContainer()
@@ -234,82 +145,72 @@ export class Svg2Roughjs {
 
     if (this.outputElement instanceof SVGSVGElement) {
       // sketch already in the outputElement
-      return
+      return Promise.resolve(this.outputElement)
     } else if (this.outputElement instanceof HTMLCanvasElement) {
-      // TODO render sketch containter to given canvas element
-    } else {
-      // remove the previous attached result
-      this.lastResult?.parentElement?.removeChild(this.lastResult)
-      // assume that the given output element is a container, thus append the sketch to it
-      if (this.outputType === OutputType.SVG) {
-        this.outputElement.appendChild(renderContext.svgSketch)
-        this.lastResult = renderContext.svgSketch
-      } else if (this.outputType === OutputType.CANVAS) {
-        const canvas = document.createElement('canvas')
-        this.outputElement.appendChild(canvas)
-        canvas.width = this.width
-        canvas.height = this.height
-        const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
-        ctx.clearRect(0, 0, this.width, this.height)
-        this.drawSvg(renderContext.svgSketch, ctx).then(() => {
-          // console.log(this.exportCanvas.toDataURL())
-          // sketch.parentElement?.appendChild(this.exportCanvas)
-        })
-        this.lastResult = canvas
-      }
+      return this.drawToCanvas(renderContext, this.outputElement)
     }
 
-    // TODO if the outputElement was not directly an SVGSVGElement, we need
-    // * if outputElement === container: Either append SVG sketch container or append a canvas and draw it to the canvase
-    // * or draw the  sketch container to the given outputElement canvas
-
-    // target = document.createElement('canvas')
-    // target.width = this.width
-    // target.height = this.height
-
-    // if (this.$renderMode === RenderMode.CANVAS) {
-    //   const sketch = renderContext.svgSketchContainer
-    //   if (sketch) {
-    //     const targetCanvas = this.outputElement as HTMLCanvasElement
-    //     targetCanvas.width = this.width
-    //     targetCanvas.height = this.height
-    //     const ctx = targetCanvas.getContext('2d') as CanvasRenderingContext2D
-    //     ctx.clearRect(0, 0, this.width, this.height)
-    //     this.drawSvg(sketch, ctx).then(() => {
-    //       // console.log(this.exportCanvas.toDataURL())
-    //       // sketch.parentElement?.appendChild(this.exportCanvas)
-    //     })
-    //   }
-    // }
+    // remove the previous attached result
+    this.lastResult?.parentElement?.removeChild(this.lastResult)
+    // assume that the given output element is a container, thus append the sketch to it
+    if (this.outputType === OutputType.SVG) {
+      this.outputElement.appendChild(renderContext.svgSketch)
+      this.lastResult = renderContext.svgSketch
+      return Promise.resolve(renderContext.svgSketch)
+    } else {
+      // canvas output type
+      const canvas = document.createElement('canvas')
+      this.outputElement.appendChild(canvas)
+      this.lastResult = canvas
+      return this.drawToCanvas(renderContext, canvas)
+    }
   }
 
-  private drawSvg(svgElement: SVGSVGElement, ctx: CanvasRenderingContext2D): Promise<void> {
+  /**
+   * Creates a new context which contains the current state of the
+   * Svg2Roughs instance for rendering.
+   */
+  private createRenderContext(sketchContainer: SVGSVGElement): RenderContext {
+    if (!this.svg) {
+      throw new Error('No source SVG set yet.')
+    }
+    return {
+      rc: rough.svg(sketchContainer, { options: this.roughConfig }),
+      roughConfig: this.roughConfig,
+      fontFamily: this.fontFamily,
+      pencilFilter: this.pencilFilter,
+      randomize: this.randomize,
+      idElements: this.idElements,
+      sourceSvg: this.svg,
+      svgSketch: sketchContainer,
+      styleSheets: Array.from(this.svg.querySelectorAll('style'))
+        .map(s => s.sheet)
+        .filter(s => s !== null) as CSSStyleSheet[],
+      processElement: processRoot
+    }
+  }
+
+  /**
+   * Helper method to draw the sketched SVG to a HTMLCanvasElement.
+   */
+  private drawToCanvas(
+    renderContext: RenderContext,
+    canvas: HTMLCanvasElement
+  ): Promise<HTMLCanvasElement> {
+    canvas.width = this.width
+    canvas.height = this.height
+    const canvasCtx = canvas.getContext('2d') as CanvasRenderingContext2D
+    canvasCtx.clearRect(0, 0, this.width, this.height)
     return new Promise(resolve => {
-      const svgString = new XMLSerializer().serializeToString(svgElement)
+      const svgString = new XMLSerializer().serializeToString(renderContext.svgSketch)
       const img = new Image()
       img.onload = function () {
-        ctx.drawImage(this as HTMLImageElement, 0, 0)
-        resolve()
+        canvasCtx.drawImage(this as HTMLImageElement, 0, 0)
+        resolve(canvas)
       }
       img.src = `data:image/svg+xml;charset=utf8,${encodeURIComponent(svgString)}`
     })
   }
-
-  /**
-   * Prepares the given canvas element depending on the set properties.
-   */
-  // private initializeCanvas(canvas: HTMLCanvasElement) {
-  //   this.ctx = canvas.getContext('2d')
-  //   if (this.ctx) {
-  //     this.ctx.clearRect(0, 0, this.width, this.height)
-  //     if (this.backgroundColor) {
-  //       this.ctx.fillStyle = this.backgroundColor
-  //       this.ctx.fillRect(0, 0, this.width, this.height)
-  //     }
-  //     // use round linecap to emphasize a ballpoint pen like drawing
-  //     this.ctx.lineCap = 'round'
-  //   }
-  // }
 
   /**
    * Prepares the given SVG element depending on the set properties.
