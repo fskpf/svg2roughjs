@@ -1,6 +1,6 @@
 {
   "name": "svg2roughjs",
-  "version": "3.0.0",
+  "version": "3.0.0-wip",
   "description": "Leverages Rough.js to convert SVGs to a hand-drawn, sketchy representation",
   "author": "Fabian Schwarzkopf",
   "contributors": [
