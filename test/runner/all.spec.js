@@ -1,5 +1,6 @@
 // import { OutputType, Svg2Roughjs } from '../../out-tsc/index'
-import { OutputType, Svg2Roughjs } from '../../src/index'
+// import { OutputType, Svg2Roughjs } from '../../src/index'
+import { OutputType, Svg2Roughjs } from '../lib/dist/svg2roughjs.es'
 
 import { fixture, expect } from '@open-wc/testing'
 
