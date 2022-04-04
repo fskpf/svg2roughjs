@@ -1,15 +1,24 @@
 // import { playwrightLauncher } from '@web/test-runner-playwright';
 
-import { esbuildPlugin } from '@web/dev-server-esbuild'
+import { rollupBundlePlugin } from '@web/dev-server-rollup'
+import { nodeResolve } from '@rollup/plugin-node-resolve'
+import commonjs from '@rollup/plugin-commonjs'
 
-const filteredLogs = ['Running in dev mode', 'lit-html is in dev mode']
+const filteredLogs = ['Running in dev mode', 'lit-html is in dev mode', 'Lit is in dev mode']
 
 // https://modern-web.dev/docs/test-runner/cli-and-configuration/
 export default /** @type {import("@web/test-runner").TestRunnerConfig} */ ({
   /** Test files to run */
   files: 'test/runner/all.spec.js',
 
-  // plugins: [esbuildPlugin({ ts: true })],
+  plugins: [
+    rollupBundlePlugin({
+      rollupConfig: {
+        input: 'out-tsc/index.js',
+        plugins: [nodeResolve(), commonjs()]
+      }
+    })
+  ],
 
   coverage: false,
 

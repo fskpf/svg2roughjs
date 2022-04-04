@@ -1,11 +1,10 @@
-// import { OutputType, Svg2Roughjs } from '../../out-tsc/index'
-// import { OutputType, Svg2Roughjs } from '../../src/index'
-import { OutputType, Svg2Roughjs } from '../lib/dist/svg2roughjs.es'
+import { OutputType, Svg2Roughjs } from '../../out-tsc/index'
 
 import { fixture, expect } from '@open-wc/testing'
 
 describe('please work', () => {
   it('why is this so hard?', async () => {
+    console.log(OutputType.SVG)
     const el = await fixture(`<div><!-- comment --><h1>${'Hey'}  </h1>  </div>`)
     expect(el).dom.to.equal('<div><h1>Hey</h1></div>')
     // assert.equal(1, 2)
