@@ -1,9 +1,9 @@
 import { Drawable, Options } from 'roughjs/bin/core'
 import { RoughSVG } from 'roughjs/bin/svg'
 import { Point } from './geom/point'
-import tinycolor from 'tinycolor2'
-// @ts-ignore
-import units from 'units-css'
+
+const units = require('units-css')
+const tinycolor = require('tinycolor2')
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Color = any // type alias for tinycolor

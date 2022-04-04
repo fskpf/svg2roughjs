@@ -107,7 +107,8 @@
       background-color: #b2b2b2;
     }
 
-    .toolbar label.toggle-btn:hover, .toolbar input.toggle-btn:checked+label {
+    .toolbar label.toggle-btn:hover,
+    .toolbar input.toggle-btn:checked+label {
       background-color: #dedede;
     }
 
@@ -115,7 +116,8 @@
       user-select: none;
     }
 
-    label.icon {
+    .icon {
+      display: block;
       width: 32px;
       height: 32px;
       background-repeat: no-repeat;
@@ -127,7 +129,11 @@
     }
 
     .icon-raw {
-      background: url('./static/raw-source.svg');
+      background-image: url('./static/raw-source.svg');
+    }
+
+    .icon-flask {
+      background-image: url('./static/flask.svg');
     }
 
     .toggle-btn {
@@ -193,6 +199,22 @@
     label[for=opacity] {
       cursor: pointer;
     }
+
+    .icon-button {
+      width: 32px;
+      height: 32px;
+      padding: 0;
+    }
+
+    .icon-button .icon {
+      width: 28px;
+      height: 28px;
+      background-size: 16px;
+    }
+
+    #download-testcase {
+      margin: 0 0 0 auto;
+    }
   </style>
 </head>
 
@@ -224,14 +246,14 @@
         <option value="zigzag-line">zigzag-line (slow)</option>
       </select>
       <div class="separator"></div>
-      
+
       <label for="output-format">Output Format</label>
       <select id="output-format" style="margin: 2px 0;">
         <option value="svg">SVG</option>
         <option value="canvas">Canvas</option>
       </select>
       <div class="separator"></div>
-      
+
       <label for="roughness-input">Roughness</label>
       <input id="roughness-input" type="range" value="1" min="0" max="4" step="0.5">
       <div class="separator"></div>
@@ -278,6 +300,8 @@
         <label for="opacity">Compare: </label>
         <input id="opacity" type="range" min="0" max="1" step="0.05" value="0">
         <button id="download-btn">Download Sketch</button>
+        <button id="download-testcase" title="Create a testcase for the repository" class="icon-button"><span
+            class="icon icon-flask"></span></button>
       </div>
 
       <div class="separator" style="margin: 0;"></div>

@@ -5,3 +5,4 @@ svg2roughjs-*.tgz
 dist
 debug.log
 out-tsc
+coverage

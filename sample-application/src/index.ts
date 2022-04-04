@@ -18,13 +18,28 @@ import SAMPLE_ORGANIC2 from '../public/organic2.svg'
 import SAMPLE_TREE from '../public/tree1.svg'
 import SAMPLE_VENN from '../public/venn.svg'
 
+// direkt debug lib import for better debugging...
+// @ts-ignore
 import { OutputType, Svg2Roughjs } from 'svg2roughjs/dist/svg2roughjs.es'
 
-let svg2roughjs
+let svg2roughjs: Svg2Roughjs
 let loadingSvg = false
-let scheduledLoad
-let debouncedTimer = null
-let codeMirrorInstance
+let scheduledLoad: string | null = null
+let debouncedTimer: ReturnType<typeof setTimeout> | null = null
+let codeMirrorInstance: CodeMirror.Editor
+
+// just for easier access, it's a debug project, so who cares...
+const pencilCheckbox = document.getElementById('pencilFilter') as HTMLInputElement
+const sampleSelect = document.getElementById('sample-select') as HTMLSelectElement
+const codeContainer = document.querySelector('.raw-svg-container') as HTMLDivElement
+const fillStyleSelect = document.getElementById('fill-style') as HTMLSelectElement
+const outputFormatSelect = document.getElementById('output-format') as HTMLSelectElement
+const roughnessInput = document.getElementById('roughness-input') as HTMLInputElement
+const bowingInput = document.getElementById('bowing-input') as HTMLInputElement
+const opacityInput = document.getElementById('opacity') as HTMLInputElement
+const fileInput = document.getElementById('file-chooser') as HTMLInputElement
+const originalFontCheckbox = document.getElementById('original-font') as HTMLInputElement
+const randomizeCheckbox = document.getElementById('randomize') as HTMLInputElement
 
 const onCodeMirrorChange = () => {
   if (debouncedTimer) {
@@ -42,19 +57,14 @@ const onCodeMirrorChange = () => {
 
 /**
  * Sets CodeMirror content without triggering the change listener
- * @param {string} value
  */
-function setCodeMirrorValue(value) {
+function setCodeMirrorValue(value: string) {
   codeMirrorInstance.off('change', onCodeMirrorChange)
   codeMirrorInstance.setValue(value)
   codeMirrorInstance.on('change', onCodeMirrorChange)
 }
 
-/**
- * @param {SVGSVGElement} svg
- * @returns {{width:number, height:number}}
- */
-function getSvgSize(svg) {
+function getSvgSize(svg: SVGSVGElement): { width: number; height: number } {
   let width, height
   const hasViewbox = svg.hasAttribute('viewBox')
   if (svg.hasAttribute('width')) {
@@ -86,7 +96,7 @@ function getSvgSize(svg) {
   return { width, height }
 }
 
-function loadSvgString(svg2roughjs, fileContent) {
+function loadSvgString(svg2roughjs: Svg2Roughjs, fileContent: string) {
   if (loadingSvg) {
     scheduledLoad = fileContent
     return
@@ -95,8 +105,8 @@ function loadSvgString(svg2roughjs, fileContent) {
 
   loadingSvg = true
 
-  const inputElement = document.getElementById('input')
-  const outputElement = document.getElementById('output')
+  const inputElement = document.getElementById('input')!
+  const outputElement = document.getElementById('output')!
   const canvas = outputElement.querySelector('canvas')
 
   const parser = new DOMParser()
@@ -104,7 +114,7 @@ function loadSvgString(svg2roughjs, fileContent) {
   const svg = doc.querySelector('svg')
 
   while (inputElement.childElementCount > 0) {
-    inputElement.removeChild(inputElement.firstChild)
+    inputElement.removeChild(inputElement.firstChild!)
   }
 
   if (!svg) {
@@ -126,16 +136,17 @@ function loadSvgString(svg2roughjs, fileContent) {
   setTimeout(async () => {
     if (svg.tagName === 'HTML') {
       console.error('Error parsing XML')
-      inputElement.style.opacity = 1
+      inputElement.style.opacity = '1'
       inputElement.style.width = '100%'
       inputElement.style.height = '100%'
       if (canvas) {
-        canvas.style.opacity = 0
+        canvas.style.opacity = '0'
       }
     } else {
-      inputElement.style.opacity = document.getElementById('opacity').value
+      const opacityInput = document.getElementById('opacity') as HTMLInputElement
+      inputElement.style.opacity = opacityInput.value
       if (canvas) {
-        canvas.style.opacity = 1
+        canvas.style.opacity = '1'
       }
       try {
         svg2roughjs.svg = svg
@@ -157,7 +168,7 @@ function loadSvgString(svg2roughjs, fileContent) {
   }, 0)
 }
 
-function loadSample(svg2roughjs, sample) {
+function loadSample(svg2roughjs: Svg2Roughjs, sample: string) {
   let sampleString = ''
   switch (sample) {
     case 'bpmn1':
@@ -200,23 +211,27 @@ function loadSample(svg2roughjs, sample) {
   loadSvgString(svg2roughjs, sampleString)
 }
 
-function updateOpacity(inputContainerOpacity) {
-  const inputContainer = document.getElementById('input')
-  const outputContainer = document.getElementById('output')
-  inputContainer.style.opacity = inputContainerOpacity
-  outputContainer.style.opacity = 1 - inputContainerOpacity
+function updateOpacity(inputContainerOpacity: number) {
+  const inputContainer = document.getElementById('input')!
+  const outputContainer = document.getElementById('output')!
+  inputContainer.style.opacity = `${inputContainerOpacity}`
+  outputContainer.style.opacity = `${1 - inputContainerOpacity}`
 }
 
 function run() {
   svg2roughjs = new Svg2Roughjs('#output', OutputType.SVG)
   svg2roughjs.backgroundColor = 'white'
-  svg2roughjs.pencilFilter = !!document.getElementById('pencilFilter').checked
-  const sampleSelect = document.getElementById('sample-select')
+  svg2roughjs.pencilFilter = !!pencilCheckbox.checked
+  svg2roughjs.roughConfig = {
+    bowing: parseInt(bowingInput.value),
+    roughness: parseInt(roughnessInput.value),
+    fillStyle: fillStyleSelect.value
+  }
   sampleSelect.addEventListener('change', () => {
     loadSample(svg2roughjs, sampleSelect.value)
   })
 
-  const toggleSourceBtn = document.getElementById('source-toggle')
+  const toggleSourceBtn = document.getElementById('source-toggle') as HTMLInputElement
   toggleSourceBtn.addEventListener('change', () => {
     if (toggleSourceBtn.checked) {
       codeContainer.classList.remove('hidden')
@@ -229,10 +244,9 @@ function run() {
     }
   })
 
-  const codeContainer = document.querySelector('.raw-svg-container')
   codeMirrorInstance = CodeMirror(codeContainer, {
     mode: 'xml',
-    lineNumbers: 'true'
+    lineNumbers: true
   })
 
   // make sure codemirror is rendered when the expand animation has finished
@@ -246,11 +260,6 @@ function run() {
   // pre-select a sample
   sampleSelect.selectedIndex = 0
   loadSample(svg2roughjs, sampleSelect.value)
-
-  const fillStyleSelect = document.getElementById('fill-style')
-  const outputFormatSelect = document.getElementById('output-format')
-  const roughnessInput = document.getElementById('roughness-input')
-  const bowingInput = document.getElementById('bowing-input')
 
   outputFormatSelect.addEventListener('change', async () => {
     setUIState(false)
@@ -289,32 +298,30 @@ function run() {
     setUIState(true)
   })
 
-  const opacityInput = document.getElementById('opacity')
   opacityInput.addEventListener('change', () => {
-    updateOpacity(opacityInput.value)
+    updateOpacity(parseFloat(opacityInput.value))
   })
-  const opacityLabel = document.querySelector('label[for=opacity]')
+  const opacityLabel = document.querySelector('label[for=opacity]') as HTMLLabelElement
   opacityLabel.addEventListener('click', () => {
-    const currentOpacity = opacityInput.value
+    const currentOpacity = parseFloat(opacityInput.value)
     const newOpacity = currentOpacity < 1 ? 1 : 0
-    opacityInput.value = newOpacity
+    opacityInput.value = `${newOpacity}`
     updateOpacity(newOpacity)
   })
 
-  function loadFile(file) {
+  function loadFile(file: File) {
     const reader = new FileReader()
     reader.readAsText(file)
     reader.addEventListener('load', () => {
-      const fileContent = reader.result
+      const fileContent = reader.result as string
       setCodeMirrorValue(fileContent)
       loadSvgString(svg2roughjs, fileContent)
     })
   }
 
-  const fileInput = document.getElementById('file-chooser')
   fileInput.addEventListener('change', () => {
     const files = fileInput.files
-    if (files.length > 0) {
+    if (files && files.length > 0) {
       loadFile(files[0])
     }
   })
@@ -325,15 +332,17 @@ function run() {
   })
   body.addEventListener('drop', e => {
     e.preventDefault()
-    if (e.dataTransfer.items) {
+    if (e.dataTransfer && e.dataTransfer.items) {
       for (let i = 0; i < e.dataTransfer.items.length; i++) {
         if (e.dataTransfer.items[i].kind === 'file') {
           const file = e.dataTransfer.items[i].getAsFile()
-          loadFile(file)
+          if (file) {
+            loadFile(file)
+          }
           return
         }
       }
-    } else {
+    } else if (e.dataTransfer) {
       // Use DataTransfer interface to access the file(s)
       for (let i = 0; i < e.dataTransfer.files.length; i++) {
         loadFile(e.dataTransfer.files[i])
@@ -342,18 +351,19 @@ function run() {
     }
   })
 
-  const downloadBtn = document.getElementById('download-btn')
+  const downloadBtn = document.getElementById('download-btn') as HTMLButtonElement
   downloadBtn.addEventListener('click', () => {
     const link = document.createElement('a')
 
     if (svg2roughjs.outputType === OutputType.CANVAS) {
-      const canvas = document.querySelector('#output canvas')
+      const canvas = document.querySelector('#output canvas') as HTMLCanvasElement
       const image = canvas.toDataURL('image/png', 1.0).replace('image/png', 'image/octet-stream')
       link.download = 'svg2roughjs.png'
       link.href = image
     } else {
       const serializer = new XMLSerializer()
-      let svgString = serializer.serializeToString(document.querySelector('#output svg'))
+      const svg = document.querySelector('#output svg') as SVGSVGElement
+      let svgString = serializer.serializeToString(svg)
       svgString = '<?xml version="1.0" standalone="no"?>\r\n' + svgString
       const svgBlob = new Blob([svgString], { type: 'image/svg+xml' })
       link.download = 'svg2roughjs.svg'
@@ -363,7 +373,58 @@ function run() {
     link.click()
   })
 
-  const originalFontCheckbox = document.getElementById('original-font')
+  const downloadTestcaseBtn = document.getElementById('download-testcase') as HTMLButtonElement
+
+  if (location.hostname !== 'localhost') {
+    downloadTestcaseBtn.style.display = 'none'
+  }
+
+  downloadTestcaseBtn.addEventListener('click', async () => {
+    // create a reproducible testcase
+    const prevRandomize = svg2roughjs.randomize
+    const prevPencilFilter = svg2roughjs.pencilFilter
+    const prevOutputType = svg2roughjs.outputType
+    const prevConfig = Object.assign({}, svg2roughjs.roughConfig)
+
+    svg2roughjs.randomize = false
+    svg2roughjs.pencilFilter = false
+    svg2roughjs.outputType = OutputType.SVG
+    svg2roughjs.backgroundColor = 'white'
+    svg2roughjs.roughConfig = {
+      ...svg2roughjs.roughConfig,
+      fixedDecimalPlaceDigits: 3,
+      seed: 4242
+    }
+    await svg2roughjs.sketch()
+
+    const serializer = new XMLSerializer()
+
+    const test = document.querySelector('#input svg') as SVGSVGElement
+    let inputSvg = serializer.serializeToString(test)
+    inputSvg = '<?xml version="1.0" standalone="no"?>\r\n' + inputSvg
+    downloadFile(inputSvg, 'image/svg+xml', 'test.svg')
+
+    const spec = document.querySelector('#output svg') as SVGSVGElement
+    let sketchedSvg = serializer.serializeToString(spec)
+    sketchedSvg = '<?xml version="1.0" standalone="no"?>\r\n' + sketchedSvg
+    downloadFile(sketchedSvg, 'image/svg+xml', 'expect.svg')
+
+    const config = {
+      roughConfig: svg2roughjs.roughConfig,
+      outputType: svg2roughjs.outputType,
+      pencilFilter: svg2roughjs.pencilFilter,
+      backgroundColor: 'white'
+    }
+    downloadFile(JSON.stringify(config), 'text/json', 'config.json')
+
+    // reset state to before testcase creation
+    svg2roughjs.randomize = prevRandomize
+    svg2roughjs.pencilFilter = prevPencilFilter
+    svg2roughjs.outputType = prevOutputType
+    svg2roughjs.roughConfig = prevConfig
+    await svg2roughjs.sketch()
+  })
+
   originalFontCheckbox.addEventListener('change', async () => {
     if (originalFontCheckbox.checked) {
       svg2roughjs.fontFamily = null
@@ -374,14 +435,13 @@ function run() {
     await svg2roughjs.sketch()
     setUIState(true)
   })
-  const randomizeCheckbox = document.getElementById('randomize')
+
   randomizeCheckbox.addEventListener('change', async () => {
     svg2roughjs.randomize = !!randomizeCheckbox.checked
     setUIState(false)
     await svg2roughjs.sketch()
     setUIState(true)
   })
-  const pencilCheckbox = document.getElementById('pencilFilter')
   pencilCheckbox.addEventListener('change', async () => {
     svg2roughjs.pencilFilter = !!pencilCheckbox.checked
     setUIState(false)
@@ -390,21 +450,31 @@ function run() {
   })
 }
 
-function setUIState(enabled) {
+function setUIState(enabled: boolean) {
   const elements = [
-    document.getElementById('fill-style'),
-    document.getElementById('output-format'),
-    document.getElementById('roughness-input'),
-    document.getElementById('bowing-input'),
-    document.getElementById('original-font'),
-    document.getElementById('randomize'),
-    document.getElementById('pencilFilter'),
-    document.getElementById('sample-select')
+    pencilCheckbox,
+    sampleSelect,
+    fillStyleSelect,
+    outputFormatSelect,
+    roughnessInput,
+    bowingInput,
+    opacityInput,
+    fileInput,
+    originalFontCheckbox,
+    randomizeCheckbox
   ]
 
   for (const ele of elements) {
     ele.disabled = !enabled
   }
+}
+
+function downloadFile(content: string, mime: string, fileName: string) {
+  const link = document.createElement('a')
+  const configBlob = new Blob([content], { type: mime })
+  link.download = fileName
+  link.href = URL.createObjectURL(configBlob)
+  link.click()
 }
 
 run()
