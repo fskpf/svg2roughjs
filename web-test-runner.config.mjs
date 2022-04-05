@@ -9,7 +9,7 @@ const filteredLogs = ['Running in dev mode', 'lit-html is in dev mode', 'Lit is 
 // https://modern-web.dev/docs/test-runner/cli-and-configuration/
 export default /** @type {import("@web/test-runner").TestRunnerConfig} */ ({
   /** Test files to run */
-  files: 'test/runner/all.spec.js',
+  files: ['test/runner/all.spec.js'],
 
   plugins: [
     // We need to use rollup here unfortunately, because esbuild in the open-wc test-runner
@@ -32,6 +32,8 @@ export default /** @type {import("@web/test-runner").TestRunnerConfig} */ ({
   nodeResolve: {
     exportConditions: ['browser', 'development']
   },
+
+  rootDir: './',
 
   /** Filter out lit dev mode logs */
   filterBrowserLogs(log) {

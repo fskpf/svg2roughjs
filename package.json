@@ -27,7 +27,6 @@
     "build": "npm run clean && tsc && rollup -c rollup.config.js",
     "clean": "rimraf dist/",
     "lint": "eslint --ext .ts ./src",
-    "test-specs": "karma start ./test/runner/karma.conf.js",
     "test-wtr": "wtr"
   },
   "files": [
