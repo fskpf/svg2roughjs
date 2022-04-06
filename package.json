@@ -27,7 +27,7 @@
     "build": "npm run clean && tsc && rollup -c rollup.config.js",
     "clean": "rimraf dist/",
     "lint": "eslint --ext .ts ./src",
-    "test-wtr": "wtr"
+    "test-all": "wtr"
   },
   "files": [
     "dist/*",
