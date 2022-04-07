@@ -9,7 +9,7 @@ const filteredLogs = ['Running in dev mode', 'lit-html is in dev mode', 'Lit is 
 // https://modern-web.dev/docs/test-runner/cli-and-configuration/
 export default /** @type {import("@web/test-runner").TestRunnerConfig} */ ({
   /** Test files to run */
-  files: ['test/runner/all.spec.js'],
+  files: ['test/runner/spec.test.js', 'test/runner/complex.test.js'],
 
   plugins: [
     // We need to use rollup here unfortunately, because esbuild in the open-wc test-runner
@@ -26,7 +26,11 @@ export default /** @type {import("@web/test-runner").TestRunnerConfig} */ ({
     })
   ],
 
+  /** Whether to analyze code coverage */
   coverage: false,
+
+  /** Run tests manually in the browser (e.g. useful for debugging) */
+  manual: false,
 
   /** Resolve bare module imports */
   nodeResolve: {
@@ -44,9 +48,6 @@ export default /** @type {import("@web/test-runner").TestRunnerConfig} */ ({
     }
     return true
   }
-
-  /** Compile JS for older browsers. Requires @web/dev-server-esbuild plugin */
-  // esbuildTarget: 'auto',
 
   /** Amount of browsers to run concurrently */
   // concurrentBrowsers: 2,

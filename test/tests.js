@@ -1,4 +1,4 @@
-export const rendererTests = [
+export const specTests = [
   'circle-transform',
   'clippath-circle',
   'clippath-circle-transformed',
@@ -40,7 +40,7 @@ export const rendererTests = [
   'rect-rounded-rx-ry',
   'rect-rounded-ry',
   'rect-rounded-transform',
-  // 'rect-rounded-transform-mirror', // TODO: Infinite-loop while rendering
+  'rect-rounded-transform-mirror',
   'rect-transform',
   'rect-transform-from-g',
   'stroke-attribute',
@@ -52,7 +52,7 @@ export const rendererTests = [
   'stroke-none-is-transparent',
   'stroke-width-attribute',
   'stroke-width-scale-transform',
-  // 'svg-image-element', // TODO: fails for whatever reason
+  'svg-image-element',
   'symbols',
   'symbols-non-uniform-scale',
   'symbols2',
@@ -74,4 +74,16 @@ export const rendererTests = [
   'viewbox-non-uniform-translated'
 ]
 
-export const diagramTests = ['bpmn-diagram']
+export const complexTests = [
+  'bpmn-diagram',
+  'computer-network-diagram',
+  'flowchart-diagram',
+  'hierarchical1-diagram',
+  'hierarchical2-diagram',
+  'mindmap-diagram',
+  'movies-diagram',
+  'organic1-diagram',
+  'organic2-diagram',
+  'tree-diagram',
+  'venn-diagram'
+]

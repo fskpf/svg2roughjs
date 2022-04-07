@@ -1,16 +1,14 @@
-import { expect, fixture, html } from '@open-wc/testing'
+import { expect, fixture } from '@open-wc/testing'
 import { OutputType, Svg2Roughjs } from '../../out-tsc/index'
 import { compareRootElements, loadConfig, loadSvg, repackage } from './utils'
-import { rendererTests } from '../tests'
+import { complexTests } from '../tests'
 
-for (const test of rendererTests) {
-  const name = test
-
+for (const name of complexTests) {
   describe(name, () => {
-    it(`testing ${name}`, async () => {
-      const svgTestText = loadSvg(`/test/specs/${name}/test.svg`)
-      const svgExpectedText = loadSvg(`/test/specs/${name}/expect.svg`)
-      const testConfig = loadConfig(`/test/specs/${name}/config.json`)
+    it(`Testing complex SVG ${name}`, async () => {
+      const svgTestText = loadSvg(`/test/complex/${name}/test.svg`)
+      const svgExpectedText = loadSvg(`/test/complex/${name}/expect.svg`)
+      const testConfig = loadConfig(`/test/complex/${name}/config.json`)
 
       const svgTestElement = await fixture(svgTestText)
       const svgExpectedElement = await fixture(svgExpectedText)
@@ -32,10 +30,16 @@ for (const test of rendererTests) {
       const expectElement = repackage(svgExpectedElement)
 
       // Diff the DOMs
+      // https://github.com/open-wc/open-wc/blob/master/docs/docs/testing/helpers.md
+      //
       // Ensure that the expected element is provided as string, otherwise the internal
       // 'getDiffableHTML' results in different casing from the expect element (which is
       // provided as string internally as well).
-      expect(sketchElement).dom.to.equal(expectElement.outerHTML)
+      expect(sketchElement).dom.to.equal(expectElement.outerHTML, {
+        ignoreAttributes: [
+          'xmlns:xlink' // the downloaded expect file may have this attribute, while the generated one doesn't have it
+        ]
+      })
     })
   })
 }
