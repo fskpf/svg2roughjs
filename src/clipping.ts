@@ -30,17 +30,14 @@ export function applyClipPath(
   }
 
   // TODO clipPath: consider clipPathUnits
-  let clipContainer: SVGClipPathElement | null = null
-  // for SVG output, we create clipPath defs
-  const targetDefs = context.svgSketch ? getDefsElement(context.svgSketch) : null
-  if (targetDefs) {
-    // unfortunately, we cannot reuse clip-paths due to the 'global transform' approach
-    const sketchClipPathId = `${id}_${targetDefs.childElementCount}`
-    clipContainer = document.createElementNS('http://www.w3.org/2000/svg', 'clipPath')
-    clipContainer.id = sketchClipPathId
-    // remember the new id by storing it on the owner element
-    owner.setAttribute('data-sketchy-clip-path', sketchClipPathId)
-  }
+  //  create clipPath defs
+  const targetDefs = getDefsElement(context.svgSketch)
+  // unfortunately, we cannot reuse clip-paths due to the 'global transform' approach
+  const sketchClipPathId = `${id}_${targetDefs.childElementCount}`
+  const clipContainer = document.createElementNS('http://www.w3.org/2000/svg', 'clipPath')
+  clipContainer.id = sketchClipPathId
+  // remember the new id by storing it on the owner element
+  owner.setAttribute('data-sketchy-clip-path', sketchClipPathId)
 
   // traverse clip-path elements in DFS
   const stack: { element: SVGElement; transform: SVGTransform | null }[] = []
@@ -78,12 +75,10 @@ export function applyClipPath(
     }
   }
 
-  if (targetDefs && clipContainer) {
-    if (clipContainer.childNodes.length > 0) {
-      // add the clip-path only if it contains converted elements
-      // some elements are not yet supported
-      targetDefs.appendChild(clipContainer)
-    }
+  if (clipContainer.childNodes.length > 0) {
+    // add the clip-path only if it contains converted elements
+    // some elements are not yet supported
+    targetDefs.appendChild(clipContainer)
   }
 }
 

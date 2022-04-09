@@ -154,9 +154,10 @@ export class Svg2Roughjs {
     this.lastResult?.parentElement?.removeChild(this.lastResult)
     // assume that the given output element is a container, thus append the sketch to it
     if (this.outputType === OutputType.SVG) {
-      this.outputElement.appendChild(renderContext.svgSketch)
-      this.lastResult = renderContext.svgSketch
-      return Promise.resolve(renderContext.svgSketch)
+      const svgSketch = renderContext.svgSketch
+      this.outputElement.appendChild(svgSketch)
+      this.lastResult = svgSketch
+      return Promise.resolve(svgSketch)
     } else {
       // canvas output type
       const canvas = document.createElement('canvas')

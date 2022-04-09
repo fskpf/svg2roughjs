@@ -609,34 +609,32 @@ export type UseContext = {
 export function postProcessElement(
   context: RenderContext,
   element: SVGElement,
-  sketchElement?: Drawable | SVGElement
+  sketchElement: Drawable | SVGElement
 ): void {
-  if (sketchElement) {
-    let sketch = sketchElement as SVGElement
+  let sketch = sketchElement as SVGElement
 
-    // original element may have a clip-path
-    const sketchClipPathId = element.getAttribute('data-sketchy-clip-path')
-    const applyPencilFilter = context.pencilFilter && element.tagName !== 'text'
+  // original element may have a clip-path
+  const sketchClipPathId = element.getAttribute('data-sketchy-clip-path')
+  const applyPencilFilter = context.pencilFilter && element.tagName !== 'text'
 
-    // wrap it in another container to safely apply post-processing attributes,
-    // though avoid no-op <g> containers
-    const isPlainContainer = sketch.tagName === 'g' && sketch.attributes.length === 0
-    if (!isPlainContainer && (sketchClipPathId || applyPencilFilter)) {
-      const g = document.createElementNS('http://www.w3.org/2000/svg', 'g')
-      g.appendChild(sketch)
-      sketch = g
-    }
-
-    if (sketchClipPathId) {
-      sketch.setAttribute('clip-path', `url(#${sketchClipPathId})`)
-    }
-
-    if (applyPencilFilter) {
-      sketch.setAttribute('filter', 'url(#pencilTextureFilter)')
-    }
-
-    context.svgSketch.appendChild(sketch)
+  // wrap it in another container to safely apply post-processing attributes,
+  // though avoid no-op <g> containers
+  const isPlainContainer = sketch.tagName === 'g' && sketch.attributes.length === 0
+  if (!isPlainContainer && (sketchClipPathId || applyPencilFilter)) {
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+    g.appendChild(sketch)
+    sketch = g
   }
+
+  if (sketchClipPathId) {
+    sketch.setAttribute('clip-path', `url(#${sketchClipPathId})`)
+  }
+
+  if (applyPencilFilter) {
+    sketch.setAttribute('filter', 'url(#pencilTextureFilter)')
+  }
+
+  context.svgSketch.appendChild(sketch)
 }
 
 /**
