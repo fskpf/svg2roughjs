@@ -38,7 +38,7 @@ export function parseStyleConfig(
   const fillOpacity = elementOpacity * getOpacity(element, 'fill-opacity')
   if (fill) {
     if (fill.indexOf('url') !== -1) {
-      config.fill = parseFillUrl(context, fill, fillOpacity)
+      config.fill = parsePaintUrl(context, fill, fillOpacity)
     } else if (fill === 'none') {
       delete config.fill
     } else {
@@ -52,7 +52,7 @@ export function parseStyleConfig(
   const strokeOpacity = elementOpacity * getOpacity(element, 'stroke-opacity')
   if (stroke) {
     if (stroke.indexOf('url') !== -1) {
-      config.stroke = parseFillUrl(context, fill, strokeOpacity)
+      config.stroke = parsePaintUrl(context, stroke, strokeOpacity)
     } else if (stroke === 'none') {
       config.stroke = 'none'
     } else {
@@ -194,27 +194,30 @@ export function getOpacity(element: SVGElement, attribute: string): number {
  * in the internal defs store for this url.
  * @returns The parsed color
  */
-export function parseFillUrl(
-  context: RenderContext,
-  url: string,
-  opacity: number
-): string | undefined {
+export function parsePaintUrl(context: RenderContext, url: string, opacity: number): string {
   const id = getIdFromUrl(url)
   if (!id) {
-    return 'transparent'
+    return 'none'
   }
-  const fill = context.idElements[id]
-  if (fill) {
-    if (typeof fill === 'string') {
-      // maybe it was already parsed and replaced with a color
-      return fill
-    } else {
-      if (fill instanceof SVGLinearGradientElement || fill instanceof SVGRadialGradientElement) {
-        const color = gradientToColor(fill, opacity)
-        context.idElements[id] = color
-        return color
-      }
-    }
+
+  const paint = context.idElements[id]
+  if (!paint) {
+    return 'none'
+  }
+
+  if (typeof paint === 'string') {
+    // maybe it was already parsed and replaced with a color
+    return paint
+  } else if (
+    paint instanceof SVGLinearGradientElement ||
+    paint instanceof SVGRadialGradientElement
+  ) {
+    const color = gradientToColor(paint, opacity)
+    context.idElements[id] = color
+    return color
+  } else {
+    // pattern or something else that cannot be directly used in the roughjs config
+    return 'none'
   }
 }
 
@@ -230,7 +233,7 @@ export function getEffectiveAttribute(
   element: SVGElement,
   attributeName: string,
   currentUseCtx?: UseContext | null
-): string | null {
+): string | undefined {
   // getComputedStyle doesn't work for, e.g. <svg fill='rgba(...)'>
   let attr
   if (!currentUseCtx) {
@@ -255,7 +258,7 @@ export function getEffectiveAttribute(
     }
 
     if (!parent || parent === context.sourceSvg) {
-      return null
+      return
     }
     return getEffectiveAttribute(context, parent as SVGElement, attributeName, nextCtx)
   }

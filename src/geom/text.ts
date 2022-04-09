@@ -78,13 +78,7 @@ function copyTextStyleAttributes(
   context: RenderContext,
   srcElement: SVGTextElement | SVGTSpanElement,
   tgtElement: SVGTextElement | SVGTSpanElement
-): {
-  fill: string | null
-  stroke: string | null
-  strokeWidth: string | null
-  textAnchor: string | null
-  dominantBaseline: string | null
-} {
+): void {
   const stroke = getEffectiveAttribute(context, srcElement, 'stroke')
   const strokeWidth = stroke ? getEffectiveAttribute(context, srcElement, 'stroke-width') : null
   const fill = getEffectiveAttribute(context, srcElement, 'fill')
@@ -111,5 +105,4 @@ function copyTextStyleAttributes(
   if (dominantBaseline) {
     tgtElement.setAttribute('dominant-baseline', dominantBaseline)
   }
-  return { fill, stroke, strokeWidth, textAnchor, dominantBaseline }
 }

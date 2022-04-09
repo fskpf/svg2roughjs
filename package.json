@@ -25,9 +25,9 @@
   "scripts": {
     "prepare": "npm run lint && npm run build",
     "build": "npm run clean && tsc && rollup -c rollup.config.js",
-    "clean": "rimraf dist/",
+    "clean": "rimraf dist/ && rimraf out-tsc/",
     "lint": "eslint --ext .ts ./src",
-    "test-all": "wtr"
+    "test-all": "npm run clean && tsc && wtr"
   },
   "files": [
     "dist/*",
