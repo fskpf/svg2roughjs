@@ -10,7 +10,8 @@ import { drawPolyline } from './geom/polyline'
 import { drawRect } from './geom/rect'
 import { drawText } from './geom/text'
 import { drawUse } from './geom/use'
-import { getCombinedTransform, getNodeChildren, isHidden, RenderContext } from './utils'
+import { isHidden } from './styles/styles'
+import { getCombinedTransform, getNodeChildren, RenderContext } from './utils'
 
 /**
  * Traverses the SVG in DFS and draws each element to the canvas.

@@ -141,14 +141,6 @@ export function getDefsElement(svgElement: SVGSVGElement): SVGDefsElement {
   return outputDefs
 }
 
-export function isHidden(element: SVGElement): boolean {
-  const style = element.style
-  if (!style) {
-    return false
-  }
-  return style.display === 'none' || style.visibility === 'hidden'
-}
-
 export function getPointsArray(element: SVGPolygonElement | SVGPolylineElement): Array<Point> {
   const pointsAttr = element.getAttribute('points')
   if (!pointsAttr) {
@@ -355,17 +347,5 @@ export function getMatchedCssRules(context: RenderContext, el: Element): CSSStyl
       }
     }
   })
-  return ret
-}
-
-export function concatStyleStrings(...args: (string | null)[]): string {
-  let ret = ''
-  args = args.filter(s => s !== null)
-  for (const style of args) {
-    if (ret.length > 0 && ret[ret.length - 1] !== ';') {
-      ret += ';'
-    }
-    ret += style
-  }
   return ret
 }

@@ -1,11 +1,5 @@
-import { getEffectiveAttribute } from '../styles/styles'
-import {
-  RenderContext,
-  getNodeChildren,
-  postProcessElement,
-  applyGlobalTransform,
-  concatStyleStrings
-} from '../utils'
+import { concatStyleStrings, getEffectiveAttribute } from '../styles/styles'
+import { RenderContext, getNodeChildren, postProcessElement, applyGlobalTransform } from '../utils'
 
 export function drawText(
   context: RenderContext,
