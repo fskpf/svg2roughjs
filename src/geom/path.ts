@@ -1,7 +1,8 @@
 import { encodeSVGPath, SVGPathData, SVGPathDataTransformer } from 'svg-pathdata'
 import { Point } from './point'
-import { parseStyleConfig, postProcessElement, RenderContext, sketchPath } from '../utils'
+import { postProcessElement, RenderContext, sketchPath } from '../utils'
 import { drawMarkers } from './marker'
+import { parseStyleConfig } from '../styles/styles'
 
 export function drawPath(
   context: RenderContext,

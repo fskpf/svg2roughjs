@@ -4,11 +4,11 @@ import {
   applyMatrix,
   isIdentityTransform,
   isTranslationTransform,
-  parseStyleConfig,
   postProcessElement,
   RenderContext,
   sketchPath
 } from '../utils'
+import { parseStyleConfig } from '../styles/styles'
 
 export function drawCircle(
   context: RenderContext,

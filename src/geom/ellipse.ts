@@ -4,11 +4,11 @@ import {
   isIdentityTransform,
   isTranslationTransform,
   applyMatrix,
-  parseStyleConfig,
   sketchPath,
   postProcessElement,
   applyGlobalTransform
 } from '../utils'
+import { parseStyleConfig } from '../styles/styles'
 
 export function drawEllipse(
   context: RenderContext,

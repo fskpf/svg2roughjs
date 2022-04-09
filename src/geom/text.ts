@@ -1,8 +1,8 @@
+import { getEffectiveAttribute } from '../styles/styles'
 import {
   RenderContext,
   getNodeChildren,
   postProcessElement,
-  getEffectiveAttribute,
   applyGlobalTransform,
   concatStyleStrings
 } from '../utils'

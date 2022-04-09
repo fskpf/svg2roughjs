@@ -1,11 +1,6 @@
 import { Point } from 'roughjs/bin/geometry'
-import {
-  RenderContext,
-  getPointsArray,
-  applyMatrix,
-  parseStyleConfig,
-  postProcessElement
-} from '../utils'
+import { parseStyleConfig } from '../styles/styles'
+import { RenderContext, getPointsArray, applyMatrix, postProcessElement } from '../utils'
 import { drawMarkers } from './marker'
 
 export function drawPolyline(

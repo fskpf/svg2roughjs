@@ -2,7 +2,7 @@ import { Options } from 'roughjs/bin/core'
 import rough from 'roughjs/bin/rough'
 import { processRoot } from './processor'
 import { OutputType } from './OutputType'
-import { SvgTextures } from './SvgTextures'
+import { createPencilFilter } from './styles/textures'
 import { getDefsElement, RenderContext } from './utils'
 
 /**
@@ -253,7 +253,7 @@ export class Svg2Roughjs {
     // prepare filter effects
     if (this.pencilFilter) {
       const defs = getDefsElement(svgElement)
-      defs.appendChild(SvgTextures.pencilTextureFilter)
+      defs.appendChild(createPencilFilter())
     }
 
     // use round linecap to emphasize a ballpoint pen like drawing

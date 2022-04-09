@@ -1,11 +1,6 @@
 import { Point } from './point'
-import {
-  convertToPixelUnit,
-  getAngle,
-  getEffectiveAttribute,
-  getIdFromUrl,
-  RenderContext
-} from '../utils'
+import { convertToPixelUnit, getIdFromUrl, RenderContext } from '../utils'
+import { getEffectiveAttribute } from '../styles/styles'
 
 export function drawMarkers(
   context: RenderContext,
@@ -130,4 +125,11 @@ function getScaleFactor(
     }
   }
   return scaleFactor
+}
+
+/**
+ * The angle in degree of the line defined by the given points.
+ */
+function getAngle(p0: Point, p1: Point): number {
+  return Math.atan2(p1.y - p0.y, p1.x - p0.x) * (180 / Math.PI)
 }

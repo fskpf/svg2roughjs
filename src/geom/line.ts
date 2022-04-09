@@ -1,6 +1,7 @@
 import { Point } from './point'
-import { applyMatrix, parseStyleConfig, postProcessElement, RenderContext } from '../utils'
+import { applyMatrix, postProcessElement, RenderContext } from '../utils'
 import { drawMarkers } from './marker'
+import { parseStyleConfig } from '../styles/styles'
 
 export function drawLine(
   context: RenderContext,

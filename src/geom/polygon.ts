@@ -1,10 +1,10 @@
 import { Point } from 'roughjs/bin/geometry'
+import { parseStyleConfig } from '../styles/styles'
 import {
   RenderContext,
   getPointsArray,
   applyMatrix,
   postProcessElement,
-  parseStyleConfig,
   applyGlobalTransform
 } from '../utils'
 import { drawMarkers } from './marker'

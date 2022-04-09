@@ -1,12 +1,8 @@
 import { Drawable, Options } from 'roughjs/bin/core'
 import { RoughSVG } from 'roughjs/bin/svg'
 import { Point } from './geom/point'
-import tinycolor from 'tinycolor2'
 // @ts-ignore
 import units from 'units-css'
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Color = any // type alias for tinycolor
 
 /**
  * Regexp that detects curved commands in path data.
@@ -18,31 +14,6 @@ export const PATH_CURVES_REGEX = /[acsqt]/i
  * contains unit identifiers, e.g. "1px", "1em", "1%", ...
  */
 export const CONTAINS_UNIT_REGEXP = /[a-z%]/
-
-/**
- * Calculates the average color of the colors in the given array.
- * @returns The average color
- */
-export function averageColor(colorArray: Color[]): Color {
-  const count = colorArray.length
-  let r = 0
-  let g = 0
-  let b = 0
-  let a = 0
-  colorArray.forEach(tinycolor => {
-    const color = tinycolor.toRgb()
-    r += color.r * color.r
-    g += color.g * color.g
-    b += color.b * color.b
-    a += color.a
-  })
-  return tinycolor({
-    r: Math.sqrt(r / count),
-    g: Math.sqrt(g / count),
-    b: Math.sqrt(b / count),
-    a: a / count
-  })
-}
 
 /**
  * Returns the Node's children, since Node.prototype.children is not available on all browsers.
@@ -133,87 +104,6 @@ export function getRandomNumber(min: number, max: number): number {
 }
 
 /**
- * Returns the `offset` of an `SVGStopElement`.
- * @return stop percentage
- */
-export function getStopOffset(stop: SVGStopElement): number {
-  const offset = stop.getAttribute('offset')
-  if (!offset) {
-    return 0
-  }
-  if (offset.indexOf('%')) {
-    return parseFloat(offset.substring(0, offset.length - 1))
-  } else {
-    return parseFloat(offset) * 100
-  }
-}
-
-/**
- * Returns the `stop-color` of an `SVGStopElement`.
- */
-export function getStopColor(stop: SVGStopElement): Color {
-  let stopColorStr = stop.getAttribute('stop-color')
-  if (!stopColorStr) {
-    const style = stop.getAttribute('style') ?? ''
-    const match = /stop-color:\s?(.*);?/.exec(style)
-    if (match && match.length > 1) {
-      stopColorStr = match[1]
-    }
-  }
-  return stopColorStr ? tinycolor(stopColorStr) : tinycolor('white')
-}
-
-/**
- * Converts an SVG gradient to a color by mixing all stop colors
- * with `tinycolor.mix`.
- */
-export function gradientToColor(
-  gradient: SVGLinearGradientElement | SVGRadialGradientElement,
-  opacity: number
-): string {
-  const stops = Array.prototype.slice.apply(gradient.querySelectorAll('stop'))
-  if (stops.length === 0) {
-    return 'transparent'
-  } else if (stops.length === 1) {
-    const color = getStopColor(stops[0])
-    color.setAlpha(opacity)
-    return color.toString()
-  } else {
-    // Because roughjs can only deal with solid colors, we try to calculate
-    // the average color of the gradient here.
-    // The idea is to create an array of discrete (average) colors that represents the
-    // gradient under consideration of the stop's offset. Thus, larger offsets
-    // result in more entries of the same mixed color (of the two adjacent color stops).
-    // At the end, this array is averaged again, to create a single solid color.
-    const resolution = 10
-    const discreteColors = []
-
-    let lastColor = null
-    for (let i = 0; i < stops.length; i++) {
-      const currentColor = getStopColor(stops[i])
-      const currentOffset = getStopOffset(stops[i])
-
-      // combine the adjacent colors
-      const combinedColor = lastColor ? averageColor([lastColor, currentColor]) : currentColor
-
-      // fill the discrete color array depending on the offset size
-      let entries = Math.max(1, (currentOffset / resolution) | 0)
-      while (entries > 0) {
-        discreteColors.push(combinedColor)
-        entries--
-      }
-
-      lastColor = currentColor
-    }
-
-    // average the discrete colors again for the final result
-    const mixedColor = averageColor(discreteColors)
-    mixedColor.setAlpha(opacity)
-    return mixedColor.toString()
-  }
-}
-
-/**
  * Returns the id from the url string
  */
 export function getIdFromUrl(url: string | null): string | null {
@@ -226,21 +116,6 @@ export function getIdFromUrl(url: string | null): string | null {
     return result[1]
   }
   return null
-}
-
-/**
- * Converts SVG opacity attributes to a [0, 1] range.
- */
-export function getOpacity(element: SVGElement, attribute: string): number {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const attr = (getComputedStyle(element) as any)[attribute] || element.getAttribute(attribute)
-  if (attr) {
-    if (attr.indexOf('%') !== -1) {
-      return Math.min(1, Math.max(0, parseFloat(attr.substring(0, attr.length - 1)) / 100))
-    }
-    return Math.min(1, Math.max(0, parseFloat(attr)))
-  }
-  return 1
 }
 
 /**
@@ -272,13 +147,6 @@ export function isHidden(element: SVGElement): boolean {
     return false
   }
   return style.display === 'none' || style.visibility === 'hidden'
-}
-
-/**
- * The angle in degree of the line defined by the given points.
- */
-export function getAngle(p0: Point, p1: Point): number {
-  return Math.atan2(p1.y - p0.y, p1.x - p0.x) * (180 / Math.PI)
 }
 
 export function getPointsArray(element: SVGPolygonElement | SVGPolylineElement): Array<Point> {
@@ -317,130 +185,6 @@ export function getPointsArray(element: SVGPolygonElement | SVGPolylineElement):
 }
 
 /**
- * Traverses the given elements hierarchy bottom-up to determine its effective
- * opacity attribute.
- * @param currentUseCtx Consider different DOM hierarchy for use elements
- */
-export function getEffectiveElementOpacity(
-  context: RenderContext,
-  element: SVGElement,
-  currentOpacity: number,
-  currentUseCtx?: UseContext | null
-): number {
-  let attr
-  if (!currentUseCtx) {
-    attr = getComputedStyle(element)['opacity'] || element.getAttribute('opacity')
-  } else {
-    // use elements traverse a different parent-hierarchy, thus we cannot use getComputedStyle here
-    attr = element.getAttribute('opacity')
-  }
-  if (attr) {
-    let elementOpacity = 1
-    if (attr.indexOf('%') !== -1) {
-      elementOpacity = Math.min(
-        1,
-        Math.max(0, parseFloat(attr.substring(0, attr.length - 1)) / 100)
-      )
-    } else {
-      elementOpacity = Math.min(1, Math.max(0, parseFloat(attr)))
-    }
-    // combine opacities
-    currentOpacity *= elementOpacity
-  }
-  // traverse upwards to combine parent opacities as well
-  let parent: Element | null = element.parentElement
-
-  const useCtx = currentUseCtx
-  let nextUseCtx = useCtx
-
-  if (useCtx && useCtx.referenced === element) {
-    // switch context and traverse the use-element parent now
-    parent = useCtx.root
-    nextUseCtx = useCtx.parentContext
-  }
-
-  if (!parent || parent === context.sourceSvg) {
-    return currentOpacity
-  }
-
-  return getEffectiveElementOpacity(context, parent as SVGElement, currentOpacity, nextUseCtx)
-}
-
-/**
- * Returns the attribute value of an element under consideration
- * of inherited attributes from the `parentElement`.
- * @param attributeName Name of the attribute to look up
- * @param currentUseCtx Consider different DOM hierarchy for use elements
- * @return attribute value if it exists
- */
-export function getEffectiveAttribute(
-  context: RenderContext,
-  element: SVGElement,
-  attributeName: string,
-  currentUseCtx?: UseContext | null
-): string | null {
-  // getComputedStyle doesn't work for, e.g. <svg fill='rgba(...)'>
-  let attr
-  if (!currentUseCtx) {
-    attr =
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (getComputedStyle(element) as any)[attributeName] || element.getAttribute(attributeName)
-  } else {
-    // use elements traverse a different parent-hierarchy, thus we cannot use getComputedStyle here
-    attr = element.getAttribute(attributeName)
-  }
-
-  if (!attr) {
-    let parent: Element | null = element.parentElement
-
-    const useCtx = currentUseCtx
-    let nextCtx = useCtx
-
-    if (useCtx && useCtx.referenced === element) {
-      // switch context and traverse the use-element parent now
-      parent = useCtx.root
-      nextCtx = useCtx.parentContext
-    }
-
-    if (!parent || parent === context.sourceSvg) {
-      return null
-    }
-    return getEffectiveAttribute(context, parent as SVGElement, attributeName, nextCtx)
-  }
-  return attr
-}
-
-/**
- * Parses a `fill` url by looking in the SVG `defs` element.
- * When a gradient is found, it is converted to a color and stored
- * in the internal defs store for this url.
- * @returns The parsed color
- */
-export function parseFillUrl(
-  context: RenderContext,
-  url: string,
-  opacity: number
-): string | undefined {
-  const id = getIdFromUrl(url)
-  if (!id) {
-    return 'transparent'
-  }
-  const fill = context.idElements[id]
-  if (fill) {
-    if (typeof fill === 'string') {
-      // maybe it was already parsed and replaced with a color
-      return fill
-    } else {
-      if (fill instanceof SVGLinearGradientElement || fill instanceof SVGRadialGradientElement) {
-        const color = gradientToColor(fill, opacity)
-        context.idElements[id] = color
-        return color
-      }
-    }
-  }
-}
-
-/**
  * Converts the given string to px unit. May be either a <length>
  * (https://developer.mozilla.org/de/docs/Web/SVG/Content_type#Length)
  * or a <percentage>
@@ -454,119 +198,6 @@ export function convertToPixelUnit(context: RenderContext, value: string): numbe
     return units.convert('px', value, context.sourceSvg)
   }
   return parseFloat(value)
-}
-
-/**
- * Converts the effective style attributes of the given `SVGElement`
- * to a Rough.js config object that is used to draw the element with
- * Rough.js.
- * @return config for Rough.js drawing
- */
-export function parseStyleConfig(
-  context: RenderContext,
-  element: SVGElement,
-  svgTransform: SVGTransform | null
-): Options {
-  const config = Object.assign({}, context.roughConfig)
-
-  // Scalefactor for certain style attributes. For lack of a better option here, use the determinant
-  let scaleFactor = 1
-  if (!isIdentityTransform(svgTransform)) {
-    const m = svgTransform!.matrix
-    const det = m.a * m.d - m.c * m.b
-    scaleFactor = Math.sqrt(Math.abs(det))
-  }
-
-  // incorporate the elements base opacity
-  const elementOpacity = getEffectiveElementOpacity(context, element, 1, context.useElementContext)
-
-  const fill = getEffectiveAttribute(context, element, 'fill', context.useElementContext) || 'black'
-  const fillOpacity = elementOpacity * getOpacity(element, 'fill-opacity')
-  if (fill) {
-    if (fill.indexOf('url') !== -1) {
-      config.fill = parseFillUrl(context, fill, fillOpacity)
-    } else if (fill === 'none') {
-      delete config.fill
-    } else {
-      const color = tinycolor(fill)
-      color.setAlpha(fillOpacity)
-      config.fill = color.toString()
-    }
-  }
-
-  const stroke = getEffectiveAttribute(context, element, 'stroke', context.useElementContext)
-  const strokeOpacity = elementOpacity * getOpacity(element, 'stroke-opacity')
-  if (stroke) {
-    if (stroke.indexOf('url') !== -1) {
-      config.stroke = parseFillUrl(context, fill, strokeOpacity)
-    } else if (stroke === 'none') {
-      config.stroke = 'none'
-    } else {
-      const color = tinycolor(stroke)
-      color.setAlpha(strokeOpacity)
-      config.stroke = color.toString()
-    }
-  } else {
-    config.stroke = 'none'
-  }
-
-  const strokeWidth = getEffectiveAttribute(
-    context,
-    element,
-    'stroke-width',
-    context.useElementContext
-  )
-  if (strokeWidth) {
-    // Convert to user space units (px)
-    config.strokeWidth = convertToPixelUnit(context, strokeWidth) * scaleFactor
-  } else {
-    config.strokeWidth = 0
-  }
-
-  const strokeDashArray = getEffectiveAttribute(
-    context,
-    element,
-    'stroke-dasharray',
-    context.useElementContext
-  )
-  if (strokeDashArray && strokeDashArray !== 'none') {
-    config.strokeLineDash = strokeDashArray
-      .split(/[\s,]+/)
-      .filter(entry => entry.length > 0)
-      // make sure that dashes/dots are at least somewhat visible
-      .map(dash => Math.max(0.5, convertToPixelUnit(context, dash) * scaleFactor))
-  }
-
-  const strokeDashOffset = getEffectiveAttribute(
-    context,
-    element,
-    'stroke-dashoffset',
-    context.useElementContext
-  )
-  if (strokeDashOffset) {
-    config.strokeLineDashOffset = convertToPixelUnit(context, strokeDashOffset) * scaleFactor
-  }
-
-  // unstroked but filled shapes look weird, so always apply a stroke if we fill something
-  if (config.fill && config.stroke === 'none') {
-    config.stroke = config.fill
-    config.strokeWidth = 1
-  }
-
-  if (context.randomize) {
-    // Rough.js default is 0.5 * strokeWidth
-    config.fillWeight = getRandomNumber(0.5, 3)
-    // Rough.js default is -41deg
-    config.hachureAngle = getRandomNumber(-30, -50)
-    // Rough.js default is 4 * strokeWidth
-    config.hachureGap = getRandomNumber(3, 5)
-    // randomize double stroke effect if not explicitly set through user config
-    if (typeof config.disableMultiStroke === 'undefined') {
-      config.disableMultiStroke = Math.random() > 0.3
-    }
-  }
-
-  return config
 }
 
 /**
