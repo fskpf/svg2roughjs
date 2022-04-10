@@ -4,7 +4,6 @@
     "noImplicitAny": true,
     "module": "es6",
     "target": "es2015",
-    "allowJs": true,
     "allowSyntheticDefaultImports": true,
     "moduleResolution": "node",
     "lib": ["dom", "es2015"],

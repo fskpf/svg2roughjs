@@ -1,7 +1,8 @@
 import { OutputType, Svg2Roughjs } from '../../src/index'
 import { downloadFile } from './utils'
-import { specTests } from '../../test/tests'
-import { loadSvgString } from '.'
+// @ts-expect-error
+import { specTests } from '../../test/tests.js'
+import { loadSvgString } from './index'
 
 const localTestsContainer = document.getElementById('local-testing') as HTMLDivElement
 const downloadTestcaseBtn = document.getElementById('download-testcase') as HTMLButtonElement
@@ -25,16 +26,23 @@ export function initializeTestUI(svg2roughjs: Svg2Roughjs) {
     onTestcaseChange((e.target as HTMLOptionElement).value)
   )
   prevTestcaseBtn.addEventListener('click', () => {
-    console.log('todo')
+    const idx = testcaseSelect.selectedIndex
+    if (idx > 1) {
+      testcaseSelect.selectedIndex = idx - 1
+    }
+    onTestcaseChange(testcaseSelect.options[testcaseSelect.selectedIndex].value)
   })
   nextTestcaseBtn.addEventListener('click', () => {
-    console.log('todo')
+    const idx = testcaseSelect.selectedIndex
+    if (idx < testcaseSelect.childElementCount - 1) {
+      testcaseSelect.selectedIndex = idx + 1
+    }
+    onTestcaseChange(testcaseSelect.options[testcaseSelect.selectedIndex].value)
   })
   downloadTestcaseBtn.addEventListener('click', () => downloadTestcase(svg2roughjs))
 }
 
 function onTestcaseChange(testName: string) {
-  console.log(testName)
   const svgString = loadSvg(`../../specs/${testName}/test.svg`)
   loadSvgString(svgString)
 }
