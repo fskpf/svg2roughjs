@@ -38,8 +38,15 @@ export function parseStyleConfig(
   const fillOpacity = elementOpacity * getOpacity(element, 'fill-opacity')
   if (fill) {
     if (fill.indexOf('url') !== -1) {
-      config.fill = parsePaintUrl(context, fill, fillOpacity)
+      const gradientColor = convertGradient(context, fill, fillOpacity)
+      if (gradientColor !== 'none') {
+        config.fill = gradientColor
+      } else {
+        // delete fill, otherwise it may create an invisible 'hachure' element
+        delete config.fill
+      }
     } else if (fill === 'none') {
+      // delete fill, otherwise it may create an invisible 'hachure' element
       delete config.fill
     } else {
       const color = tinycolor(fill)
@@ -52,7 +59,7 @@ export function parseStyleConfig(
   const strokeOpacity = elementOpacity * getOpacity(element, 'stroke-opacity')
   if (stroke) {
     if (stroke.indexOf('url') !== -1) {
-      config.stroke = parsePaintUrl(context, stroke, strokeOpacity)
+      config.stroke = convertGradient(context, stroke, strokeOpacity)
     } else if (stroke === 'none') {
       config.stroke = 'none'
     } else {
@@ -74,7 +81,8 @@ export function parseStyleConfig(
     // Convert to user space units (px)
     config.strokeWidth = convertToPixelUnit(context, strokeWidth) * scaleFactor
   } else {
-    config.strokeWidth = 0
+    // default stroke-width is 1
+    config.strokeWidth = 1
   }
 
   const strokeDashArray = getEffectiveAttribute(
@@ -192,9 +200,12 @@ export function getOpacity(element: SVGElement, attribute: string): number {
  * Parses a `fill` url by looking in the SVG `defs` element.
  * When a gradient is found, it is converted to a color and stored
  * in the internal defs store for this url.
+ *
+ * Patterns are ignored and returned with 'none'.
+ *
  * @returns The parsed color
  */
-export function parsePaintUrl(context: RenderContext, url: string, opacity: number): string {
+export function convertGradient(context: RenderContext, url: string, opacity: number): string {
   const id = getIdFromUrl(url)
   if (!id) {
     return 'none'

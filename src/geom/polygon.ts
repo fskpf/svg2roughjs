@@ -1,4 +1,5 @@
 import { Point } from 'roughjs/bin/geometry'
+import { appendPatternPaint } from '../styles/pattern'
 import { parseStyleConfig } from '../styles/styles'
 import {
   RenderContext,
@@ -25,6 +26,13 @@ export function drawPolygon(
     transformed,
     parseStyleConfig(context, polygon, svgTransform)
   )
+
+  appendPatternPaint(context, polygon, () => {
+    const proxy = document.createElementNS('http://www.w3.org/2000/svg', 'polygon')
+    proxy.setAttribute('points', transformed.join(' '))
+    return proxy
+  })
+
   postProcessElement(context, polygon, polygonSketch)
 
   // https://www.w3.org/TR/SVG11/painting.html#MarkerProperties
@@ -40,11 +48,11 @@ export function drawPolygon(
 export function applyPolygonClip(
   context: RenderContext,
   polygon: SVGPolygonElement,
-  container: SVGClipPathElement | null,
+  container: SVGClipPathElement,
   svgTransform: SVGTransform | null
 ): void {
   const clip = document.createElementNS('http://www.w3.org/2000/svg', 'polygon')
   clip.setAttribute('points', polygon.getAttribute('points')!)
   applyGlobalTransform(context, svgTransform, clip)
-  container!.appendChild(clip)
+  container.appendChild(clip)
 }

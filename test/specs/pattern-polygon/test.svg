@@ -1,0 +1,9 @@
+<?xml version="1.0" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" height="250" width="500">
+  <defs>
+    <pattern id="star" viewBox="0,0,10,10" width="20%" height="20%">
+      <polygon points="0,0 2,5 0,10 5,8 10,10 8,5 10,0 5,2"/>
+    </pattern>
+  </defs>
+  <polygon points="220,10 300,210 170,250 123,234" fill="url(#star)"/>
+</svg>

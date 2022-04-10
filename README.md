@@ -58,7 +58,7 @@ svg2roughs.sketch()
 
   The optional `outputType` defaults to the respective mode if `target` is either `SVGSVGElement` or `HTMLCanvasElement`. If targetting an HTML container element, then `OutputType.SVG` is used by default.
 
-- `sketch()`
+- `async sketch()`
 
   Clears the targetted output `SVGSVGElement` or `HTMLCanvasElement` and converts the set `svg` to a hand-drawn sketch.
 
@@ -72,6 +72,7 @@ svg2roughs.sketch()
 | `fontFamily`      | Font with which text elements should be drawn.<br>If set to `null`, the text element's original font-family is used. | `'Comic Sans MS, cursive'` |
 | `backgroundColor` | Sets a background color onto which the sketch is drawn.                                                              | `transparent`              |
 | `randomize`       | Randomize Rough.js' fillWeight, hachureAngle and hachureGap.                                                         | `true`                     |
+| `sketchPatterns`  | Whether to sketch pattern fills/strokes or just copy them to the output                                              | `true`                     |
 | `pencilFilter`    | Applies a pencil effect on the SVG rendering.                                                                        | `false`                    |
 
 ## Sample Images

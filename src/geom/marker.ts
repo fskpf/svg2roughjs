@@ -1,4 +1,4 @@
-import { Point } from './point'
+import { Point } from './primitives'
 import { convertToPixelUnit, getIdFromUrl, RenderContext } from '../utils'
 import { getEffectiveAttribute } from '../styles/styles'
 

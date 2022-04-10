@@ -1,6 +1,6 @@
-import { Drawable, Options } from 'roughjs/bin/core'
+import { Options } from 'roughjs/bin/core'
 import { RoughSVG } from 'roughjs/bin/svg'
-import { Point } from './geom/point'
+import { Point } from './geom/primitives'
 // @ts-ignore
 import units from 'units-css'
 
@@ -93,7 +93,7 @@ export function applyMatrix(point: Point, svgTransform: SVGTransform | null): Po
   const matrix = svgTransform.matrix
   const x = matrix.a * point.x + matrix.c * point.y + matrix.e
   const y = matrix.b * point.x + matrix.d * point.y + matrix.f
-  return new Point(x, y)
+  return { x: x, y }
 }
 
 /**
@@ -128,17 +128,22 @@ export function getSvgTransform(element: SVGGraphicsElement): SVGTransform | nul
   return null
 }
 
-export function getDefsElement(svgElement: SVGSVGElement): SVGDefsElement {
-  let outputDefs = svgElement.querySelector('defs')
-  if (!outputDefs) {
-    outputDefs = document.createElementNS('http://www.w3.org/2000/svg', 'defs')
-    if (svgElement.childElementCount > 0) {
-      svgElement.insertBefore(outputDefs, svgElement.firstElementChild)
-    } else {
-      svgElement.appendChild(outputDefs)
-    }
+export function getDefsElement(context: RenderContext): SVGDefsElement {
+  if (context.svgSketchDefs) {
+    return context.svgSketchDefs
   }
-  return outputDefs
+
+  const parent = context.svgSketch
+  const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs')
+  if (parent.childElementCount > 0) {
+    parent.insertBefore(defs, parent.firstElementChild)
+  } else {
+    parent.appendChild(defs)
+  }
+
+  context.svgSketchDefs = defs
+
+  return defs
 }
 
 export function getPointsArray(element: SVGPolygonElement | SVGPolylineElement): Array<Point> {
@@ -157,17 +162,17 @@ export function getPointsArray(element: SVGPolygonElement | SVGPolylineElement):
   }
 
   const pointList = pointsAttr.split(coordinateRegexp)
-  const points = []
+  const points: Point[] = []
   for (let i = 0; i < pointList.length; i++) {
     const currentEntry = pointList[i]
     const coordinates = currentEntry.split(',')
     if (coordinates.length === 2) {
-      points.push(new Point(parseFloat(coordinates[0]), parseFloat(coordinates[1])))
+      points.push({ x: parseFloat(coordinates[0]), y: parseFloat(coordinates[1]) })
     } else {
       // space as separators, take next entry as y coordinate
       const next = i + 1
       if (next < pointList.length) {
-        points.push(new Point(parseFloat(currentEntry), parseFloat(pointList[next])))
+        points.push({ x: parseFloat(currentEntry), y: parseFloat(pointList[next]) })
         // skip the next entry
         i = next
       }
@@ -202,9 +207,11 @@ export type RenderContext = {
   fontFamily: string | null
   pencilFilter: boolean
   randomize: boolean
+  sketchPatterns: boolean
   idElements: Record<string, SVGElement | string>
   sourceSvg: SVGSVGElement
   svgSketch: SVGSVGElement
+  svgSketchDefs?: SVGDefsElement
   useElementContext?: UseContext | null
   styleSheets: CSSStyleSheet[]
   processElement: (
@@ -232,7 +239,7 @@ export type UseContext = {
 export function postProcessElement(
   context: RenderContext,
   element: SVGElement,
-  sketchElement: Drawable | SVGElement
+  sketchElement: SVGElement
 ): void {
   let sketch = sketchElement as SVGElement
 
@@ -264,13 +271,9 @@ export function postProcessElement(
  * Helper method to sketch a path.
  * Paths with curves should utilize the preserverVertices option to avoid line disjoints.
  * For non-curved paths it looks nicer to actually allow these diskoints.
- * @returns Returns the SVGElement for the SVG render mode, or undefined otherwise
+ * @returns Returns the sketched SVGElement
  */
-export function sketchPath(
-  context: RenderContext,
-  path: string,
-  options?: Options
-): Drawable | SVGElement {
+export function sketchPath(context: RenderContext, path: string, options?: Options): SVGElement {
   if (PATH_CURVES_REGEX.test(path)) {
     options = options ? { ...options, preserveVertices: true } : { preserveVertices: true }
   }
@@ -348,4 +351,39 @@ export function getMatchedCssRules(context: RenderContext, el: Element): CSSStyl
     }
   })
   return ret
+}
+
+/**
+ * Helper funtion to sketch a DOM fragment.
+ * Wraps the given element in an SVG and runs the processor on it to sketch the fragment.
+ * The result is then unpacked and returned.
+ */
+export function sketchFragment(
+  context: RenderContext,
+  g: SVGGElement,
+  roughOverwrites?: Options
+): SVGGElement {
+  const proxySource = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+  proxySource.appendChild(g)
+  const proxyContext: RenderContext = {
+    ...context,
+    sourceSvg: proxySource,
+    svgSketch: document.createElementNS('http://www.w3.org/2000/svg', 'svg'),
+    roughConfig: { ...context.roughConfig, ...roughOverwrites }
+  }
+  proxyContext.processElement(proxyContext, g, null)
+  return reparentNodes(
+    document.createElementNS('http://www.w3.org/2000/svg', 'g'),
+    proxyContext.svgSketch
+  )
+}
+
+/**
+ * Moves the child-nodes from the source to a new parent.
+ */
+export function reparentNodes<T extends SVGElement>(newParent: T, source: SVGElement): T {
+  while (source.firstChild) {
+    newParent.append(source.firstChild)
+  }
+  return newParent
 }

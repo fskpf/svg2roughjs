@@ -29,6 +29,7 @@ let debouncedTimer: ReturnType<typeof setTimeout> | null = null
 let codeMirrorInstance: CodeMirror.Editor
 
 // just for easier access, it's a debug project, so who cares...
+const patternsCheckbox = document.getElementById('sketchPatterns') as HTMLInputElement
 const pencilCheckbox = document.getElementById('pencilFilter') as HTMLInputElement
 const sampleSelect = document.getElementById('sample-select') as HTMLSelectElement
 const codeContainer = document.querySelector('.raw-svg-container') as HTMLDivElement
@@ -222,6 +223,7 @@ function run() {
   svg2roughjs = new Svg2Roughjs('#output', OutputType.SVG)
   svg2roughjs.backgroundColor = 'white'
   svg2roughjs.pencilFilter = !!pencilCheckbox.checked
+  svg2roughjs.sketchPatterns = !!patternsCheckbox.checked
   svg2roughjs.roughConfig = {
     bowing: parseInt(bowingInput.value),
     roughness: parseInt(roughnessInput.value),
@@ -384,10 +386,12 @@ function run() {
     const prevRandomize = svg2roughjs.randomize
     const prevPencilFilter = svg2roughjs.pencilFilter
     const prevOutputType = svg2roughjs.outputType
+    const prevSketchPatters = svg2roughjs.sketchPatterns
     const prevConfig = Object.assign({}, svg2roughjs.roughConfig)
 
     svg2roughjs.randomize = false
     svg2roughjs.pencilFilter = false
+    svg2roughjs.sketchPatterns = true
     svg2roughjs.outputType = OutputType.SVG
     svg2roughjs.backgroundColor = 'white'
     svg2roughjs.roughConfig = {
@@ -413,6 +417,7 @@ function run() {
       roughConfig: svg2roughjs.roughConfig,
       outputType: svg2roughjs.outputType,
       pencilFilter: svg2roughjs.pencilFilter,
+      sketchPatterns: svg2roughjs.sketchPatterns,
       backgroundColor: 'white'
     }
     downloadFile(JSON.stringify(config), 'text/json', 'config.json')
@@ -421,6 +426,7 @@ function run() {
     svg2roughjs.randomize = prevRandomize
     svg2roughjs.pencilFilter = prevPencilFilter
     svg2roughjs.outputType = prevOutputType
+    svg2roughjs.sketchPatterns = prevSketchPatters
     svg2roughjs.roughConfig = prevConfig
     await svg2roughjs.sketch()
   })
@@ -448,10 +454,17 @@ function run() {
     await svg2roughjs.sketch()
     setUIState(true)
   })
+  patternsCheckbox.addEventListener('change', async () => {
+    svg2roughjs.sketchPatterns = !!patternsCheckbox.checked
+    setUIState(false)
+    await svg2roughjs.sketch()
+    setUIState(true)
+  })
 }
 
 function setUIState(enabled: boolean) {
   const elements = [
+    patternsCheckbox,
     pencilCheckbox,
     sampleSelect,
     fillStyleSelect,

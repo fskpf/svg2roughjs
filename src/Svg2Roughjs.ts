@@ -30,6 +30,13 @@ export class Svg2Roughjs {
   randomize: boolean = true
 
   /**
+   * Whether pattern elements should be sketched or just copied to the output.
+   * For smaller pattern base sizes, it's often beneficial to just copy it over
+   * as the sketch will be too smalle to actually look sketched at all.
+   */
+  sketchPatterns: boolean = true
+
+  /**
    * Whether to apply a pencil filter.
    */
   pencilFilter: boolean = false
@@ -140,6 +147,12 @@ export class Svg2Roughjs {
     const sketchContainer = this.prepareRenderContainer()
     const renderContext = this.createRenderContext(sketchContainer)
 
+    // prepare filter effects
+    if (this.pencilFilter) {
+      const defs = getDefsElement(renderContext)
+      defs.appendChild(createPencilFilter())
+    }
+
     // sketchify the SVG
     renderContext.processElement(renderContext, this.svg, null, this.width, this.height)
 
@@ -181,6 +194,7 @@ export class Svg2Roughjs {
       fontFamily: this.fontFamily,
       pencilFilter: this.pencilFilter,
       randomize: this.randomize,
+      sketchPatterns: this.sketchPatterns,
       idElements: this.idElements,
       sourceSvg: this.svg,
       svgSketch: sketchContainer,
@@ -248,12 +262,6 @@ export class Svg2Roughjs {
       backgroundElement.height.baseVal.value = this.height
       backgroundElement.setAttribute('fill', this.backgroundColor)
       svgElement.appendChild(backgroundElement)
-    }
-
-    // prepare filter effects
-    if (this.pencilFilter) {
-      const defs = getDefsElement(svgElement)
-      defs.appendChild(createPencilFilter())
     }
 
     // use round linecap to emphasize a ballpoint pen like drawing

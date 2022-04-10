@@ -31,7 +31,7 @@ export function applyClipPath(
 
   // TODO clipPath: consider clipPathUnits
   //  create clipPath defs
-  const targetDefs = getDefsElement(context.svgSketch)
+  const targetDefs = getDefsElement(context)
   // unfortunately, we cannot reuse clip-paths due to the 'global transform' approach
   const sketchClipPathId = `${id}_${targetDefs.childElementCount}`
   const clipContainer = document.createElementNS('http://www.w3.org/2000/svg', 'clipPath')
@@ -88,7 +88,7 @@ export function applyClipPath(
 function applyElementClip(
   context: RenderContext,
   element: SVGElement,
-  container: SVGClipPathElement | null,
+  container: SVGClipPathElement,
   svgTransform: SVGTransform | null
 ) {
   switch (element.tagName) {
