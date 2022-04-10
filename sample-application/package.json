@@ -4,9 +4,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently --kill-others \"npm run watch-lib\" \"npm run serve\"",
     "serve": " webpack serve",
-    "watch-lib": "cd ../ && npm run watch",
     "deploy": "webpack --mode production"
   },
   "author": "Fabian Schwarzkopf",
@@ -21,7 +19,6 @@
     "@babel/preset-typescript": "^7.16.7",
     "@types/codemirror": "^5.60.5",
     "babel-loader": "^8.2.4",
-    "concurrently": "^7.1.0",
     "copy-webpack-plugin": "^10.2.4",
     "css-loader": "^6.7.1",
     "html-webpack-plugin": "^5.5.0",

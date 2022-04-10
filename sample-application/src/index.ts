@@ -2,24 +2,38 @@ import 'core-js'
 import 'core-js/es/symbol'
 import 'regenerator-runtime/runtime'
 
+import './assets/styles.css'
+
 import CodeMirror from 'codemirror'
 import 'codemirror/lib/codemirror.css'
 import 'codemirror/mode/xml/xml.js'
 
-import SAMPLE_BPMN from '../public/bpmn1.svg'
-import SAMPLE_COMPUTER_NETWORK from '../public/computer-network.svg'
-import SAMPLE_FLOWCHART from '../public/flowchart4.svg'
-import SAMPLE_HIERARCHICAL1 from '../public/hierarchical1.svg'
-import SAMPLE_HIERARCHICAL2 from '../public/hierarchical2.svg'
-import SAMPLE_MINDMAP from '../public/mindmap.svg'
-import SAMPLE_MOVIES from '../public/movies.svg'
-import SAMPLE_ORGANIC1 from '../public/organic1.svg'
-import SAMPLE_ORGANIC2 from '../public/organic2.svg'
-import SAMPLE_TREE from '../public/tree1.svg'
-import SAMPLE_VENN from '../public/venn.svg'
+// @ts-ignore
+import SAMPLE_BPMN from '../public/bpmn1.svg?raw'
+// @ts-ignore
+import SAMPLE_COMPUTER_NETWORK from '../public/computer-network.svg?raw'
+// @ts-ignore
+import SAMPLE_FLOWCHART from '../public/flowchart4.svg?raw'
+// @ts-ignore
+import SAMPLE_HIERARCHICAL1 from '../public/hierarchical1.svg?raw'
+// @ts-ignore
+import SAMPLE_HIERARCHICAL2 from '../public/hierarchical2.svg?raw'
+// @ts-ignore
+import SAMPLE_MINDMAP from '../public/mindmap.svg?raw'
+// @ts-ignore
+import SAMPLE_MOVIES from '../public/movies.svg?raw'
+// @ts-ignore
+import SAMPLE_ORGANIC1 from '../public/organic1.svg?raw'
+// @ts-ignore
+import SAMPLE_ORGANIC2 from '../public/organic2.svg?raw'
+// @ts-ignore
+import SAMPLE_TREE from '../public/tree1.svg?raw'
+// @ts-ignore
+import SAMPLE_VENN from '../public/venn.svg?raw'
 
 // debug lib import for better debugging...
-import { OutputType, Svg2Roughjs } from '../../out-tsc/index.js'
+import { OutputType, Svg2Roughjs } from '../../src/index'
+import { initializeTestUI } from './testing'
 
 let svg2roughjs: Svg2Roughjs
 let loadingSvg = false
@@ -48,7 +62,7 @@ const onCodeMirrorChange = () => {
   debouncedTimer = setTimeout(() => {
     debouncedTimer = null
     try {
-      loadSvgString(svg2roughjs, codeMirrorInstance.getValue())
+      loadSvgString(codeMirrorInstance.getValue())
     } catch (e) {
       /* do nothing */
     }
@@ -96,7 +110,7 @@ function getSvgSize(svg: SVGSVGElement): { width: number; height: number } {
   return { width, height }
 }
 
-function loadSvgString(svg2roughjs: Svg2Roughjs, fileContent: string) {
+export function loadSvgString(fileContent: string) {
   if (loadingSvg) {
     scheduledLoad = fileContent
     return
@@ -161,7 +175,7 @@ function loadSvgString(svg2roughjs: Svg2Roughjs, fileContent: string) {
 
       // maybe there was a load during the rendering.. so load this instead
       if (scheduledLoad) {
-        loadSvgString(svg2roughjs, scheduledLoad)
+        loadSvgString(scheduledLoad)
         scheduledLoad = null
       }
     }
@@ -208,7 +222,7 @@ function loadSample(svg2roughjs: Svg2Roughjs, sample: string) {
 
   setCodeMirrorValue(sampleString)
 
-  loadSvgString(svg2roughjs, sampleString)
+  loadSvgString(sampleString)
 }
 
 function updateOpacity(inputContainerOpacity: number) {
@@ -316,7 +330,7 @@ function run() {
     reader.addEventListener('load', () => {
       const fileContent = reader.result as string
       setCodeMirrorValue(fileContent)
-      loadSvgString(svg2roughjs, fileContent)
+      loadSvgString(fileContent)
     })
   }
 
@@ -374,61 +388,7 @@ function run() {
     link.click()
   })
 
-  const downloadTestcaseBtn = document.getElementById('download-testcase') as HTMLButtonElement
-
-  if (location.hostname !== 'localhost') {
-    downloadTestcaseBtn.style.display = 'none'
-  }
-
-  downloadTestcaseBtn.addEventListener('click', async () => {
-    // create a reproducible testcase
-    const prevRandomize = svg2roughjs.randomize
-    const prevPencilFilter = svg2roughjs.pencilFilter
-    const prevOutputType = svg2roughjs.outputType
-    const prevSketchPatters = svg2roughjs.sketchPatterns
-    const prevConfig = Object.assign({}, svg2roughjs.roughConfig)
-
-    svg2roughjs.randomize = false
-    svg2roughjs.pencilFilter = false
-    svg2roughjs.sketchPatterns = true
-    svg2roughjs.outputType = OutputType.SVG
-    svg2roughjs.backgroundColor = 'white'
-    svg2roughjs.roughConfig = {
-      ...svg2roughjs.roughConfig,
-      fixedDecimalPlaceDigits: 3,
-      seed: 4242
-    }
-    await svg2roughjs.sketch()
-
-    const serializer = new XMLSerializer()
-
-    const test = document.querySelector('#input svg') as SVGSVGElement
-    let inputSvg = serializer.serializeToString(test)
-    inputSvg = '<?xml version="1.0" standalone="no"?>\r\n' + inputSvg
-    downloadFile(inputSvg, 'image/svg+xml', 'test.svg')
-
-    const spec = document.querySelector('#output svg') as SVGSVGElement
-    let sketchedSvg = serializer.serializeToString(spec)
-    sketchedSvg = '<?xml version="1.0" standalone="no"?>\r\n' + sketchedSvg
-    downloadFile(sketchedSvg, 'image/svg+xml', 'expect.svg')
-
-    const config = {
-      roughConfig: svg2roughjs.roughConfig,
-      outputType: svg2roughjs.outputType,
-      pencilFilter: svg2roughjs.pencilFilter,
-      sketchPatterns: svg2roughjs.sketchPatterns,
-      backgroundColor: 'white'
-    }
-    downloadFile(JSON.stringify(config), 'text/json', 'config.json')
-
-    // reset state to before testcase creation
-    svg2roughjs.randomize = prevRandomize
-    svg2roughjs.pencilFilter = prevPencilFilter
-    svg2roughjs.outputType = prevOutputType
-    svg2roughjs.sketchPatterns = prevSketchPatters
-    svg2roughjs.roughConfig = prevConfig
-    await svg2roughjs.sketch()
-  })
+  initializeTestUI(svg2roughjs)
 
   originalFontCheckbox.addEventListener('change', async () => {
     if (originalFontCheckbox.checked) {
@@ -479,14 +439,6 @@ function setUIState(enabled: boolean) {
   for (const ele of elements) {
     ele.disabled = !enabled
   }
-}
-
-function downloadFile(content: string, mime: string, fileName: string) {
-  const link = document.createElement('a')
-  const configBlob = new Blob([content], { type: mime })
-  link.download = fileName
-  link.href = URL.createObjectURL(configBlob)
-  link.click()
 }
 
 run()

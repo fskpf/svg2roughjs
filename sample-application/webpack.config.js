@@ -9,13 +9,19 @@ module.exports = {
     filename: '[name].[contenthash].js',
     clean: true
   },
+  resolve: {
+    extensions: ['.ts', '...']
+  },
   devServer: {
     static: [
       {
         directory: path.join(__dirname, 'public')
       },
       {
-        directory: path.join(__dirname, '../out-tsc')
+        directory: path.join(__dirname, '../src')
+      },
+      {
+        directory: path.join(__dirname, '../test')
       }
     ],
     client: {
@@ -42,10 +48,6 @@ module.exports = {
       }
     }
   },
-  snapshot: {
-    // automatically serve changed content in node_modules instead of older snapshots
-    managedPaths: []
-  },
   plugins: [
     new HtmlWebpackPlugin({
       template: './src/index.html'
@@ -69,8 +71,13 @@ module.exports = {
         }
       },
       {
-        test: /\.svg$/i,
-        use: 'raw-loader'
+        resourceQuery: /raw/,
+        type: 'asset/source'
+      },
+      {
+        test: /\.(png|svg|jpg|jpeg|gif)$/i,
+        resourceQuery: { not: [/raw/] },
+        type: 'asset/resource'
       },
       {
         test: /\.css$/i,
