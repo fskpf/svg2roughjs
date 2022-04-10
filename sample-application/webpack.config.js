@@ -1,7 +1,6 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
-/* eslint-disable no-undef */
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const CopyWebpackPlugin = require('copy-webpack-plugin')
+const path = require('path')
 
 module.exports = {
   mode: 'development',
@@ -9,6 +8,22 @@ module.exports = {
   output: {
     filename: '[name].[contenthash].js',
     clean: true
+  },
+  devServer: {
+    static: [
+      {
+        directory: path.join(__dirname, 'public')
+      },
+      {
+        directory: path.join(__dirname, '../out-tsc')
+      }
+    ],
+    client: {
+      overlay: {
+        errors: true,
+        warnings: false
+      }
+    }
   },
   optimization: {
     splitChunks: {

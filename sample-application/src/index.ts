@@ -18,9 +18,8 @@ import SAMPLE_ORGANIC2 from '../public/organic2.svg'
 import SAMPLE_TREE from '../public/tree1.svg'
 import SAMPLE_VENN from '../public/venn.svg'
 
-// direkt debug lib import for better debugging...
-// @ts-ignore
-import { OutputType, Svg2Roughjs } from 'svg2roughjs/dist/svg2roughjs.es'
+// debug lib import for better debugging...
+import { OutputType, Svg2Roughjs } from '../../out-tsc/index.js'
 
 let svg2roughjs: Svg2Roughjs
 let loadingSvg = false

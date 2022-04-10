@@ -24,6 +24,7 @@
   "license": "MIT",
   "scripts": {
     "prepare": "npm run lint && npm run build",
+    "watch": "tsc && tsc -w",
     "build": "npm run clean && tsc && rollup -c rollup.config.js",
     "clean": "rimraf dist/ && rimraf out-tsc/",
     "lint": "eslint --ext .ts ./src",
