@@ -4,11 +4,11 @@ import {
   RenderContext,
   isIdentityTransform,
   convertToPixelUnit,
-  getRandomNumber,
   UseContext,
   getIdFromUrl
 } from '../utils'
 import { gradientToColor } from './colors'
+import { createPen } from './pens'
 
 /**
  * Converts the effective style attributes of the given `SVGElement`
@@ -116,12 +116,10 @@ export function parseStyleConfig(
   }
 
   if (context.randomize) {
-    // Rough.js default is 0.5 * strokeWidth
-    config.fillWeight = getRandomNumber(0.5, 3)
-    // Rough.js default is -41deg
-    config.hachureAngle = getRandomNumber(-30, -50)
-    // Rough.js default is 4 * strokeWidth
-    config.hachureGap = getRandomNumber(3, 5)
+    const { angle, gap, weight } = createPen(context, element)
+    config.hachureAngle = angle
+    config.hachureGap = gap
+    config.fillWeight = weight
     // randomize double stroke effect if not explicitly set through user config
     if (typeof config.disableMultiStroke === 'undefined') {
       config.disableMultiStroke = Math.random() > 0.3

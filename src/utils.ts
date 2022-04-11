@@ -97,13 +97,6 @@ export function applyMatrix(point: Point, svgTransform: SVGTransform | null): Po
 }
 
 /**
- * Returns a random number in the given range.
- */
-export function getRandomNumber(min: number, max: number): number {
-  return Math.random() * (max - min) + min
-}
-
-/**
  * Returns the id from the url string
  */
 export function getIdFromUrl(url: string | null): string | null {
