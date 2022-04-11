@@ -1,14 +1,13 @@
+import { appendPatternPaint } from '../styles/pattern'
+import { parseStyleConfig } from '../styles/styles'
 import {
   applyGlobalTransform,
   applyMatrix,
   isIdentityTransform,
-  isTranslationTransform,
-  postProcessElement,
-  RenderContext,
-  sketchPath
-} from '../utils'
-import { parseStyleConfig } from '../styles/styles'
-import { appendPatternPaint } from '../styles/pattern'
+  isTranslationTransform
+} from '../transformation'
+import { RenderContext } from '../types'
+import { appendSketchElement, sketchPath } from '../utils'
 import { Rectangle, str } from './primitives'
 
 export function drawRect(
@@ -53,7 +52,7 @@ export function drawRect(
     )
 
     applyPatternPaint(context, rect, transformedBounds)
-    postProcessElement(context, rect, sketchRect)
+    appendSketchElement(context, rect, sketchRect)
   } else {
     let path = ''
     if (rx !== null && ry !== null) {
@@ -112,7 +111,7 @@ export function drawRect(
     const result = sketchPath(context, path, parseStyleConfig(context, rect, svgTransform))
 
     applyPatternPaint(context, rect, transformedBounds)
-    postProcessElement(context, rect, result)
+    appendSketchElement(context, rect, result)
   }
 }
 

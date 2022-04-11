@@ -1,11 +1,6 @@
-import {
-  RenderContext,
-  getIdFromUrl,
-  getDefsElement,
-  reparentNodes,
-  sketchFragment,
-  postProcessElement
-} from '../utils'
+import { getIdFromUrl, reparentNodes } from '../dom-helpers'
+import { RenderContext } from '../types'
+import { appendSketchElement, getDefsElement, sketchFragment } from '../utils'
 import { getEffectiveAttribute } from './styles'
 
 /**
@@ -34,7 +29,7 @@ export function appendPatternPaint(
     patternProxy.setAttribute('stroke-width', strokeWidth ?? '0')
 
     // append the proxy
-    postProcessElement(context, sourceElement, patternProxy)
+    appendSketchElement(context, sourceElement, patternProxy)
 
     // add the pattern defs
     appendPatternDefsElement(context, fillId)

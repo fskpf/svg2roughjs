@@ -1,9 +1,10 @@
 import { encodeSVGPath, SVGPathData, SVGPathDataTransformer } from 'svg-pathdata'
-import { Point } from './primitives'
-import { postProcessElement, RenderContext, sketchPath } from '../utils'
-import { drawMarkers } from './marker'
-import { parseStyleConfig } from '../styles/styles'
 import { appendPatternPaint } from '../styles/pattern'
+import { parseStyleConfig } from '../styles/styles'
+import { RenderContext } from '../types'
+import { appendSketchElement, sketchPath } from '../utils'
+import { drawMarkers } from './marker'
+import { Point } from './primitives'
 
 export function drawPath(
   context: RenderContext,
@@ -57,7 +58,7 @@ export function drawPath(
     return proxy
   })
 
-  postProcessElement(context, path, pathSketch)
+  appendSketchElement(context, path, pathSketch)
 
   // https://www.w3.org/TR/SVG11/painting.html#MarkerProperties
   // Note that for a ‘path’ element which ends with a closed sub-path,

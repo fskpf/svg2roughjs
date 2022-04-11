@@ -1,9 +1,10 @@
 import { Options } from 'roughjs/bin/core'
 import rough from 'roughjs/bin/rough'
-import { processRoot } from './processor'
 import { OutputType } from './OutputType'
+import { processRoot } from './processor'
 import { createPencilFilter } from './styles/textures'
-import { getDefsElement, RenderContext } from './utils'
+import { RenderContext } from './types'
+import { getDefsElement } from './utils'
 
 /**
  * Svg2Roughjs parses an SVG and converts it to a hand-drawn sketch.

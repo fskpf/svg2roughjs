@@ -1,5 +1,8 @@
+import { getNodeChildren } from '../dom-helpers'
 import { concatStyleStrings, getEffectiveAttribute } from '../styles/styles'
-import { RenderContext, getNodeChildren, postProcessElement, applyGlobalTransform } from '../utils'
+import { applyGlobalTransform } from '../transformation'
+import { RenderContext } from '../types'
+import { appendSketchElement } from '../utils'
 
 export function drawText(
   context: RenderContext,
@@ -32,7 +35,7 @@ export function drawText(
   }
 
   container.appendChild(textClone)
-  postProcessElement(context, text, container)
+  appendSketchElement(context, text, container)
 }
 
 /**

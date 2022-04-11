@@ -1,4 +1,6 @@
-import { applyGlobalTransform, postProcessElement, RenderContext } from '../utils'
+import { applyGlobalTransform } from '../transformation'
+import { RenderContext } from '../types'
+import { appendSketchElement } from '../utils'
 
 export function drawForeignObject(
   context: RenderContext,
@@ -36,5 +38,5 @@ export function drawForeignObject(
   // transform the foreignObject to its destination location
   applyGlobalTransform(context, svgTransform, container)
   container.appendChild(foreignObjectClone)
-  postProcessElement(context, foreignObjectClone, container)
+  appendSketchElement(context, foreignObjectClone, container)
 }

@@ -1,12 +1,9 @@
 import { Options } from 'roughjs/bin/core'
 import tinycolor from 'tinycolor2'
-import {
-  RenderContext,
-  isIdentityTransform,
-  convertToPixelUnit,
-  UseContext,
-  getIdFromUrl
-} from '../utils'
+import { getIdFromUrl } from '../dom-helpers'
+import { isIdentityTransform } from '../transformation'
+import { RenderContext, UseContext } from '../types'
+import { convertToPixelUnit } from '../utils'
 import { gradientToColor } from './colors'
 import { createPen } from './pens'
 

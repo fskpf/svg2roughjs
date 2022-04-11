@@ -1,4 +1,4 @@
-import { RenderContext } from '../utils'
+import { RenderContext } from '../types'
 
 type Range = [number, number]
 type AngleConfig = { normal: Range; horizontal: Range; vertical: Range }

@@ -1,4 +1,6 @@
-import { applyGlobalTransform, postProcessElement, RenderContext } from '../utils'
+import { applyGlobalTransform } from '../transformation'
+import { RenderContext } from '../types'
+import { appendSketchElement } from '../utils'
 
 export function drawImage(
   context: RenderContext,
@@ -49,6 +51,6 @@ export function drawImage(
     const container = document.createElementNS('http://www.w3.org/2000/svg', 'g')
     applyGlobalTransform(context, svgTransform, container)
     container.appendChild(imageClone)
-    postProcessElement(context, svgImage, container)
+    appendSketchElement(context, svgImage, container)
   }
 }

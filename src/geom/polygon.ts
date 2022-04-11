@@ -1,13 +1,9 @@
 import { Point } from 'roughjs/bin/geometry'
 import { appendPatternPaint } from '../styles/pattern'
 import { parseStyleConfig } from '../styles/styles'
-import {
-  RenderContext,
-  getPointsArray,
-  applyMatrix,
-  postProcessElement,
-  applyGlobalTransform
-} from '../utils'
+import { applyGlobalTransform, applyMatrix } from '../transformation'
+import { RenderContext } from '../types'
+import { appendSketchElement, getPointsArray } from '../utils'
 import { drawMarkers } from './marker'
 
 export function drawPolygon(
@@ -33,7 +29,7 @@ export function drawPolygon(
     return proxy
   })
 
-  postProcessElement(context, polygon, polygonSketch)
+  appendSketchElement(context, polygon, polygonSketch)
 
   // https://www.w3.org/TR/SVG11/painting.html#MarkerProperties
   // Note that for a ‘path’ element which ends with a closed sub-path,

@@ -1,7 +1,9 @@
 import { Point } from 'roughjs/bin/geometry'
 import { appendPatternPaint } from '../styles/pattern'
 import { parseStyleConfig } from '../styles/styles'
-import { RenderContext, getPointsArray, applyMatrix, postProcessElement } from '../utils'
+import { applyMatrix } from '../transformation'
+import { RenderContext } from '../types'
+import { appendSketchElement, getPointsArray } from '../utils'
 import { drawMarkers } from './marker'
 
 export function drawPolyline(
@@ -24,9 +26,9 @@ export function drawPolyline(
 
   if (style.fill && style.fill !== 'none') {
     const fillStyle = { ...style, stroke: 'none' }
-    postProcessElement(context, polyline, context.rc.polygon(transformed, fillStyle))
+    appendSketchElement(context, polyline, context.rc.polygon(transformed, fillStyle))
   }
-  postProcessElement(context, polyline, context.rc.linearPath(transformed, style))
+  appendSketchElement(context, polyline, context.rc.linearPath(transformed, style))
 
   drawMarkers(context, polyline, points, svgTransform)
 }

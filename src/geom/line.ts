@@ -1,7 +1,9 @@
-import { applyMatrix, postProcessElement, RenderContext } from '../utils'
-import { drawMarkers } from './marker'
-import { parseStyleConfig } from '../styles/styles'
 import { appendPatternPaint } from '../styles/pattern'
+import { parseStyleConfig } from '../styles/styles'
+import { applyMatrix } from '../transformation'
+import { RenderContext } from '../types'
+import { appendSketchElement } from '../utils'
+import { drawMarkers } from './marker'
 
 export function drawLine(
   context: RenderContext,
@@ -35,7 +37,7 @@ export function drawLine(
     return proxy
   })
 
-  postProcessElement(context, line, lineSketch)
+  appendSketchElement(context, line, lineSketch)
 
   drawMarkers(context, line, [p1, p2], svgTransform)
 }

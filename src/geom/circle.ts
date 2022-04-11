@@ -1,15 +1,14 @@
+import { appendPatternPaint } from '../styles/pattern'
+import { parseStyleConfig } from '../styles/styles'
 import {
   applyGlobalTransform,
   applyMatrix,
   isIdentityTransform,
-  isTranslationTransform,
-  postProcessElement,
-  RenderContext,
-  sketchPath
-} from '../utils'
-import { parseStyleConfig } from '../styles/styles'
+  isTranslationTransform
+} from '../transformation'
+import { RenderContext } from '../types'
+import { appendSketchElement, sketchPath } from '../utils'
 import { str } from './primitives'
-import { appendPatternPaint } from '../styles/pattern'
 
 export function drawCircle(
   context: RenderContext,
@@ -61,7 +60,7 @@ export function drawCircle(
     proxy.r.baseVal.value = transformedRadius
     return proxy
   })
-  postProcessElement(context, circle, result)
+  appendSketchElement(context, circle, result)
 }
 
 export function applyCircleClip(

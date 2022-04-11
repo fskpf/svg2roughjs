@@ -1,15 +1,14 @@
-import {
-  RenderContext,
-  isIdentityTransform,
-  isTranslationTransform,
-  applyMatrix,
-  sketchPath,
-  postProcessElement,
-  applyGlobalTransform
-} from '../utils'
-import { parseStyleConfig } from '../styles/styles'
-import { str } from './primitives'
 import { appendPatternPaint } from '../styles/pattern'
+import { parseStyleConfig } from '../styles/styles'
+import {
+  applyGlobalTransform,
+  applyMatrix,
+  isIdentityTransform,
+  isTranslationTransform
+} from '../transformation'
+import { RenderContext } from '../types'
+import { appendSketchElement, sketchPath } from '../utils'
+import { str } from './primitives'
 
 export function drawEllipse(
   context: RenderContext,
@@ -65,7 +64,7 @@ export function drawEllipse(
     proxy.ry.baseVal.value = transformedRy
     return proxy
   })
-  postProcessElement(context, ellipse, result)
+  appendSketchElement(context, ellipse, result)
 }
 
 export function applyEllipseClip(

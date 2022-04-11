@@ -1,4 +1,5 @@
-import { getCombinedTransform, RenderContext } from '../utils'
+import { getCombinedTransform } from '../transformation'
+import { RenderContext } from '../types'
 
 export function drawUse(
   context: RenderContext,

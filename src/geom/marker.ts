@@ -1,6 +1,8 @@
-import { Point } from './primitives'
-import { convertToPixelUnit, getIdFromUrl, RenderContext } from '../utils'
+import { getIdFromUrl } from '../dom-helpers'
 import { getEffectiveAttribute } from '../styles/styles'
+import { RenderContext } from '../types'
+import { convertToPixelUnit } from '../utils'
+import { Point } from './primitives'
 
 export function drawMarkers(
   context: RenderContext,

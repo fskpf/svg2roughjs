@@ -1,4 +1,5 @@
 import { applyClipPath } from './clipping'
+import { getNodeChildren } from './dom-helpers'
 import { drawCircle } from './geom/circle'
 import { drawEllipse } from './geom/ellipse'
 import { drawForeignObject } from './geom/foreign-object'
@@ -11,7 +12,8 @@ import { drawRect } from './geom/rect'
 import { drawText } from './geom/text'
 import { drawUse } from './geom/use'
 import { isHidden } from './styles/styles'
-import { getCombinedTransform, getNodeChildren, RenderContext } from './utils'
+import { getCombinedTransform } from './transformation'
+import { RenderContext } from './types'
 
 /**
  * Traverses the SVG in DFS and draws each element to the canvas.

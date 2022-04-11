@@ -1,14 +1,11 @@
+import { getIdFromUrl, getNodeChildren } from './dom-helpers'
 import { applyCircleClip } from './geom/circle'
 import { applyEllipseClip } from './geom/ellipse'
 import { applyPolygonClip } from './geom/polygon'
 import { applyRectClip } from './geom/rect'
-import {
-  getCombinedTransform,
-  getDefsElement,
-  getIdFromUrl,
-  getNodeChildren,
-  RenderContext
-} from './utils'
+import { getCombinedTransform } from './transformation'
+import { RenderContext } from './types'
+import { getDefsElement } from './utils'
 
 /**
  * Applies the clip-path to the CanvasContext.
