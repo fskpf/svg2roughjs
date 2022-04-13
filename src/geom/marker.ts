@@ -2,7 +2,7 @@ import { getIdFromUrl } from '../dom-helpers'
 import { getEffectiveAttribute } from '../styles/styles'
 import { RenderContext } from '../types'
 import { convertToPixelUnit } from '../utils'
-import { Point } from './primitives'
+import { equals, Point } from './primitives'
 
 export function drawMarkers(
   context: RenderContext,
@@ -14,25 +14,37 @@ export function drawMarkers(
     return
   }
 
+  const startPt = points[0]
+  const endPt = points[points.length - 1]
+
   // start marker
   const markerStartId = getIdFromUrl(element.getAttribute('marker-start'))
   const markerStartElement = markerStartId
     ? (context.idElements[markerStartId] as SVGMarkerElement)
     : null
-  if (markerStartElement) {
+
+  // marker-start is only rendered when there are at least two points
+  if (markerStartElement && points.length > 1) {
     let angle = markerStartElement.orientAngle.baseVal.value
-    if (points.length > 1) {
-      const orientAttr = markerStartElement.getAttribute('orient')
-      if (orientAttr === 'auto' || orientAttr === 'auto-start-reverse') {
-        const autoAngle = getAngle(points[0], points[1])
-        angle = orientAttr === 'auto' ? autoAngle : autoAngle + 180
+
+    const nextPt = points[1]
+    const orientAttr = markerStartElement.getAttribute('orient')
+    if (orientAttr === 'auto' || orientAttr === 'auto-start-reverse') {
+      const reverse = orientAttr === 'auto' ? 0 : 180
+      const prevPt = points[points.length - 2]
+      if (isClosedPath(points)) {
+        // https://www.w3.org/TR/SVG11/painting.html#OrientAttribute
+        // use angle bisector of incoming and outgoing angle
+        angle = getBisectingAngle(prevPt, endPt, nextPt) - reverse
+      } else {
+        const vOut = { x: nextPt.x - startPt.x, y: nextPt.y - startPt.y }
+        angle = getAngle({ x: 1, y: 0 }, vOut) - reverse
       }
     }
 
-    const location = points[0]
     const matrix = context.sourceSvg
       .createSVGMatrix()
-      .translate(location.x, location.y)
+      .translate(startPt.x, startPt.y)
       .rotate(angle)
       .scale(getScaleFactor(context, markerStartElement, element))
 
@@ -47,19 +59,31 @@ export function drawMarkers(
   const markerEndElement = markerEndId
     ? (context.idElements[markerEndId] as SVGMarkerElement)
     : null
+
+  // marker-end is also rendered if the path has only one point
   if (markerEndElement) {
     let angle = markerEndElement.orientAngle.baseVal.value
+
     if (points.length > 1) {
       const orientAttr = markerEndElement.getAttribute('orient')
       if (orientAttr === 'auto' || orientAttr === 'auto-start-reverse') {
-        angle = getAngle(points[points.length - 2], points[points.length - 1])
+        // by spec, "auto-start-reverse" has no effect on marker end
+        const prevPt = points[points.length - 2]
+        if (isClosedPath(points)) {
+          // https://www.w3.org/TR/SVG11/painting.html#OrientAttribute
+          // use angle bisector of incoming and outgoing angle
+          const nextPt = points[1] // start and end points are equal, take second point
+          angle = getBisectingAngle(prevPt, endPt, nextPt)
+        } else {
+          const vIn = { x: endPt.x - prevPt.x, y: endPt.y - prevPt.y }
+          angle = getAngle({ x: 1, y: 0 }, vIn)
+        }
       }
     }
 
-    const location = points[points.length - 1]
     const matrix = context.sourceSvg
       .createSVGMatrix()
-      .translate(location.x, location.y)
+      .translate(endPt.x, endPt.y)
       .rotate(angle)
       .scale(getScaleFactor(context, markerEndElement, element))
 
@@ -74,6 +98,7 @@ export function drawMarkers(
   const markerMidElement = markerMidId
     ? (context.idElements[markerMidId] as SVGMarkerElement)
     : null
+
   if (markerMidElement && points.length > 2) {
     for (let i = 0; i < points.length; i++) {
       const loc = points[i]
@@ -85,14 +110,12 @@ export function drawMarkers(
       let angle = markerMidElement.orientAngle.baseVal.value
       const orientAttr = markerMidElement.getAttribute('orient')
       if (orientAttr === 'auto' || orientAttr === 'auto-start-reverse') {
+        // by spec, "auto-start-reverse" has no effect on marker mid
         const prevPt = points[i - 1]
         const nextPt = points[i + 1]
         // https://www.w3.org/TR/SVG11/painting.html#OrientAttribute
         // use angle bisector of incoming and outgoing angle
-        const inAngle = getAngle(prevPt, loc)
-        const outAngle = getAngle(loc, nextPt)
-        const reverse = nextPt.x < loc.x ? 180 : 0
-        angle = (inAngle + outAngle) / 2 + reverse
+        angle = getBisectingAngle(prevPt, loc, nextPt)
       }
 
       const matrix = context.sourceSvg
@@ -130,8 +153,52 @@ function getScaleFactor(
 }
 
 /**
- * The angle in degree of the line defined by the given points.
+ * Whether the path is closed, i.e. the start and end points are identical
  */
-function getAngle(p0: Point, p1: Point): number {
-  return Math.atan2(p1.y - p0.y, p1.x - p0.x) * (180 / Math.PI)
+function isClosedPath(points: Point[]): boolean {
+  return equals(points[0], points[points.length - 1])
+}
+
+/**
+ * Returns the bisection angle of the angle that is spanned by the given points.
+ * @param prevPt The point from which the incoming flank is pointing
+ * @param crossingPt The anchor point of the angle
+ * @param nextPt Th point to which the outgoing flank is pointing
+ * @returns The bisecting angle
+ */
+function getBisectingAngle(prevPt: Point, crossingPt: Point, nextPt: Point): number {
+  const vIn = { x: nextPt.x - crossingPt.x, y: nextPt.y - crossingPt.y }
+  const vOut = { x: prevPt.x - crossingPt.x, y: prevPt.y - crossingPt.y }
+
+  const refPoint = { x: crossingPt.x + 1, y: crossingPt.y }
+  const refVector = { x: refPoint.x - crossingPt.x, y: refPoint.y - crossingPt.y }
+  const refAngle = getAngle(vIn, refVector)
+
+  const vectorAngle = getAngle(vIn, vOut)
+
+  return getOppositeAngle(vectorAngle) / 2 - refAngle
+}
+
+/**
+ * Returns the opposite angle of the line. Considers the direction of the angle
+ * (i.e. positive for clockwise, negative for counter-clickwise).
+ */
+function getOppositeAngle(angle: number): number {
+  return angle - Math.sign(angle) * 180
+}
+
+/**
+ * Returns the signed angle between the vectors (i.e. positive for clockwise,
+ * negative for counter-clickwise).
+ * @param v1 2-dimensional vector
+ * @param v2 2-dimensional vector
+ * @returns The signed angle between the vectors
+ */
+function getAngle(v1: Point, v2: Point): number {
+  const a1 = Math.atan2(v1.y, v1.x)
+  const a2 = Math.atan2(v2.y, v2.x)
+  const angle = a2 - a1
+  const K = -Math.sign(angle) * Math.PI * 2
+  const a = Math.abs(K + angle) < Math.abs(angle) ? K + angle : angle
+  return Math.round((360 * a) / (Math.PI * 2))
 }
