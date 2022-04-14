@@ -75,6 +75,7 @@ async function downloadTestcase(svg2roughjs: Svg2Roughjs) {
   svg2roughjs.roughConfig = {
     ...svg2roughjs.roughConfig,
     fixedDecimalPlaceDigits: 3,
+    fillStyle: 'solid', // just use solid for tests, to make the more stable on lib changes
     seed: 4242
   }
   await svg2roughjs.sketch()

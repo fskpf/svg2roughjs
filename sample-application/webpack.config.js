@@ -21,7 +21,12 @@ module.exports = {
         directory: path.join(__dirname, '../src')
       },
       {
-        directory: path.join(__dirname, '../test')
+        directory: path.join(__dirname, '../test'),
+        watch: false
+      },
+      {
+        // watch the test.js but not the actual specs...
+        directory: path.join(__dirname, '../test/tests.js')
       }
     ],
     client: {

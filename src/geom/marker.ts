@@ -170,12 +170,15 @@ function getBisectingAngle(prevPt: Point, crossingPt: Point, nextPt: Point): num
   const vIn = { x: nextPt.x - crossingPt.x, y: nextPt.y - crossingPt.y }
   const vOut = { x: prevPt.x - crossingPt.x, y: prevPt.y - crossingPt.y }
 
+  // the relative angle between the two vectors
+  const vectorAngle = getAngle(vIn, vOut)
+
+  // calculate the absolute angle of the vectors considering the x-axis as reference
   const refPoint = { x: crossingPt.x + 1, y: crossingPt.y }
   const refVector = { x: refPoint.x - crossingPt.x, y: refPoint.y - crossingPt.y }
   const refAngle = getAngle(vIn, refVector)
 
-  const vectorAngle = getAngle(vIn, vOut)
-
+  // return the absolute bisector
   return getOppositeAngle(vectorAngle) / 2 - refAngle
 }
 

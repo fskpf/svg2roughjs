@@ -1,0 +1,39 @@
+<?xml version="1.0" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="16" markerHeight="16" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 4 L 10 6 L 0 10 z"/>
+    </marker>
+
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="16" markerHeight="16" orient="auto-start-reverse">
+      <path fill="red" d="M 0 0 L 10 4 L 10 6 L 0 10 z"/>
+    </marker>
+  </defs>
+
+  <path d="M 150,80 L 200,80 L 200,180 z" stroke="gray" fill="none" marker-start="url(#arrow)" marker-end="url(#arrow)" marker-mid="url(#arrow-red)"/>
+
+  <g transform="translate(0, 150)">
+    <path d="M 150,80 L 200,40 L 75,180 z" stroke="gray" fill="none" marker-start="url(#arrow)" marker-end="url(#arrow)" marker-mid="url(#arrow-red)"/>
+  </g>
+
+  <g transform="translate(150, 150)">
+    <path d="M 150,80 L 200,160 L 75,0 z" stroke="gray" fill="none" marker-start="url(#arrow)" marker-end="url(#arrow)" marker-mid="url(#arrow-red)"/>
+  </g>
+
+  <g transform="translate(150, 25)">
+    <path d="M 150,80 L 150,150 L 200,0 z" stroke="gray" fill="none" marker-start="url(#arrow)" marker-end="url(#arrow)" marker-mid="url(#arrow-red)"/>
+  </g>
+
+  <g transform="translate(-70, 120)">
+    <path d="M 150,50 L 200,100 L 200,0 z" stroke="gray" fill="none" marker-start="url(#arrow)" marker-end="url(#arrow)" marker-mid="url(#arrow-red)"/>
+  </g>
+
+  <g transform="translate(150, 50)">
+    <path d="M 150,80 L -20,80 L 200,75 z" stroke="gray" fill="none" marker-start="url(#arrow)" marker-end="url(#arrow)" marker-mid="url(#arrow-red)"/>
+  </g>
+
+  <g transform="translate(-75, 30)">
+    <path d="M 150,80 z" stroke="gray" fill="none" marker-start="url(#arrow)" marker-end="url(#arrow)" marker-mid="url(#arrow-red)"/>
+  </g>
+
+</svg>
