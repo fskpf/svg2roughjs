@@ -85,23 +85,20 @@ export function getCombinedTransform(
 }
 
 /**
- * Applies the given svgTransform to the canvas context or the given element when in SVG mode.
- * @param element The element to which the transform should be applied
- * when in SVG mode.
+ * Applies the given svgTransform to the given element.
+ * @param element The element to which the transform should be applied.
  */
 export function applyGlobalTransform(
   context: RenderContext,
   svgTransform: SVGTransform | null,
-  element?: SVGGraphicsElement | null
+  element: SVGGraphicsElement
 ): void {
   if (svgTransform && svgTransform.matrix) {
     const matrix = svgTransform.matrix
-    if (element) {
-      if (element.transform.baseVal.numberOfItems > 0) {
-        element.transform.baseVal.getItem(0).setMatrix(matrix)
-      } else {
-        element.transform.baseVal.appendItem(svgTransform)
-      }
+    if (element.transform.baseVal.numberOfItems > 0) {
+      element.transform.baseVal.getItem(0).setMatrix(matrix)
+    } else {
+      element.transform.baseVal.appendItem(svgTransform)
     }
   }
 }

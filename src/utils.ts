@@ -88,8 +88,8 @@ export function convertToPixelUnit(context: RenderContext, value: string): numbe
 }
 
 /**
- * Helper method to append the returned `SVGGElement` from
- * Rough.js when drawing in SVG mode.
+ * Helper method to append the returned `SVGGElement` from Rough.js which
+ * also post processes the result e.g. by applying the clip.
  */
 export function appendSketchElement(
   context: RenderContext,
