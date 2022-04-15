@@ -58,6 +58,10 @@ function loadSvg(url: string) {
   return request.responseText
 }
 
+function isExistingTestcase(testcase: string): boolean {
+  return specTests.indexOf(testcase) !== -1
+}
+
 /**
  * Creates a reproducible testcase
  */
@@ -80,10 +84,15 @@ async function downloadTestcase(svg2roughjs: Svg2Roughjs) {
   }
   await svg2roughjs.sketch()
   const serializer = new XMLSerializer()
-  const test = document.querySelector('#input svg') as SVGSVGElement
-  let inputSvg = serializer.serializeToString(test)
-  inputSvg = '<?xml version="1.0" standalone="no"?>\r\n' + inputSvg
-  downloadFile(inputSvg, 'image/svg+xml', 'test.svg')
+
+  const testcaseName = testcaseSelect.options[testcaseSelect.selectedIndex].value
+  if (!isExistingTestcase(testcaseName)) {
+    const test = document.querySelector('#input svg') as SVGSVGElement
+    let inputSvg = serializer.serializeToString(test)
+    inputSvg = '<?xml version="1.0" standalone="no"?>\r\n' + inputSvg
+    downloadFile(inputSvg, 'image/svg+xml', 'test.svg')
+  }
+
   const spec = document.querySelector('#output svg') as SVGSVGElement
   let sketchedSvg = serializer.serializeToString(spec)
   sketchedSvg = '<?xml version="1.0" standalone="no"?>\r\n' + sketchedSvg

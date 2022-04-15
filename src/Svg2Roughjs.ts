@@ -59,8 +59,9 @@ export class Svg2Roughjs {
     if (this.$svg !== svg) {
       this.$svg = svg
 
-      this.width = this.coerceSize(svg, 'width', 300)
-      this.height = this.coerceSize(svg, 'height', 150)
+      const precision = this.roughConfig.fixedDecimalPlaceDigits
+      this.width = parseFloat(this.coerceSize(svg, 'width', 300).toFixed(precision))
+      this.height = parseFloat(this.coerceSize(svg, 'height', 150).toFixed(precision))
 
       // pre-process defs for subsequent references
       this.collectElementsWithID()
