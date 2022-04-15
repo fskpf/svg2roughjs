@@ -18,6 +18,7 @@ export function parseStyleConfig(
   element: SVGElement,
   svgTransform: SVGTransform | null
 ): Options {
+  const precision = context.roughConfig.fixedDecimalPlaceDigits ?? 15
   const config = Object.assign({}, context.roughConfig)
 
   // Scalefactor for certain style attributes. For lack of a better option here, use the determinant
@@ -76,7 +77,8 @@ export function parseStyleConfig(
   )
   if (strokeWidth) {
     // Convert to user space units (px)
-    config.strokeWidth = convertToPixelUnit(context, strokeWidth) * scaleFactor
+    const scaledWidth = convertToPixelUnit(context, strokeWidth) * scaleFactor
+    config.strokeWidth = parseFloat(scaledWidth.toFixed(precision))
   } else {
     // default stroke-width is 1
     config.strokeWidth = 1
@@ -93,7 +95,10 @@ export function parseStyleConfig(
       .split(/[\s,]+/)
       .filter(entry => entry.length > 0)
       // make sure that dashes/dots are at least somewhat visible
-      .map(dash => Math.max(0.5, convertToPixelUnit(context, dash) * scaleFactor))
+      .map(dash => {
+        const scaledLineDash = convertToPixelUnit(context, dash) * scaleFactor
+        return Math.max(0.5, parseFloat(scaledLineDash.toFixed(precision)))
+      })
   }
 
   const strokeDashOffset = getEffectiveAttribute(
@@ -103,7 +108,8 @@ export function parseStyleConfig(
     context.useElementContext
   )
   if (strokeDashOffset) {
-    config.strokeLineDashOffset = convertToPixelUnit(context, strokeDashOffset) * scaleFactor
+    const scaledOffset = convertToPixelUnit(context, strokeDashOffset) * scaleFactor
+    config.strokeLineDashOffset = parseFloat(scaledOffset.toFixed(precision))
   }
 
   // unstroked but filled shapes look weird, so always apply a stroke if we fill something
@@ -116,7 +122,7 @@ export function parseStyleConfig(
     const { angle, gap, weight } = createPen(context, element)
     config.hachureAngle = angle
     config.hachureGap = gap
-    config.fillWeight = weight
+    config.fillWeight = parseFloat(weight.toFixed(precision)) // value is used in the sketched output as-is
     // randomize double stroke effect if not explicitly set through user config
     if (typeof config.disableMultiStroke === 'undefined') {
       config.disableMultiStroke = Math.random() > 0.3

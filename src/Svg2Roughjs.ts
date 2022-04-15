@@ -46,13 +46,14 @@ export class Svg2Roughjs {
   private width: number = 0
   private height: number = 0
   private $outputType: OutputType
+  private $roughConfig: Options = {}
   private idElements: Record<string, SVGElement | string> = {}
 
   private outputElement: Element
   private lastResult: SVGSVGElement | HTMLCanvasElement | null = null
 
   /**
-   * The SVG that should be converted.
+   * Set the SVG that should be sketched.
    */
   set svg(svg: SVGSVGElement) {
     if (this.$svg !== svg) {
@@ -66,6 +67,9 @@ export class Svg2Roughjs {
     }
   }
 
+  /**
+   * Returns the SVG that should be sketched.
+   */
   get svg(): SVGSVGElement {
     return this.$svg as SVGSVGElement
   }
@@ -97,8 +101,31 @@ export class Svg2Roughjs {
     this.$outputType = type
   }
 
+  /**
+   * Returns the currently configured output type.
+   */
   get outputType(): OutputType {
     return this.$outputType
+  }
+
+  /**
+   * Sets the config object that is passed to Rough.js and considered
+   * during rendering of the `SVGElement`s.
+   *
+   * Sets `fixedDecimalPlaceDigits` to `3` if not specified otherwise.
+   */
+  set roughConfig(config: Options) {
+    if (typeof config.fixedDecimalPlaceDigits === 'undefined') {
+      config.fixedDecimalPlaceDigits = 3
+    }
+    this.$roughConfig = config
+  }
+
+  /**
+   * Returns the currently configured rendering configuration.
+   */
+  get roughConfig(): Options {
+    return this.$roughConfig
   }
 
   /**
@@ -108,13 +135,13 @@ export class Svg2Roughjs {
    * @param outputType Whether the output should be an SVG or drawn to an HTML canvas.
    * Defaults to SVG or CANVAS depending if the given target is of type `HTMLCanvasElement` or `SVGSVGElement`,
    * otherwise it defaults to SVG.
-   * @param roughConfig Config object this passed to the Rough.js ctor and
-   * also used while parsing the styles for `SVGElement`s.
+   * @param roughConfig Config object that is passed to Rough.js and considered during
+   * rendering of the `SVGElement`s.
    */
   constructor(
     target: string | HTMLCanvasElement | SVGSVGElement,
     outputType: OutputType = OutputType.SVG,
-    public roughConfig: Options = {}
+    roughConfig: Options = {}
   ) {
     if (!target) {
       throw new Error('No target provided')
@@ -124,6 +151,8 @@ export class Svg2Roughjs {
     if (!targetElement) {
       throw new Error('Could not find target in document')
     }
+
+    this.roughConfig = roughConfig
 
     this.outputElement = targetElement
     if (targetElement instanceof HTMLCanvasElement) {
