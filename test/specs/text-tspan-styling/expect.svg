@@ -1,0 +1,6 @@
+<?xml version="1.0" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="240" height="40" stroke-linecap="round"><rect fill="white" width="240" height="40"/><g class="text-container" transform="matrix(1 0 0 1 0 0)"><text x="10" y="30" class="small" style="font-style: italic;font-weight: 400;font-size: 12px;font-family: Comic Sans MS, cursive;" stroke="none" stroke-width="1px" fill="rgb(0, 0, 0)" text-anchor="start" dominant-baseline="auto">
+    You are
+    <tspan stroke="none" stroke-width="1px" fill="rgb(255, 0, 0)" text-anchor="start" dominant-baseline="auto">not</tspan>
+    a banana!
+  </text></g></svg>

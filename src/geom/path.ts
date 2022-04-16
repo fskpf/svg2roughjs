@@ -1,7 +1,10 @@
 import { encodeSVGPath, SVGPathData, SVGPathDataTransformer } from 'svg-pathdata'
-import { Point } from './point'
-import { parseStyleConfig, postProcessElement, RenderContext, sketchPath } from '../utils'
+import { appendPatternPaint } from '../styles/pattern'
+import { parseStyleConfig } from '../styles/styles'
+import { RenderContext } from '../types'
+import { appendSketchElement, sketchPath } from '../utils'
 import { drawMarkers } from './marker'
+import { Point } from './primitives'
 
 export function drawPath(
   context: RenderContext,
@@ -43,11 +46,19 @@ export function drawPath(
     return
   }
 
-  postProcessElement(
+  const pathSketch = sketchPath(
     context,
-    path,
-    sketchPath(context, encodedPathData, parseStyleConfig(context, path, svgTransform))
+    encodedPathData,
+    parseStyleConfig(context, path, svgTransform)
   )
+
+  appendPatternPaint(context, path, () => {
+    const proxy = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+    proxy.setAttribute('d', encodedPathData)
+    return proxy
+  })
+
+  appendSketchElement(context, path, pathSketch)
 
   // https://www.w3.org/TR/SVG11/painting.html#MarkerProperties
   // Note that for a ‘path’ element which ends with a closed sub-path,
@@ -58,7 +69,7 @@ export function drawPath(
   pathData.commands.forEach(cmd => {
     switch (cmd.type) {
       case SVGPathData.MOVE_TO: {
-        const p = new Point(cmd.x, cmd.y)
+        const p = { x: cmd.x, y: cmd.y }
         points.push(p)
         // each moveto starts a new subpath
         currentSubPathBegin = p
@@ -70,13 +81,13 @@ export function drawPath(
       case SVGPathData.CURVE_TO:
       case SVGPathData.SMOOTH_CURVE_TO:
       case SVGPathData.ARC:
-        points.push(new Point(cmd.x, cmd.y))
+        points.push({ x: cmd.x, y: cmd.y })
         break
       case SVGPathData.HORIZ_LINE_TO:
-        points.push(new Point(cmd.x, 0))
+        points.push({ x: cmd.x, y: 0 })
         break
       case SVGPathData.VERT_LINE_TO:
-        points.push(new Point(0, cmd.y))
+        points.push({ x: 0, y: cmd.y })
         break
       case SVGPathData.CLOSE_PATH:
         if (currentSubPathBegin) {

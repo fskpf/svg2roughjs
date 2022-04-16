@@ -1,13 +1,9 @@
 import { Point } from 'roughjs/bin/geometry'
-import { RenderMode } from '../RenderMode'
-import {
-  RenderContext,
-  getPointsArray,
-  applyMatrix,
-  postProcessElement,
-  parseStyleConfig,
-  applyGlobalTransform
-} from '../utils'
+import { appendPatternPaint } from '../styles/pattern'
+import { parseStyleConfig } from '../styles/styles'
+import { applyGlobalTransform, applyMatrix } from '../transformation'
+import { RenderContext } from '../types'
+import { appendSketchElement, getPointsArray } from '../utils'
 import { drawMarkers } from './marker'
 
 export function drawPolygon(
@@ -26,7 +22,14 @@ export function drawPolygon(
     transformed,
     parseStyleConfig(context, polygon, svgTransform)
   )
-  postProcessElement(context, polygon, polygonSketch)
+
+  appendPatternPaint(context, polygon, () => {
+    const proxy = document.createElementNS('http://www.w3.org/2000/svg', 'polygon')
+    proxy.setAttribute('points', transformed.join(' '))
+    return proxy
+  })
+
+  appendSketchElement(context, polygon, polygonSketch)
 
   // https://www.w3.org/TR/SVG11/painting.html#MarkerProperties
   // Note that for a ‘path’ element which ends with a closed sub-path,
@@ -41,30 +44,11 @@ export function drawPolygon(
 export function applyPolygonClip(
   context: RenderContext,
   polygon: SVGPolygonElement,
-  container: SVGClipPathElement | null,
+  container: SVGClipPathElement,
   svgTransform: SVGTransform | null
 ): void {
-  const targetCtx = context.targetCanvasContext
-  if (context.renderMode === RenderMode.CANVAS && targetCtx) {
-    const points = getPointsArray(polygon)
-    // in the clip case, we can actually transform the entire
-    // canvas without distorting the hand-drawn style
-    if (points.length > 0) {
-      targetCtx.save()
-      applyGlobalTransform(context, svgTransform)
-      const startPt = points[0]
-      targetCtx.moveTo(startPt.x, startPt.y)
-      for (let i = 1; i < points.length; i++) {
-        const pt = points[i]
-        targetCtx.lineTo(pt.x, pt.y)
-      }
-      targetCtx.closePath()
-      targetCtx.restore()
-    }
-  } else {
-    const clip = document.createElementNS('http://www.w3.org/2000/svg', 'polygon')
-    clip.setAttribute('points', polygon.getAttribute('points')!)
-    applyGlobalTransform(context, svgTransform, clip)
-    container!.appendChild(clip)
-  }
+  const clip = document.createElementNS('http://www.w3.org/2000/svg', 'polygon')
+  clip.setAttribute('points', polygon.getAttribute('points')!)
+  applyGlobalTransform(context, svgTransform, clip)
+  container.appendChild(clip)
 }

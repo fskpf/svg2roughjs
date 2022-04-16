@@ -1,0 +1,23 @@
+<?xml version="1.0" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="graph-div" width="100" height="60" style="max-width: 170.984375px;" viewBox="0 0 170.984375 60">
+	<style>#graph-div {font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;fill:#333;}#graph-div .error-icon{fill:hsl(220.5882352941, 100%, 98.3333333333%);}#graph-div .error-text{fill:rgb(8.5000000002, 5.7500000001, 0);stroke:rgb(8.5000000002, 5.7500000001, 0);}#graph-div .edge-thickness-normal{stroke-width:2px;}#graph-div .edge-thickness-thick{stroke-width:3.5px;}#graph-div .edge-pattern-solid{stroke-dasharray:0;}#graph-div .edge-pattern-dashed{stroke-dasharray:3;}#graph-div .edge-pattern-dotted{stroke-dasharray:2;}#graph-div .marker{fill:#0b0b0b;stroke:#0b0b0b;}#graph-div .marker.cross{stroke:#0b0b0b;}#graph-div svg{font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;}#graph-div .label{font-family:"trebuchet ms",verdana,arial,sans-serif;color:#333;}#graph-div .cluster-label text{fill:rgb(8.5000000002, 5.7500000001, 0);}#graph-div .cluster-label span{color:rgb(8.5000000002, 5.7500000001, 0);}#graph-div .label text,#graph-div span{fill:#333;color:#333;}#graph-div .node rect,#graph-div .node circle,#graph-div .node ellipse,#graph-div .node polygon,#graph-div .node path{fill:#fff4dd;stroke:hsl(40.5882352941, 60%, 83.3333333333%);stroke-width:1px;}#graph-div .node .label{text-align:center;}#graph-div .node.clickable{cursor:pointer;}#graph-div .arrowheadPath{fill:undefined;}#graph-div .edgePath .path{stroke:#0b0b0b;stroke-width:2.0px;}#graph-div .flowchart-link{stroke:#0b0b0b;fill:none;}#graph-div .edgeLabel{background-color:hsl(-79.4117647059, 100%, 93.3333333333%);text-align:center;}#graph-div .edgeLabel rect{opacity:0.5;background-color:hsl(-79.4117647059, 100%, 93.3333333333%);fill:hsl(-79.4117647059, 100%, 93.3333333333%);}#graph-div .cluster rect{fill:hsl(220.5882352941, 100%, 98.3333333333%);stroke:hsl(220.5882352941, 60%, 88.3333333333%);stroke-width:1px;}#graph-div .cluster text{fill:rgb(8.5000000002, 5.7500000001, 0);}#graph-div .cluster span{color:rgb(8.5000000002, 5.7500000001, 0);}#graph-div div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:12px;background:hsl(220.5882352941, 100%, 98.3333333333%);border:1px solid undefined;border-radius:2px;pointer-events:none;z-index:100;}#graph-div :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style>
+	<g>
+		<g class="output">
+			<g class="clusters"/>
+			<g class="edgePaths"/>
+			<g class="edgeLabels"/>
+			<g class="nodes">
+				<g class="node default" id="flowchart-A-126" transform="translate(85.4921875,30)" style="opacity: 1;">
+					<rect rx="5" ry="5" x="-77.4921875" y="-22" width="154.984375" height="44" class="label-container"/>
+					<g class="label" transform="translate(0,0)">
+						<g transform="translate(-67.4921875,-12)">
+							<foreignObject width="134.984375" height="24">
+								<div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap;">Hello Svg2Rough.js</div>
+							</foreignObject>
+						</g>
+					</g>
+				</g>
+			</g>
+		</g>
+	</g>
+</svg>

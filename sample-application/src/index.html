@@ -9,191 +9,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>Svg2Rough.js - Convert Your SVG to a Hand Drawn Image</title>
-
-  <style>
-    body * {
-      box-sizing: border-box;
-    }
-
-    body {
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      right: 0;
-      left: 0;
-      margin: 0;
-      font-family: Arial, Helvetica, sans-serif;
-      color: #2a333d;
-    }
-
-    #preview {
-      display: flex;
-      flex-direction: column;
-      overflow: auto;
-      width: 100%;
-    }
-
-    #input {
-      position: absolute;
-      top: 0;
-      left: 0;
-      opacity: 0;
-      background-color: white;
-    }
-
-    .header {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 20px 0;
-      width: 100%;
-      background-image: linear-gradient(60deg, #29323c 0%, #485563 100%);
-    }
-
-    .header-img {
-      width: 100px;
-      height: 100px;
-      margin: 0 40px;
-    }
-
-    .title {
-      text-align: center;
-      font-family: Arial, Helvetica, sans-serif;
-    }
-
-    .title h1 {
-      margin-bottom: 5px;
-      font-weight: bold;
-      letter-spacing: 5px;
-      font-size: 35px;
-    }
-
-    a:link,
-    a:visited,
-    a:hover,
-    a:active {
-      color: #fff;
-      text-decoration: none;
-    }
-
-    .sidebar {
-      border-right: 1px solid rgba(0, 0, 0, 0.14);
-      display: flex;
-      flex-direction: column;
-      padding: 0 15px;
-      flex: 0 0 200px;
-    }
-
-    .sidebar h2 {
-      margin: 10px 0;
-      font-size: 18px;
-      text-align: center;
-      letter-spacing: 1px;
-    }
-
-    .toolbar {
-      display: flex;
-      justify-items: center;
-      align-items: center;
-      flex-wrap: wrap;
-      padding: 5px 10px;
-    }
-
-    .toolbar>* {
-      margin: 2px 5px;
-    }
-
-    .toolbar input.toggle-btn:checked:hover+label {
-      background-color: #b2b2b2;
-    }
-
-    .toolbar label.toggle-btn:hover, .toolbar input.toggle-btn:checked+label {
-      background-color: #dedede;
-    }
-
-    label {
-      user-select: none;
-    }
-
-    label.icon {
-      width: 32px;
-      height: 32px;
-      background-repeat: no-repeat;
-      background-position: center;
-      border: none;
-      cursor: pointer;
-      background-size: 24px;
-      border-radius: 5px;
-    }
-
-    .icon-raw {
-      background: url('./static/raw-source.svg');
-    }
-
-    .toggle-btn {
-      display: none;
-    }
-
-    .main {
-      position: absolute;
-      top: 140px;
-      right: 0;
-      left: 0;
-      bottom: 0;
-      overflow: hidden;
-      display: flex;
-    }
-
-    .content-container {
-      overflow: hidden;
-      height: 100%;
-      position: relative;
-      display: flex;
-    }
-
-    .raw-svg-container {
-      flex: 0 0 40%;
-      overflow: auto;
-      border-right: 1px solid rgba(0, 0, 0, 0.14);
-      transition: flex-basis 0.2s ease-in-out;
-    }
-
-    .raw-svg-container.hidden {
-      flex-basis: 0;
-    }
-
-    .raw-svg-container .CodeMirror {
-      height: 100%;
-    }
-
-    .image-container {
-      flex: 1 1 auto;
-      overflow: auto;
-      position: relative;
-    }
-
-    .separator {
-      border-top: 1px solid rgba(0, 0, 0, 0.14);
-      margin: 15px 20px;
-    }
-
-    .checkbox {
-      display: flex;
-      align-items: center;
-    }
-
-    .checkbox input {
-      margin: 8px;
-    }
-
-    .checkbox * {
-      cursor: pointer;
-    }
-
-    label[for=opacity] {
-      cursor: pointer;
-    }
-  </style>
 </head>
 
 <body>
@@ -224,14 +39,14 @@
         <option value="zigzag-line">zigzag-line (slow)</option>
       </select>
       <div class="separator"></div>
-      
+
       <label for="output-format">Output Format</label>
       <select id="output-format" style="margin: 2px 0;">
         <option value="svg">SVG</option>
         <option value="canvas">Canvas</option>
       </select>
       <div class="separator"></div>
-      
+
       <label for="roughness-input">Roughness</label>
       <input id="roughness-input" type="range" value="1" min="0" max="4" step="0.5">
       <div class="separator"></div>
@@ -246,6 +61,13 @@
       <div class="checkbox">
         <input id="randomize" type="checkbox" checked>
         <label for="randomize">Randomize hatching per shape</label>
+      </div>
+      <div class="separator"></div>
+      <div class="checkbox">
+        <input id="sketchPatterns" type="checkbox" checked>
+        <label for="sketchPatterns" title="Whether patterns should be sketched or just copied">
+          Sketch patterns
+        </label>
       </div>
       <div class="separator"></div>
       <div class="checkbox">
@@ -278,6 +100,17 @@
         <label for="opacity">Compare: </label>
         <input id="opacity" type="range" min="0" max="1" step="0.05" value="0">
         <button id="download-btn">Download Sketch</button>
+        <div id="local-testing">
+          <button id="prev-testcase" title="Previous testcase" class="icon-button"><span
+              class="icon icon-chevron-left"></span></button>
+          <select id="select-testcase">
+            <option value=""></option>
+          </select>
+          <button id="next-testcase" title="Previous testcase" class="icon-button"><span
+              class="icon icon-chevron-right"></span></button>
+          <button id="download-testcase" title="Create a testcase for the repository" class="icon-button"><span
+              class="icon icon-flask"></span></button>
+        </div>
       </div>
 
       <div class="separator" style="margin: 0;"></div>

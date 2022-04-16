@@ -1,0 +1,20 @@
+<?xml version="1.0" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1200px" height="600px" viewBox="0 0 360 180">
+  <rect fill="#090" width="360" height="180"/>
+  <rect fill="#c00" width="360" height="120"/>
+  <rect fill="#fff" width="40" height="180"/>
+  <g id="g2">
+    <g id="g1" fill="#c00">
+      <path d="M20,90v-1h-1v-2h-1v-2h-2v2h1v2h1v1z M10,90v-2h-2v-3h-1v-3h-2v-3h-1v-4h2v3h2v3h2v3h1v-3h2v-3h2v-3h2v-3h2v-4h-2v-5h-2v-4h-2v5h1v5h-1v4h-2v4h-1v-4h-2v-4h-2v-5h-1v-4h1v-4h2v-4h1v-4h2v-4h2v4h2v4h2v4h2v5h1v15h-2v3h-2v3h-2v3h-1v3h-2v2z M11,37h2v-4h2v-4h2v-4h2v-4h1v-4h-1v-4h-2v-4h-2v-4h-2v-4h-2v4h-2v4h-2v4h-2v4h-1v4h1v4h2v4h2v4h2v4z M4,9v-4h2v4zM4,33v-4h2v4z M4,52v-4h2v4z M4,74v-4h2v4z M4,90v-2h2v2z M14,90v-2h2v2z M19,84v-4h1v4z M19,52v-4h1v4z M19,33v-4h2v4z M19,9v-4h1v4z"/>
+      <path fill="#fff" d="M11,29h2v-4h2v-4h2v-4h-2v-4h-2v-4h-2v4h-2v4h-2v4h2v4h2v4z"/>
+      <path d="M11,21h2v-4h-2v4z"/>
+      <g id="g3">
+        <path d="M17,48h1v-3h1v-3h1v-3h-1v-3h-1v-3h-1v3h-1v3h-1v3h1v3h1v3z"/>
+        <path fill="#fff" d="M17,39h1v3h-1v-3z"/>
+      </g>
+      <use xlink:href="#g3" transform="translate(-10)"/>
+    </g>
+    <use xlink:href="#g1" transform="rotate(180, 20,90)"/>
+  </g>
+  <use xlink:href="#g2" transform="translate(0,180) scale(1,-1)"/>
+</svg>

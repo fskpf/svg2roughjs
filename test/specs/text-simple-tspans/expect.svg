@@ -1,0 +1,7 @@
+<?xml version="1.0" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="660" height="220" stroke-linecap="round"><rect fill="white" height="220" width="660"/><g class="text-container" transform="matrix(1 0 0 1 0 0)"><text x="240" y="120" xml:space="default" style="font-style: normal;font-weight: 400;font-size: 32px;font-family: Comic Sans MS, cursive;" stroke="none" stroke-width="1px" fill="rgb(0, 0, 0)" text-anchor="start" dominant-baseline="auto">  
+    <tspan stroke="none" stroke-width="1px" fill="rgb(0, 0, 0)" text-anchor="start" dominant-baseline="auto">First</tspan>  
+    <tspan stroke="none" stroke-width="1px" fill="rgb(0, 0, 0)" text-anchor="start" dominant-baseline="auto">Second</tspan>
+    <tspan stroke="none" stroke-width="1px" fill="rgb(0, 0, 0)" text-anchor="start" dominant-baseline="auto">Third</tspan>	
+    <tspan stroke="none" stroke-width="1px" fill="rgb(0, 0, 0)" text-anchor="start" dominant-baseline="auto">Fourth</tspan>	
+  </text></g></svg>

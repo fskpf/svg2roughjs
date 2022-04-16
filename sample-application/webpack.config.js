@@ -1,14 +1,40 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
-/* eslint-disable no-undef */
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const CopyWebpackPlugin = require('copy-webpack-plugin')
+const path = require('path')
 
 module.exports = {
   mode: 'development',
-  entry: './src/index.js',
+  entry: './src/index.ts',
   output: {
     filename: '[name].[contenthash].js',
     clean: true
+  },
+  resolve: {
+    extensions: ['.ts', '...']
+  },
+  devServer: {
+    static: [
+      {
+        directory: path.join(__dirname, 'public')
+      },
+      {
+        directory: path.join(__dirname, '../src')
+      },
+      {
+        directory: path.join(__dirname, '../test'),
+        watch: false
+      },
+      {
+        // watch the test.js but not the actual specs...
+        directory: path.join(__dirname, '../test/tests.js')
+      }
+    ],
+    client: {
+      overlay: {
+        errors: true,
+        warnings: false
+      }
+    }
   },
   optimization: {
     splitChunks: {
@@ -27,10 +53,6 @@ module.exports = {
       }
     }
   },
-  snapshot: {
-    // automatically serve changed content in node_modules instead of older snapshots
-    managedPaths: []
-  },
   plugins: [
     new HtmlWebpackPlugin({
       template: './src/index.html'
@@ -40,7 +62,7 @@ module.exports = {
   module: {
     rules: [
       {
-        test: /\.m?js$/,
+        test: /\.(js|jsx|tsx|ts)$/,
         exclude: [
           // \\ for Windows, \/ for Mac OS and Linux
           /node_modules[\\/]core-js/,
@@ -49,13 +71,18 @@ module.exports = {
         use: {
           loader: 'babel-loader',
           options: {
-            presets: ['@babel/preset-env']
+            presets: ['@babel/preset-env', '@babel/preset-typescript']
           }
         }
       },
       {
-        test: /\.svg$/i,
-        use: 'raw-loader'
+        resourceQuery: /raw/,
+        type: 'asset/source'
+      },
+      {
+        test: /\.(png|svg|jpg|jpeg|gif)$/i,
+        resourceQuery: { not: [/raw/] },
+        type: 'asset/resource'
       },
       {
         test: /\.css$/i,

@@ -1,0 +1,20 @@
+<?xml version="1.0" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" id="mermaid-svg-77" width="100%" height="309" style="max-width: 500px;" viewBox="-50 -10 500 309">
+	<style>#mermaid-svg-77 {font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;fill:#ccc;}#mermaid-svg-77 .error-icon{fill:#a44141;}#mermaid-svg-77 .error-text{fill:#ddd;stroke:#ddd;}#mermaid-svg-77 .edge-thickness-normal{stroke-width:2px;}#mermaid-svg-77 .edge-thickness-thick{stroke-width:3.5px;}#mermaid-svg-77 .edge-pattern-solid{stroke-dasharray:0;}#mermaid-svg-77 .edge-pattern-dashed{stroke-dasharray:3;}#mermaid-svg-77 .edge-pattern-dotted{stroke-dasharray:2;}#mermaid-svg-77 .marker{fill:lightgrey;stroke:lightgrey;}#mermaid-svg-77 .marker.cross{stroke:lightgrey;}#mermaid-svg-77 svg{font-family:"trebuchet ms",verdana,arial,sans-serif;font-size:16px;}#mermaid-svg-77 .actor{stroke:#81B1DB;fill:#1f2020;}#mermaid-svg-77 text.actor&gt;tspan{fill:lightgrey;stroke:none;}#mermaid-svg-77 .actor-line{stroke:lightgrey;}#mermaid-svg-77 .messageLine0{stroke-width:1.5;stroke-dasharray:none;stroke:lightgrey;}#mermaid-svg-77 .messageLine1{stroke-width:1.5;stroke-dasharray:2,2;stroke:lightgrey;}#mermaid-svg-77 #arrowhead path{fill:lightgrey;stroke:lightgrey;}#mermaid-svg-77 .sequenceNumber{fill:black;}#mermaid-svg-77 #sequencenumber{fill:lightgrey;}#mermaid-svg-77 #crosshead path{fill:lightgrey;stroke:lightgrey;}#mermaid-svg-77 .messageText{fill:lightgrey;stroke:lightgrey;}#mermaid-svg-77 .labelBox{stroke:#81B1DB;fill:#1f2020;}#mermaid-svg-77 .labelText,#mermaid-svg-77 .labelText&gt;tspan{fill:lightgrey;stroke:none;}#mermaid-svg-77 .loopText,#mermaid-svg-77 .loopText&gt;tspan{fill:lightgrey;stroke:none;}#mermaid-svg-77 .loopLine{stroke-width:2px;stroke-dasharray:2,2;stroke:#81B1DB;fill:#81B1DB;}#mermaid-svg-77 .note{stroke:hsl(180, 0%, 18.3529411765%);fill:hsl(180, 1.5873015873%, 28.3529411765%);}#mermaid-svg-77 .noteText,#mermaid-svg-77 .noteText&gt;tspan{fill:rgb(183.8476190475, 181.5523809523, 181.5523809523);stroke:none;}#mermaid-svg-77 .activation0{fill:hsl(180, 1.5873015873%, 28.3529411765%);stroke:#81B1DB;}#mermaid-svg-77 .activation1{fill:hsl(180, 1.5873015873%, 28.3529411765%);stroke:#81B1DB;}#mermaid-svg-77 .activation2{fill:hsl(180, 1.5873015873%, 28.3529411765%);stroke:#81B1DB;}#mermaid-svg-77 .actor-man line{stroke:#81B1DB;fill:#1f2020;}#mermaid-svg-77 .actor-man circle,#mermaid-svg-77 line{stroke:#81B1DB;fill:#1f2020;stroke-width:2px;}#mermaid-svg-77 .label{font-family:Source Sans Pro,Helvetica Neue,Arial,sans-serif;}#mermaid-svg-77 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style>
+	<defs>
+		<marker id="sequencenumber" refX="15" refY="15" markerWidth="60" markerHeight="40" orient="auto">
+			<circle cx="15" cy="15" r="6"/>
+		</marker>
+	</defs>
+	
+	<line x1="75" y1="111" x2="325" y2="111" class="messageLine0" stroke-width="2" stroke="none" marker-end="url(#arrowhead)" marker-start="url(#sequencenumber)" style="fill: none;"/>
+	
+	
+	<line x1="325" y1="157" x2="75" y2="157" class="messageLine1" stroke-width="2" stroke="none" marker-end="url(#arrowhead)" marker-start="url(#sequencenumber)" style="stroke-dasharray: 3, 3; fill: none;"/>
+	
+	
+	<line x1="75" y1="203" x2="325" y2="203" class="messageLine0" stroke-width="2" stroke="none" marker-end="url(#filled-head)" marker-start="url(#sequencenumber)" style="fill: none;"/>
+	
+	
+	
+</svg>

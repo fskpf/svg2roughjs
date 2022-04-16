@@ -1,2 +1,2 @@
 export * from './Svg2Roughjs'
-export * from './RenderMode'
+export * from './OutputType'

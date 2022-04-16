@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "module": "es6",
+    "target": "es2015",
+    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "node",
+    "lib": ["dom", "es2015"],
+    "declaration": true
+  },
+  "include": ["../dist/index.d.ts", "src/types.d.ts", "src/**/*.ts"]
+}

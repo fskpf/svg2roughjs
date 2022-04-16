@@ -1,0 +1,9 @@
+<?xml version="1.0" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="660" height="220" style="outline: 1px solid red; font-size: 2em; overflow: visible;">  
+  <text x="240" y="120" xml:space="default">  
+    <tspan>First</tspan>  
+    <tspan>Second</tspan>
+    <tspan>Third</tspan>	
+    <tspan>Fourth</tspan>	
+  </text>  
+</svg>

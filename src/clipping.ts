@@ -1,15 +1,11 @@
+import { getIdFromUrl, getNodeChildren } from './dom-helpers'
 import { applyCircleClip } from './geom/circle'
 import { applyEllipseClip } from './geom/ellipse'
 import { applyPolygonClip } from './geom/polygon'
 import { applyRectClip } from './geom/rect'
-import { RenderMode } from './RenderMode'
-import {
-  getCombinedTransform,
-  getDefsElement,
-  getIdFromUrl,
-  getNodeChildren,
-  RenderContext
-} from './utils'
+import { getCombinedTransform } from './transformation'
+import { RenderContext } from './types'
+import { getDefsElement } from './utils'
 
 /**
  * Applies the clip-path to the CanvasContext.
@@ -31,22 +27,14 @@ export function applyClipPath(
   }
 
   // TODO clipPath: consider clipPathUnits
-  let clipContainer: SVGClipPathElement | null = null
-  // for canvas rendering, we just apply the clip to the CanvasContext
-  const targetCtx = context.targetCanvasContext
-  // for SVG output, we create clipPath defs
-  const targetDefs = context.targetSvg ? getDefsElement(context.targetSvg) : null
-  if (context.renderMode === RenderMode.CANVAS && targetCtx) {
-    // for a canvas, we just apply a 'ctx.clip()' path
-    targetCtx.beginPath()
-  } else if (targetDefs) {
-    // unfortunately, we cannot reuse clip-paths due to the 'global transform' approach
-    const sketchClipPathId = `${id}_${targetDefs.childElementCount}`
-    clipContainer = document.createElementNS('http://www.w3.org/2000/svg', 'clipPath')
-    clipContainer.id = sketchClipPathId
-    // remember the new id by storing it on the owner element
-    owner.setAttribute('data-sketchy-clip-path', sketchClipPathId)
-  }
+  //  create clipPath defs
+  const targetDefs = getDefsElement(context)
+  // unfortunately, we cannot reuse clip-paths due to the 'global transform' approach
+  const sketchClipPathId = `${id}_${targetDefs.childElementCount}`
+  const clipContainer = document.createElementNS('http://www.w3.org/2000/svg', 'clipPath')
+  clipContainer.id = sketchClipPathId
+  // remember the new id by storing it on the owner element
+  owner.setAttribute('data-sketchy-clip-path', sketchClipPathId)
 
   // traverse clip-path elements in DFS
   const stack: { element: SVGElement; transform: SVGTransform | null }[] = []
@@ -84,14 +72,10 @@ export function applyClipPath(
     }
   }
 
-  if (context.renderMode === RenderMode.CANVAS && targetCtx) {
-    targetCtx.clip()
-  } else if (targetDefs && clipContainer) {
-    if (clipContainer.childNodes.length > 0) {
-      // add the clip-path only if it contains converted elements
-      // some elements are not yet supported
-      targetDefs.appendChild(clipContainer)
-    }
+  if (clipContainer.childNodes.length > 0) {
+    // add the clip-path only if it contains converted elements
+    // some elements are not yet supported
+    targetDefs.appendChild(clipContainer)
   }
 }
 
@@ -101,7 +85,7 @@ export function applyClipPath(
 function applyElementClip(
   context: RenderContext,
   element: SVGElement,
-  container: SVGClipPathElement | null,
+  container: SVGClipPathElement,
   svgTransform: SVGTransform | null
 ) {
   switch (element.tagName) {

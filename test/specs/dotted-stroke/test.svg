@@ -1,0 +1,11 @@
+<?xml version="1.0" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="201px" height="80px" viewBox="0 0 201 80" style="overflow: hidden; display: block; width: 201px; height: 80px;">
+  <g style="pointer-events:visiblePainted" transform="translate(-190.75 229.5)" image-rendering="auto" shape-rendering="auto">
+    <path d="M 245.5,-189.5 L 336,-189.5" stroke="rgb(0,0,0)" stroke-opacity="1" stroke-width="1" stroke-dasharray="0.01,2" stroke-dashoffset="0" stroke-linecap="round" stroke-linejoin="miter" stroke-miterlimit="10" fill="none"/>
+    <g transform="translate(336 -189.5)">
+      <path d="M 4,0 L 8,3 L 4,6" stroke="rgb(0,0,0)" stroke-opacity="1" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" fill="rgb(255,255,255)" fill-opacity="0" transform="translate(-8 -3)"/>
+    </g>
+    <rect fill="rgb(255,140,0)" stroke="rgb(255,140,0)" stroke-opacity="1" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10" fill-opacity="1" x="215.5" width="30" height="30" y="-204.5"/>
+    <rect fill="rgb(255,140,0)" stroke="rgb(255,140,0)" stroke-opacity="1" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10" fill-opacity="1" x="337" width="30" height="30" y="-204.5"/>
+  </g>
+</svg>
