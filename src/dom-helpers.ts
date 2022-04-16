@@ -21,6 +21,18 @@ export function getNodeChildren(element: Element): Element[] {
 }
 
 /**
+ * IE doesn't support `element.parentElement` in SVG documents.
+ * This helper utilizes `parentNode` and checks for the `nodeType`.
+ */
+export function getParentElement(node: Node): Element | null {
+  const parentNode = node.parentNode
+  if (parentNode && parentNode.nodeType === Node.ELEMENT_NODE) {
+    return parentNode as Element
+  }
+  return null
+}
+
+/**
  * Returns the CSS rules that apply to the given element (ignoring inheritance).
  *
  * Based on https://stackoverflow.com/a/22638396

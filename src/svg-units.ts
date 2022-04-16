@@ -1,3 +1,4 @@
+import { getParentElement } from './dom-helpers'
 import { Size } from './geom/primitives'
 import { getEffectiveAttribute } from './styles/effective-attributes'
 import { RenderContext } from './types'
@@ -216,7 +217,7 @@ function isAbsoluteUnit(unit: string): boolean {
  * Returns the width of the '0' character in the context of the element.
  */
 function measureZeroCharacter(element: SVGElement): number {
-  const parent = element.parentNode
+  const parent = getParentElement(element)
   if (!parent) {
     return 1
   }

@@ -32,7 +32,7 @@ export function drawImage(
       }
       const parser = new DOMParser()
       const doc = parser.parseFromString(svgString, 'image/svg+xml')
-      const svg = doc.firstElementChild as SVGSVGElement
+      const svg = doc.firstChild as SVGSVGElement
 
       let matrix = context.sourceSvg.createSVGMatrix().translate(x, y)
       matrix = svgTransform ? svgTransform.matrix.multiply(matrix) : matrix

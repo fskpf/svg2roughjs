@@ -1,8 +1,9 @@
+import { getParentElement } from '../dom-helpers'
 import { RenderContext, UseContext } from '../types'
 
 /**
  * Returns the attribute value of an element under consideration
- * of inherited attributes from the `parentNode`.
+ * of inherited attributes from the `parentElement`.
  * @param attributeName Name of the attribute to look up
  * @param currentUseCtx Consider different DOM hierarchy for use elements
  * @return attribute value if it exists
@@ -26,7 +27,7 @@ export function getEffectiveAttribute(
   }
 
   if (!attr) {
-    let parent: Node | null = element.parentNode
+    let parent: Node | null = getParentElement(element)
 
     const useCtx = currentUseCtx
     let nextCtx = useCtx
@@ -77,7 +78,7 @@ export function getEffectiveElementOpacity(
     currentOpacity *= elementOpacity
   }
   // traverse upwards to combine parent opacities as well
-  let parent: Node | null = element.parentNode
+  let parent: Node | null = getParentElement(element)
 
   const useCtx = currentUseCtx
   let nextUseCtx = useCtx
