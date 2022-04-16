@@ -1,7 +1,7 @@
 import { getIdFromUrl, reparentNodes } from '../dom-helpers'
 import { RenderContext } from '../types'
 import { appendSketchElement, getDefsElement, sketchFragment } from '../utils'
-import { getEffectiveAttribute } from './styles'
+import { getEffectiveAttribute } from './effective-attributes'
 
 /**
  * If the input element has a pattern stroke/fill, an additional element is added to the result,

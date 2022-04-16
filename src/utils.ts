@@ -1,6 +1,4 @@
 import { Options } from 'roughjs/bin/core'
-// @ts-ignore
-import units from 'units-css'
 import { reparentNodes } from './dom-helpers'
 import { Point } from './geom/primitives'
 import { RenderContext } from './types'
@@ -9,12 +7,6 @@ import { RenderContext } from './types'
  * Regexp that detects curved commands in path data.
  */
 const PATH_CURVES_REGEX = /[acsqt]/i
-
-/**
- * A simple regexp which is used to test whether a given string value
- * contains unit identifiers, e.g. "1px", "1em", "1%", ...
- */
-const CONTAINS_UNIT_REGEXP = /[a-z%]/
 
 /**
  * Returns the <defs> element of the output SVG sketch.
@@ -70,21 +62,6 @@ export function getPointsArray(element: SVGPolygonElement | SVGPolylineElement):
     }
   }
   return points
-}
-
-/**
- * Converts the given string to px unit. May be either a
- * [length](https://developer.mozilla.org/de/docs/Web/SVG/Content_type#Length)
- * or a [percentage](https://developer.mozilla.org/de/docs/Web/SVG/Content_type#Percentage).
- * @returns The value in px unit
- */
-export function convertToPixelUnit(context: RenderContext, value: string): number {
-  // css-units fails for converting from unit-less to 'px' in IE11,
-  // thus we only apply it to non-px values
-  if (value.match(CONTAINS_UNIT_REGEXP) !== null) {
-    return units.convert('px', value, context.sourceSvg)
-  }
-  return parseFloat(value)
 }
 
 /**

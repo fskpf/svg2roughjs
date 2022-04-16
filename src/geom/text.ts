@@ -1,5 +1,6 @@
 import { getNodeChildren } from '../dom-helpers'
-import { concatStyleStrings, getEffectiveAttribute } from '../styles/styles'
+import { concatStyleStrings } from '../styles/styles'
+import { getEffectiveAttribute } from '../styles/effective-attributes'
 import { applyGlobalTransform } from '../transformation'
 import { RenderContext } from '../types'
 import { appendSketchElement } from '../utils'

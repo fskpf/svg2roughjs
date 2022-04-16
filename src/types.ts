@@ -1,5 +1,6 @@
 import { Options } from 'roughjs/bin/core'
 import { RoughSVG } from 'roughjs/bin/svg'
+import { Rectangle } from './geom/primitives'
 
 /**
  * A context that represents the current state of the rendering,
@@ -17,6 +18,7 @@ export type RenderContext = {
   svgSketch: SVGSVGElement
   svgSketchDefs?: SVGDefsElement
   useElementContext?: UseContext | null
+  viewBox?: Rectangle
   styleSheets: CSSStyleSheet[]
   processElement: (
     context: RenderContext,

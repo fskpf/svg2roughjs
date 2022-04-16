@@ -15,7 +15,7 @@ export default /** @type {import("@web/test-runner").TestRunnerConfig} */ ({
     // We need to use rollup here unfortunately, because esbuild in the open-wc test-runner
     // only works on esbuild's single file transform API that doesn't bundle dependencies
     // automatically. This does not work for the external dependencies here (e.g. rough,
-    // units-css, etc.), which cannot be resolved then.
+    // etc.), which cannot be resolved then.
     //
     // So use rollup with a configuration that creates one big-fat bundle without external deps.
     rollupBundlePlugin({

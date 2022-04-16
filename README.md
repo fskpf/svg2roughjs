@@ -98,7 +98,6 @@ Some sample images with different Svg2rough.js settings. Try it yourself [here](
 - [Rough.js](https://github.com/pshihn/rough) – Draws the hand-drawn elements
 - [svg-pathdata](https://github.com/nfroidure/svg-pathdata) – Parses SVGPathElements
 - [TinyColor](https://github.com/bgrins/TinyColor) – Color manipulation
-- [units-css](https://github.com/alexdunphy/units) – CSS units parsing
 
 ## License
 

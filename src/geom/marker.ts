@@ -1,7 +1,7 @@
 import { getIdFromUrl } from '../dom-helpers'
-import { getEffectiveAttribute } from '../styles/styles'
+import { getEffectiveAttribute } from '../styles/effective-attributes'
+import { convertToPixelUnit } from '../svg-units'
 import { RenderContext } from '../types'
-import { convertToPixelUnit } from '../utils'
 import { equals, Point } from './primitives'
 
 export function drawMarkers(
@@ -146,7 +146,7 @@ function getScaleFactor(
     // default is strokeWidth by SVG spec
     const strokeWidth = getEffectiveAttribute(context, referrer, 'stroke-width')
     if (strokeWidth) {
-      scaleFactor = convertToPixelUnit(context, strokeWidth)
+      scaleFactor = convertToPixelUnit(context, referrer, strokeWidth, 'stroke-width')
     }
   }
   return scaleFactor

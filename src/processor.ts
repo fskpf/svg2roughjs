@@ -8,6 +8,7 @@ import { drawLine } from './geom/line'
 import { drawPath } from './geom/path'
 import { drawPolygon } from './geom/polygon'
 import { drawPolyline } from './geom/polyline'
+import { Rectangle } from './geom/primitives'
 import { drawRect } from './geom/rect'
 import { drawText } from './geom/text'
 import { drawUse } from './geom/use'
@@ -29,7 +30,9 @@ export function processRoot(
   height?: number
 ): void {
   // traverse svg in DFS
-  const stack: { element: SVGElement; transform: SVGTransform | null }[] = []
+  const stack: { element: SVGElement; transform: SVGTransform | null; viewBox: Rectangle }[] = []
+
+  const currentViewBox: Rectangle = { x: 0, y: 0, w: width ?? 0, h: height ?? 0 }
 
   if (
     root instanceof SVGSVGElement ||
@@ -57,11 +60,7 @@ export function processRoot(
 
     let rootTransform = context.sourceSvg.createSVGMatrix()
 
-    if (
-      typeof width !== 'undefined' &&
-      typeof height !== 'undefined' &&
-      root.getAttribute('viewBox')
-    ) {
+    if (root.getAttribute('viewBox')) {
       const {
         x: viewBoxX,
         y: viewBoxY,
@@ -69,21 +68,28 @@ export function processRoot(
         height: viewBoxHeight
       } = root.viewBox.baseVal
 
-      // viewBox values might scale the SVGs content
-      const sx = width / viewBoxWidth
-      const sy = height / viewBoxHeight
-      const centerviewportX = rootX + width * 0.5
-      const centerviewportY = rootY + height * 0.5
-      const centerViewBoxX = viewBoxX + viewBoxWidth * 0.5
-      const centerViewBoxY = viewBoxY + viewBoxHeight * 0.5
-      // only support scaling from the center, e.g. xMidYMid
-      rootTransform = rootTransform.translate(centerviewportX, centerviewportY)
-      if (root.getAttribute('preserveAspectRatio') === 'none') {
-        rootTransform = rootTransform.scaleNonUniform(sx, sy)
-      } else {
-        rootTransform = rootTransform.scale(Math.min(sx, sy))
+      currentViewBox.x = viewBoxX
+      currentViewBox.y = viewBoxY
+      currentViewBox.w = viewBoxWidth
+      currentViewBox.h = viewBoxHeight
+
+      if (typeof width !== 'undefined' && typeof height !== 'undefined') {
+        // viewBox values might scale the SVGs content
+        const sx = width / viewBoxWidth
+        const sy = height / viewBoxHeight
+        const centerviewportX = rootX + width * 0.5
+        const centerviewportY = rootY + height * 0.5
+        const centerViewBoxX = viewBoxX + viewBoxWidth * 0.5
+        const centerViewBoxY = viewBoxY + viewBoxHeight * 0.5
+        // only support scaling from the center, e.g. xMidYMid
+        rootTransform = rootTransform.translate(centerviewportX, centerviewportY)
+        if (root.getAttribute('preserveAspectRatio') === 'none') {
+          rootTransform = rootTransform.scaleNonUniform(sx, sy)
+        } else {
+          rootTransform = rootTransform.scale(Math.min(sx, sy))
+        }
+        rootTransform = rootTransform.translate(-centerViewBoxX, -centerViewBoxY)
       }
-      rootTransform = rootTransform.translate(-centerViewBoxX, -centerViewBoxY)
     } else {
       rootTransform = rootTransform.translate(rootX, rootY)
     }
@@ -109,17 +115,18 @@ export function processRoot(
         continue
       }
       const childTransform = getCombinedTransform(context, child, svgTransform)
-      stack.push({ element: child, transform: childTransform })
+      stack.push({ element: child, transform: childTransform, viewBox: currentViewBox })
     }
   } else {
-    stack.push({ element: root, transform: svgTransform })
+    stack.push({ element: root, transform: svgTransform, viewBox: currentViewBox })
   }
 
   while (stack.length > 0) {
-    const { element, transform } = stack.pop()!
+    const { element, transform, viewBox } = stack.pop()!
 
     // maybe draw the element
     try {
+      context.viewBox = viewBox
       drawElement(context, element, transform)
     } catch (e) {
       console.error(e)
@@ -143,7 +150,7 @@ export function processRoot(
     for (let i = children.length - 1; i >= 0; i--) {
       const childElement = children[i] as SVGGraphicsElement
       const newTransform = getCombinedTransform(context, childElement, transform)
-      stack.push({ element: childElement, transform: newTransform })
+      stack.push({ element: childElement, transform: newTransform, viewBox })
     }
   }
 }
