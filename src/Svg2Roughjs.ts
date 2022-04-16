@@ -195,7 +195,7 @@ export class Svg2Roughjs {
     }
 
     // remove the previous attached result
-    this.lastResult?.parentElement?.removeChild(this.lastResult)
+    this.lastResult?.parentNode?.removeChild(this.lastResult)
     // assume that the given output element is a container, thus append the sketch to it
     if (this.outputType === OutputType.SVG) {
       const svgSketch = renderContext.svgSketch

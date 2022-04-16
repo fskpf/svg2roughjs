@@ -216,7 +216,7 @@ function isAbsoluteUnit(unit: string): boolean {
  * Returns the width of the '0' character in the context of the element.
  */
 function measureZeroCharacter(element: SVGElement): number {
-  const parent = element.parentElement
+  const parent = element.parentNode
   if (!parent) {
     return 1
   }
