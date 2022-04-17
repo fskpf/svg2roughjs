@@ -1,16 +1,17 @@
 <?xml version="1.0" standalone="no"?>
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 640 375" width="640" height="375">
+<svg xmlns="http://www.w3.org/2000/svg"
+  xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 640 375" width="640" height="375">
   <defs>
     <clipPath id="clip1">
-	  <polygon points="300,10 240,198 390,78"/>
-    </clipPath>  
+      <polygon points="300,10 240,198 390,78"/>
+    </clipPath>
     <clipPath id="clip2">
-	  <polygon points="590,78 410,78 560,198"/>
-    </clipPath>  
- 
+      <polygon points="590,78 410,78 560,198"/>
+    </clipPath>
+
   </defs>
 
- 
-  <rect x="200" y="0" width="200" height="200" fill="#dfac20" clip-path="url(#clip1)" data-sketchy-clip-path="clip1_0"/>
-  <rect x="410" y="0" width="200" height="200" fill="#dfac20" clip-path="url(#clip2)" data-sketchy-clip-path="clip2_1"/>
+
+  <rect x="200" y="0" width="200" height="200" fill="#dfac20" clip-path="url(#clip1)" />
+  <rect x="410" y="0" width="200" height="200" fill="#dfac20" clip-path="url(#clip2)" />
 </svg>

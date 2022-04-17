@@ -8,6 +8,8 @@ import { getCombinedTransform } from './transformation'
 import { RenderContext } from './types'
 import { getDefsElement } from './utils'
 
+export const SKETCH_CLIP_ATTRIBUTE = 'data-sketchy-clip-path'
+
 /**
  * Applies the clip-path to the CanvasContext.
  */
@@ -115,9 +117,8 @@ function applyElementClip(
  * on the child elements.
  */
 function storeSketchClipId(element: SVGElement, id: string): void {
-  const sketchClipAttr = 'data-sketchy-clip-path'
   if (element.tagName !== 'g') {
-    element.setAttribute(sketchClipAttr, id)
+    element.setAttribute(SKETCH_CLIP_ATTRIBUTE, id)
     return
   }
 
@@ -129,7 +130,7 @@ function storeSketchClipId(element: SVGElement, id: string): void {
 
   while (stack.length > 0) {
     const element = stack.pop()!
-    element.setAttribute(sketchClipAttr, id)
+    element.setAttribute(SKETCH_CLIP_ATTRIBUTE, id)
 
     const children = getNodeChildren(element)
     for (let i = children.length - 1; i >= 0; i--) {

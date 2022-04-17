@@ -1,2 +1,66 @@
 <?xml version="1.0" standalone="no"?>
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="188px" height="208px" viewBox="0 0 188 208" style="overflow: hidden; display: block; width: 188px; height: 208px;"><defs><style xmlns="http://www.w3.org/1999/xhtml" type="text/css">@font-face{font-family:'Roboto'; src: url(data:application/font-ttf;charset=utf-8;base64,undefined) format('truetype');}</style></defs><g style="pointer-events:visiblePainted" transform="translate(-1114.1829365079366 -543)" image-rendering="auto" shape-rendering="auto"><g class="uml-node" transform="translate(1140.1337652480663 569)"><rect fill="rgb(255,255,255)" stroke="rgb(96,125,139)" stroke-opacity="1" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10" fill-opacity="1" x="0" y="0" height="156" width="136.098"/><g transform="translate(0 0)"><rect fill="rgb(96,125,139)" stroke="none" fill-opacity="1" x="0" y="0" height="50" width="136.098"/><text font-family="'Arial'" font-size="12px" font-style="normal" font-weight="normal" text-anchor="start" fill="rgb(0,0,0)" fill-opacity="1" dy="0.9166666666666666em" transform="translate(0 0)"/></g><g transform="translate(0 0)"><text font-family="'Arial'" font-size="12px" font-style="normal" font-weight="normal" text-anchor="middle" fill="rgb(255,255,255)" fill-opacity="1" dy="0.9166666666666666em" transform="translate(68.0491712598702 18)">Exam</text></g><g transform="translate(0 52)" cursor="pointer"><rect fill="rgb(96,125,139)" stroke="none" fill-opacity="1" x="0" y="0" height="20" width="136.098"/><text font-family="'Arial'" font-size="12px" font-style="normal" font-weight="normal" text-anchor="start" fill="rgb(0,0,0)" fill-opacity="1" dy="0.9166666666666666em" transform="translate(0 0)"/><polygon fill="white" points="-5,-3.5 5,-3.5 0,6" transform="translate(12 10)" class="uml-button"/><g class="uml-button"><rect fill="rgb(96,125,139)" fill-opacity="1" x="99.09834251974041px" y="2px" width="16px" height="16px"/><path fill="white" d="M8.5,16.5c-4.418,0-8,3.582-8,8s3.582,8,8,8c4.418,0,8-3.582,8-8S12.918,16.5,8.5,16.5z M13.5,25.5h-4v4h-2v-4h-4v-2h4v-4h2v4h4V25.5z" transform="matrix(0.8 0 0 0.8 100.09834251974041 -10)"/></g><g class="uml-button disabled"><rect fill="rgb(96,125,139)" fill-opacity="1" x="117.09834251974041px" y="2px" width="16px" height="16px"/><path fill="white" fill-opacity="0.5" d="M8.5,16.5c-4.418,0-8,3.582-8,8s3.582,8,8,8c4.418,0,8-3.582,8-8S12.918,16.5,8.5,16.5z M13.5,25.5h-10v-2h10V25.5z" transform="matrix(0.8 0 0 0.8 118.09834251974041 -10)"/></g></g><g transform="translate(25 52)" cursor="pointer"><text font-family="'Arial'" font-size="12px" font-style="normal" font-weight="normal" text-anchor="start" fill="rgb(255,255,255)" fill-opacity="1" dy="0.9166666666666666em" transform="translate(0 3)">Attributes</text></g><g transform="translate(25 72)"><text font-family="'Arial'" font-size="12px" font-style="normal" font-weight="normal" text-anchor="start" fill="rgb(0,0,0)" fill-opacity="1" dy="0.9166666666666666em" transform="translate(0 1)">exName:String</text></g><g transform="translate(25 88)"><text font-family="'Arial'" font-size="12px" font-style="normal" font-weight="normal" text-anchor="start" fill="rgb(0,0,0)" fill-opacity="1" dy="0.9166666666666666em" transform="translate(0 1)" clip-path="url(#ygc858_0)" data-sketchy-clip-path="ygc858_0_0">percentage:Number</text><clipPath id="ygc858_0"><rect x="0" y="-1" height="16" width="106.098"/></clipPath></g><g transform="translate(25 104)"><text font-family="'Arial'" font-size="12px" font-style="normal" font-weight="normal" text-anchor="start" fill="rgb(0,0,0)" fill-opacity="1" dy="0.9166666666666666em" transform="translate(0 1)">date: Date</text></g><g transform="translate(0 120)" cursor="pointer"><rect fill="rgb(96,125,139)" stroke="none" fill-opacity="1" x="0" y="0" height="20" width="136.098"/><text font-family="'Arial'" font-size="12px" font-style="normal" font-weight="normal" text-anchor="start" fill="rgb(0,0,0)" fill-opacity="1" dy="0.9166666666666666em" transform="translate(0 0)"/><polygon fill="white" points="-5,-3.5 5,-3.5 0,6" transform="translate(12 10)" class="uml-button"/><g class="uml-button"><rect fill="rgb(96,125,139)" fill-opacity="1" x="99.09834251974041px" y="2px" width="16px" height="16px"/><path fill="white" d="M8.5,16.5c-4.418,0-8,3.582-8,8s3.582,8,8,8c4.418,0,8-3.582,8-8S12.918,16.5,8.5,16.5z M13.5,25.5h-4v4h-2v-4h-4v-2h4v-4h2v4h4V25.5z" transform="matrix(0.8 0 0 0.8 100.09834251974041 -10)"/></g><g class="uml-button disabled"><rect fill="rgb(96,125,139)" fill-opacity="1" x="117.09834251974041px" y="2px" width="16px" height="16px"/><path fill="white" fill-opacity="0.5" d="M8.5,16.5c-4.418,0-8,3.582-8,8s3.582,8,8,8c4.418,0,8-3.582,8-8S12.918,16.5,8.5,16.5z M13.5,25.5h-10v-2h10V25.5z" transform="matrix(0.8 0 0 0.8 118.09834251974041 -10)"/></g></g><g transform="translate(25 120)" cursor="pointer"><text font-family="'Arial'" font-size="12px" font-style="normal" font-weight="normal" text-anchor="start" fill="rgb(255,255,255)" fill-opacity="1" dy="0.9166666666666666em" transform="translate(0 3)">Operations</text></g><g transform="translate(25 140)"><text font-family="'Arial'" font-size="12px" font-style="normal" font-weight="normal" text-anchor="start" fill="rgb(0,0,0)" fill-opacity="1" dy="0.9166666666666666em" transform="translate(0 1)">isIn():Boolean</text></g></g></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg"
+  xmlns:xlink="http://www.w3.org/1999/xlink" width="188px" height="208px" viewBox="0 0 188 208" style="overflow: hidden; display: block; width: 188px; height: 208px;">
+  <defs>
+    <style xmlns="http://www.w3.org/1999/xhtml" type="text/css">@font-face{font-family:'Roboto'; src: url(data:application/font-ttf;charset=utf-8;base64,undefined) format('truetype');}</style>
+  </defs>
+  <g style="pointer-events:visiblePainted" transform="translate(-1114.1829365079366 -543)" image-rendering="auto" shape-rendering="auto">
+    <g class="uml-node" transform="translate(1140.1337652480663 569)">
+      <rect fill="rgb(255,255,255)" stroke="rgb(96,125,139)" stroke-opacity="1" stroke-width="2" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10" fill-opacity="1" x="0" y="0" height="156" width="136.098"/>
+      <g transform="translate(0 0)">
+        <rect fill="rgb(96,125,139)" stroke="none" fill-opacity="1" x="0" y="0" height="50" width="136.098"/>
+        <text font-family="'Arial'" font-size="12px" font-style="normal" font-weight="normal" text-anchor="start" fill="rgb(0,0,0)" fill-opacity="1" dy="0.9166666666666666em" transform="translate(0 0)"/>
+      </g>
+      <g transform="translate(0 0)">
+        <text font-family="'Arial'" font-size="12px" font-style="normal" font-weight="normal" text-anchor="middle" fill="rgb(255,255,255)" fill-opacity="1" dy="0.9166666666666666em" transform="translate(68.0491712598702 18)">Exam</text>
+      </g>
+      <g transform="translate(0 52)" cursor="pointer">
+        <rect fill="rgb(96,125,139)" stroke="none" fill-opacity="1" x="0" y="0" height="20" width="136.098"/>
+        <text font-family="'Arial'" font-size="12px" font-style="normal" font-weight="normal" text-anchor="start" fill="rgb(0,0,0)" fill-opacity="1" dy="0.9166666666666666em" transform="translate(0 0)"/>
+        <polygon fill="white" points="-5,-3.5 5,-3.5 0,6" transform="translate(12 10)" class="uml-button"/>
+        <g class="uml-button">
+          <rect fill="rgb(96,125,139)" fill-opacity="1" x="99.09834251974041px" y="2px" width="16px" height="16px"/>
+          <path fill="white" d="M8.5,16.5c-4.418,0-8,3.582-8,8s3.582,8,8,8c4.418,0,8-3.582,8-8S12.918,16.5,8.5,16.5z M13.5,25.5h-4v4h-2v-4h-4v-2h4v-4h2v4h4V25.5z" transform="matrix(0.8 0 0 0.8 100.09834251974041 -10)"/>
+        </g>
+        <g class="uml-button disabled">
+          <rect fill="rgb(96,125,139)" fill-opacity="1" x="117.09834251974041px" y="2px" width="16px" height="16px"/>
+          <path fill="white" fill-opacity="0.5" d="M8.5,16.5c-4.418,0-8,3.582-8,8s3.582,8,8,8c4.418,0,8-3.582,8-8S12.918,16.5,8.5,16.5z M13.5,25.5h-10v-2h10V25.5z" transform="matrix(0.8 0 0 0.8 118.09834251974041 -10)"/>
+        </g>
+      </g>
+      <g transform="translate(25 52)" cursor="pointer">
+        <text font-family="'Arial'" font-size="12px" font-style="normal" font-weight="normal" text-anchor="start" fill="rgb(255,255,255)" fill-opacity="1" dy="0.9166666666666666em" transform="translate(0 3)">Attributes</text>
+      </g>
+      <g transform="translate(25 72)">
+        <text font-family="'Arial'" font-size="12px" font-style="normal" font-weight="normal" text-anchor="start" fill="rgb(0,0,0)" fill-opacity="1" dy="0.9166666666666666em" transform="translate(0 1)">exName:String</text>
+      </g>
+      <g transform="translate(25 88)">
+        <text font-family="'Arial'" font-size="12px" font-style="normal" font-weight="normal" text-anchor="start" fill="rgb(0,0,0)" fill-opacity="1" dy="0.9166666666666666em" transform="translate(0 1)" clip-path="url(#ygc858_0)">percentage:Number</text>
+        <clipPath id="ygc858_0">
+          <rect x="0" y="-1" height="16" width="106.098"/>
+        </clipPath>
+      </g>
+      <g transform="translate(25 104)">
+        <text font-family="'Arial'" font-size="12px" font-style="normal" font-weight="normal" text-anchor="start" fill="rgb(0,0,0)" fill-opacity="1" dy="0.9166666666666666em" transform="translate(0 1)">date: Date</text>
+      </g>
+      <g transform="translate(0 120)" cursor="pointer">
+        <rect fill="rgb(96,125,139)" stroke="none" fill-opacity="1" x="0" y="0" height="20" width="136.098"/>
+        <text font-family="'Arial'" font-size="12px" font-style="normal" font-weight="normal" text-anchor="start" fill="rgb(0,0,0)" fill-opacity="1" dy="0.9166666666666666em" transform="translate(0 0)"/>
+        <polygon fill="white" points="-5,-3.5 5,-3.5 0,6" transform="translate(12 10)" class="uml-button"/>
+        <g class="uml-button">
+          <rect fill="rgb(96,125,139)" fill-opacity="1" x="99.09834251974041px" y="2px" width="16px" height="16px"/>
+          <path fill="white" d="M8.5,16.5c-4.418,0-8,3.582-8,8s3.582,8,8,8c4.418,0,8-3.582,8-8S12.918,16.5,8.5,16.5z M13.5,25.5h-4v4h-2v-4h-4v-2h4v-4h2v4h4V25.5z" transform="matrix(0.8 0 0 0.8 100.09834251974041 -10)"/>
+        </g>
+        <g class="uml-button disabled">
+          <rect fill="rgb(96,125,139)" fill-opacity="1" x="117.09834251974041px" y="2px" width="16px" height="16px"/>
+          <path fill="white" fill-opacity="0.5" d="M8.5,16.5c-4.418,0-8,3.582-8,8s3.582,8,8,8c4.418,0,8-3.582,8-8S12.918,16.5,8.5,16.5z M13.5,25.5h-10v-2h10V25.5z" transform="matrix(0.8 0 0 0.8 118.09834251974041 -10)"/>
+        </g>
+      </g>
+      <g transform="translate(25 120)" cursor="pointer">
+        <text font-family="'Arial'" font-size="12px" font-style="normal" font-weight="normal" text-anchor="start" fill="rgb(255,255,255)" fill-opacity="1" dy="0.9166666666666666em" transform="translate(0 3)">Operations</text>
+      </g>
+      <g transform="translate(25 140)">
+        <text font-family="'Arial'" font-size="12px" font-style="normal" font-weight="normal" text-anchor="start" fill="rgb(0,0,0)" fill-opacity="1" dy="0.9166666666666666em" transform="translate(0 1)">isIn():Boolean</text>
+      </g>
+    </g>
+  </g>
+</svg>

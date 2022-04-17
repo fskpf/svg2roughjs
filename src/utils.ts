@@ -1,4 +1,5 @@
 import { Options } from 'roughjs/bin/core'
+import { SKETCH_CLIP_ATTRIBUTE } from './clipping'
 import { reparentNodes } from './dom-helpers'
 import { Point } from './geom/primitives'
 import { RenderContext } from './types'
@@ -76,7 +77,7 @@ export function appendSketchElement(
   let sketch = sketchElement
 
   // original element may have a clip-path
-  const sketchClipPathId = element.getAttribute('data-sketchy-clip-path')
+  const sketchClipPathId = element.getAttribute(SKETCH_CLIP_ATTRIBUTE)
   const applyPencilFilter = context.pencilFilter && element.tagName !== 'text'
 
   // wrap it in another container to safely apply post-processing attributes,
@@ -90,6 +91,7 @@ export function appendSketchElement(
 
   if (sketchClipPathId) {
     sketch.setAttribute('clip-path', `url(#${sketchClipPathId})`)
+    element.removeAttribute(SKETCH_CLIP_ATTRIBUTE)
   }
 
   if (applyPencilFilter) {
