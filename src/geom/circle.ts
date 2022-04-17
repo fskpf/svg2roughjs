@@ -1,7 +1,7 @@
 import { appendPatternPaint } from '../styles/pattern'
 import { parseStyleConfig } from '../styles/styles'
 import {
-  applyGlobalTransform,
+  applyTransform,
   applyMatrix,
   isIdentityTransform,
   isTranslationTransform
@@ -82,6 +82,6 @@ export function applyCircleClip(
   clip.cx.baseVal.value = cx
   clip.cy.baseVal.value = cy
   clip.r.baseVal.value = r
-  applyGlobalTransform(context, svgTransform, clip)
+  applyTransform(context, svgTransform, clip)
   container.appendChild(clip)
 }

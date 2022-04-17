@@ -1,6 +1,7 @@
 import { getIdFromUrl, getNodeChildren } from './dom-helpers'
 import { applyCircleClip } from './geom/circle'
 import { applyEllipseClip } from './geom/ellipse'
+import { applyPathClip } from './geom/path'
 import { applyPolygonClip } from './geom/polygon'
 import { applyRectClip } from './geom/rect'
 import { getCombinedTransform } from './transformation'
@@ -80,7 +81,7 @@ export function applyClipPath(
 }
 
 /**
- * Applies the element as clip to the CanvasContext.
+ * Creates a clip element and appends it to the given container.
  */
 function applyElementClip(
   context: RenderContext,
@@ -101,6 +102,8 @@ function applyElementClip(
     case 'polygon':
       applyPolygonClip(context, element as SVGPolygonElement, container, svgTransform)
       break
-    // TODO clipPath: more elements
+    case 'path':
+      applyPathClip(context, element as SVGPathElement, container, svgTransform)
+      break
   }
 }

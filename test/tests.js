@@ -4,6 +4,8 @@ export const specTests = [
   'clippath-circle-transformed',
   'clippath-ellipse',
   'clippath-ellipse-transformed',
+  'clippath-path',
+  'clippath-path-transformed',
   'clippath-polygon',
   'clippath-rect',
   'clippath-rect-rounded',

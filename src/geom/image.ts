@@ -1,4 +1,4 @@
-import { applyGlobalTransform } from '../transformation'
+import { applyTransform } from '../transformation'
 import { RenderContext } from '../types'
 import { appendSketchElement } from '../utils'
 
@@ -49,7 +49,7 @@ export function drawImage(
   } else {
     const imageClone = svgImage.cloneNode()
     const container = document.createElementNS('http://www.w3.org/2000/svg', 'g')
-    applyGlobalTransform(context, svgTransform, container)
+    applyTransform(context, svgTransform, container)
     container.appendChild(imageClone)
     appendSketchElement(context, svgImage, container)
   }

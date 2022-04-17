@@ -1,7 +1,7 @@
 import { getNodeChildren } from '../dom-helpers'
 import { concatStyleStrings } from '../styles/styles'
 import { getEffectiveAttribute } from '../styles/effective-attributes'
-import { applyGlobalTransform } from '../transformation'
+import { applyTransform } from '../transformation'
 import { RenderContext } from '../types'
 import { appendSketchElement } from '../utils'
 
@@ -12,7 +12,7 @@ export function drawText(
 ): void {
   const container = document.createElementNS('http://www.w3.org/2000/svg', 'g')
   container.setAttribute('class', 'text-container')
-  applyGlobalTransform(context, svgTransform, container)
+  applyTransform(context, svgTransform, container)
   const textClone = text.cloneNode(true) as SVGTextElement
   if (textClone.transform.baseVal.numberOfItems > 0) {
     // remove transformation, since it is transformed globally by its parent container

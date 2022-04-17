@@ -88,7 +88,7 @@ export function getCombinedTransform(
  * Applies the given svgTransform to the given element.
  * @param element The element to which the transform should be applied.
  */
-export function applyGlobalTransform(
+export function applyTransform(
   context: RenderContext,
   svgTransform: SVGTransform | null,
   element: SVGGraphicsElement

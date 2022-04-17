@@ -1,7 +1,7 @@
 import { Point } from 'roughjs/bin/geometry'
 import { appendPatternPaint } from '../styles/pattern'
 import { parseStyleConfig } from '../styles/styles'
-import { applyGlobalTransform, applyMatrix } from '../transformation'
+import { applyTransform, applyMatrix } from '../transformation'
 import { RenderContext } from '../types'
 import { appendSketchElement, getPointsArray } from '../utils'
 import { drawMarkers } from './marker'
@@ -49,6 +49,6 @@ export function applyPolygonClip(
 ): void {
   const clip = document.createElementNS('http://www.w3.org/2000/svg', 'polygon')
   clip.setAttribute('points', polygon.getAttribute('points')!)
-  applyGlobalTransform(context, svgTransform, clip)
+  applyTransform(context, svgTransform, clip)
   container.appendChild(clip)
 }

@@ -1,7 +1,7 @@
 import { appendPatternPaint } from '../styles/pattern'
 import { parseStyleConfig } from '../styles/styles'
 import {
-  applyGlobalTransform,
+  applyTransform,
   applyMatrix,
   isIdentityTransform,
   isTranslationTransform
@@ -88,6 +88,6 @@ export function applyEllipseClip(
   clip.cy.baseVal.value = cy
   clip.rx.baseVal.value = rx
   clip.ry.baseVal.value = ry
-  applyGlobalTransform(context, svgTransform, clip)
+  applyTransform(context, svgTransform, clip)
   container.appendChild(clip)
 }

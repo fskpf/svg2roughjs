@@ -1,6 +1,7 @@
 import { encodeSVGPath, SVGPathData, SVGPathDataTransformer } from 'svg-pathdata'
 import { appendPatternPaint } from '../styles/pattern'
 import { parseStyleConfig } from '../styles/styles'
+import { applyTransform } from '../transformation'
 import { RenderContext } from '../types'
 import { appendSketchElement, sketchPath } from '../utils'
 import { drawMarkers } from './marker'
@@ -97,4 +98,16 @@ export function drawPath(
     }
   })
   drawMarkers(context, path, points, svgTransform)
+}
+
+export function applyPathClip(
+  context: RenderContext,
+  path: SVGPathElement,
+  container: SVGClipPathElement,
+  svgTransform: SVGTransform | null
+): void {
+  const clip = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+  clip.setAttribute('d', path.getAttribute('d')!)
+  applyTransform(context, svgTransform, clip)
+  container.appendChild(clip)
 }
