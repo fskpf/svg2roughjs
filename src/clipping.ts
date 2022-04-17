@@ -34,8 +34,7 @@ export function applyClipPath(
   const sketchClipPathId = `${id}_${targetDefs.childElementCount}`
   const clipContainer = document.createElementNS('http://www.w3.org/2000/svg', 'clipPath')
   clipContainer.id = sketchClipPathId
-  // remember the new id by storing it on the owner element
-  owner.setAttribute('data-sketchy-clip-path', sketchClipPathId)
+  storeSketchClipId(owner, sketchClipPathId)
 
   // traverse clip-path elements in DFS
   const stack: { element: SVGElement; transform: SVGTransform | null }[] = []
@@ -105,5 +104,36 @@ function applyElementClip(
     case 'path':
       applyPathClip(context, element as SVGPathElement, container, svgTransform)
       break
+  }
+}
+
+/**
+ * Store clippath-id on each child for <g> elements, or on the owner itself for other
+ * elements.
+ *
+ * <g> elements are skipped in the processing loop, thus the clip-path id must be stored
+ * on the child elements.
+ */
+function storeSketchClipId(element: SVGElement, id: string): void {
+  const sketchClipAttr = 'data-sketchy-clip-path'
+  if (element.tagName !== 'g') {
+    element.setAttribute(sketchClipAttr, id)
+    return
+  }
+
+  const stack: SVGElement[] = []
+  const children = getNodeChildren(element)
+  for (let i = children.length - 1; i >= 0; i--) {
+    stack.push(children[i] as SVGElement)
+  }
+
+  while (stack.length > 0) {
+    const element = stack.pop()!
+    element.setAttribute(sketchClipAttr, id)
+
+    const children = getNodeChildren(element)
+    for (let i = children.length - 1; i >= 0; i--) {
+      stack.push(children[i] as SVGElement)
+    }
   }
 }
