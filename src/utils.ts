@@ -1,8 +1,12 @@
 import { Options } from 'roughjs/bin/core'
-import { SKETCH_CLIP_ATTRIBUTE } from './clipping'
 import { reparentNodes } from './dom-helpers'
 import { Point } from './geom/primitives'
 import { RenderContext } from './types'
+
+/**
+ * Attribute for storing the new clip-path IDs for the sketch output.
+ */
+export const SKETCH_CLIP_ATTRIBUTE = 'data-sketchy-clip-path'
 
 /**
  * Regexp that detects curved commands in path data.

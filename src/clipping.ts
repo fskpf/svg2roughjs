@@ -6,9 +6,7 @@ import { applyPolygonClip } from './geom/polygon'
 import { applyRectClip } from './geom/rect'
 import { getCombinedTransform } from './transformation'
 import { RenderContext } from './types'
-import { getDefsElement } from './utils'
-
-export const SKETCH_CLIP_ATTRIBUTE = 'data-sketchy-clip-path'
+import { getDefsElement, SKETCH_CLIP_ATTRIBUTE } from './utils'
 
 /**
  * Applies the clip-path to the CanvasContext.

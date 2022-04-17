@@ -1,1 +1,3 @@
 bundled/*
+dist/*
+out-tsc/*
