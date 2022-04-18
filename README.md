@@ -8,6 +8,8 @@ Try the sample application [here](https://fskpf.github.io/).
 
 ## Installation
 
+## NPM
+
 Just install it from the NPM registry with
 
 ```shell
@@ -22,23 +24,59 @@ or pack it yourself with `npm pack` and depend on the tar ball to import `Svg2Ro
 },
 ```
 
-## Usage
+## UMD
 
-For example see `/sample-application/` which is a simple web application with controls to load some sample SVG files and change some of Rough.js parameters.
+The `build` also creates an UMD bundle that ca be loaded via script tags or a module loader e.g.
+[RequireJS](https://requirejs.org/).
 
-Then you can import it as usual
+The UMD bundle is also available on [unpkg](https://unpkg.com/):
 
-```javascript
-import Svg2Roughjs from 'svg2roughjs'
+```
+https://unpkg.com/svg2roughjs/dist/svg2roughjs.umd.min.js
 ```
 
-and instantiate it with an output div in which the canvas should be created. Calling `sketch()` outputs the current `svg` to the given element as hand-drawn sketch.
+## Usage
+
+Basically, just import `Svg2Roughjs` and instantiate it with an output div in which the
+SVG sketch should be created. Calling `sketch()` outputs the current `svg` to the given element
+as hand-drawn sketch.
+
+For reference, the [sample application](https://fskpf.github.io/) is provided in
+[`/sample-application/`](https://github.com/fskpf/svg2roughjs/tree/master/sample-application)
+as well.
+
+### ES Module
 
 ```javascript
-const svg2roughjs = new Svg2Roughjs('#output')
-const svg = document.getElementById('some-svg-element')
-svg2roughjs.svg = svg // or maybe use the DOMParser to load an SVG file instead
+import { Svg2Roughjs } from 'svg2roughjs'
+
+const svg2roughjs = new Svg2Roughjs('#output-div')
+svg2roughjs.svg = document.getElementById('input-svg') // or maybe use the DOMParser to load an SVG file instead
 svg2roughs.sketch()
+```
+
+### UMD Bundle
+
+```javascript
+<!-- script loading -->
+<script src="https://unpkg.com/svg2roughjs/dist/svg2roughjs.umd.min.js"></script>
+<script>
+  const svgConverter = new svg2roughjs.Svg2Roughjs('#output-div')
+  svgConverter.svg = document.getElementById('input-svg')
+  svgConverter.sketch()
+</script>
+```
+
+```javascript
+<!-- requirejs -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script>
+<script>
+  window.requirejs(['https://unpkg.com/svg2roughjs/dist/svg2roughjs.umd.min.js'], svg2roughjs => {
+    const svgConverter = new svg2roughjs.Svg2Roughjs('#output-div')
+    svgConverter.svg = document.getElementById('input-svg')
+    svgConverter.sketch()
+  });
+</script>
 ```
 
 ## API
