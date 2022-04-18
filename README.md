@@ -51,7 +51,7 @@ as well.
 import { Svg2Roughjs } from 'svg2roughjs'
 
 const svg2roughjs = new Svg2Roughjs('#output-div')
-svg2roughjs.svg = document.getElementById('input-svg') // or maybe use the DOMParser to load an SVG file instead
+svg2roughjs.svg = document.getElementById('input-svg')
 svg2roughs.sketch()
 ```
 
