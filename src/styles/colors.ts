@@ -1,7 +1,4 @@
-import tinycolor from 'tinycolor2'
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Color = any // type alias for tinycolor
+import tinycolor, { Instance as TinyColorInstance } from 'tinycolor2'
 
 /**
  * Converts an SVG gradient to a color by mixing all stop colors
@@ -26,9 +23,9 @@ export function gradientToColor(
     // result in more entries of the same mixed color (of the two adjacent color stops).
     // At the end, this array is averaged again, to create a single solid color.
     const resolution = 10
-    const discreteColors = []
+    const discreteColors: TinyColorInstance[] = []
 
-    let lastColor = null
+    let lastColor: TinyColorInstance | null = null
     for (let i = 0; i < stops.length; i++) {
       const currentColor = getStopColor(stops[i])
       const currentOffset = getStopOffset(stops[i])
@@ -56,7 +53,7 @@ export function gradientToColor(
 /**
  * Returns the `stop-color` of an `SVGStopElement`.
  */
-export function getStopColor(stop: SVGStopElement): Color {
+export function getStopColor(stop: SVGStopElement): TinyColorInstance {
   let stopColorStr = stop.getAttribute('stop-color')
   if (!stopColorStr) {
     const style = stop.getAttribute('style') ?? ''
@@ -72,7 +69,7 @@ export function getStopColor(stop: SVGStopElement): Color {
  * Calculates the average color of the colors in the given array.
  * @returns The average color
  */
-export function averageColor(colorArray: Color[]): Color {
+export function averageColor(colorArray: TinyColorInstance[]): TinyColorInstance {
   const count = colorArray.length
   let r = 0
   let g = 0

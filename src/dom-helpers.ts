@@ -11,13 +11,13 @@ export function getNodeChildren(element: Element): Element[] {
   let i = 0
   let node
   const nodes = element.childNodes
-  const children = []
+  const children: Element[] = []
   while ((node = nodes[i++])) {
     if (node.nodeType === 1) {
-      children.push(node)
+      children.push(node as Element)
     }
   }
-  return children as Element[]
+  return children
 }
 
 /**

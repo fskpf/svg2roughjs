@@ -1,8 +1,10 @@
 import commonjs from '@rollup/plugin-commonjs'
 import resolve from '@rollup/plugin-node-resolve'
 import dts from 'rollup-plugin-dts'
-import { terser } from 'rollup-plugin-terser'
-import pkg from './package.json'
+import terser from '@rollup/plugin-terser'
+import fs from 'fs'
+
+const pkg = JSON.parse(fs.readFileSync('./package.json'))
 
 function matchSubmodules(externals) {
   return externals.map(e => new RegExp(`^${e}(?:[/\\\\]|$)`))

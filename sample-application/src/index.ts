@@ -1,35 +1,20 @@
-import 'core-js'
-import 'core-js/es/symbol'
-import 'regenerator-runtime/runtime'
-
 import './assets/styles.css'
 
 import CodeMirror from 'codemirror'
 import 'codemirror/lib/codemirror.css'
 import 'codemirror/mode/xml/xml.js'
 
-// @ts-ignore
-import SAMPLE_BPMN from '../public/bpmn1.svg?raw'
-// @ts-ignore
-import SAMPLE_COMPUTER_NETWORK from '../public/computer-network.svg?raw'
-// @ts-ignore
-import SAMPLE_FLOWCHART from '../public/flowchart4.svg?raw'
-// @ts-ignore
-import SAMPLE_HIERARCHICAL1 from '../public/hierarchical1.svg?raw'
-// @ts-ignore
-import SAMPLE_HIERARCHICAL2 from '../public/hierarchical2.svg?raw'
-// @ts-ignore
-import SAMPLE_MINDMAP from '../public/mindmap.svg?raw'
-// @ts-ignore
-import SAMPLE_MOVIES from '../public/movies.svg?raw'
-// @ts-ignore
-import SAMPLE_ORGANIC1 from '../public/organic1.svg?raw'
-// @ts-ignore
-import SAMPLE_ORGANIC2 from '../public/organic2.svg?raw'
-// @ts-ignore
-import SAMPLE_TREE from '../public/tree1.svg?raw'
-// @ts-ignore
-import SAMPLE_VENN from '../public/venn.svg?raw'
+import SAMPLE_BPMN from './samples/bpmn1.svg?raw'
+import SAMPLE_COMPUTER_NETWORK from './samples/computer-network.svg?raw'
+import SAMPLE_FLOWCHART from './samples/flowchart4.svg?raw'
+import SAMPLE_HIERARCHICAL1 from './samples/hierarchical1.svg?raw'
+import SAMPLE_HIERARCHICAL2 from './samples/hierarchical2.svg?raw'
+import SAMPLE_MINDMAP from './samples/mindmap.svg?raw'
+import SAMPLE_MOVIES from './samples/movies.svg?raw'
+import SAMPLE_ORGANIC1 from './samples/organic1.svg?raw'
+import SAMPLE_ORGANIC2 from './samples/organic2.svg?raw'
+import SAMPLE_TREE from './samples/tree1.svg?raw'
+import SAMPLE_VENN from './samples/venn.svg?raw'
 
 // debug lib import for better debugging...
 import { OutputType, Svg2Roughjs } from '../../src/index'
@@ -182,7 +167,7 @@ export function loadSvgString(fileContent: string) {
   }, 0)
 }
 
-function loadSample(svg2roughjs: Svg2Roughjs, sample: string) {
+function loadSample(sample: string) {
   let sampleString = ''
   switch (sample) {
     case 'bpmn1':
@@ -243,7 +228,7 @@ function run() {
     fillStyle: fillStyleSelect.value
   }
   sampleSelect.addEventListener('change', () => {
-    loadSample(svg2roughjs, sampleSelect.value)
+    loadSample(sampleSelect.value)
   })
 
   const toggleSourceBtn = document.getElementById('source-toggle') as HTMLInputElement
@@ -274,7 +259,7 @@ function run() {
 
   // pre-select a sample
   sampleSelect.selectedIndex = 0
-  loadSample(svg2roughjs, sampleSelect.value)
+  loadSample(sampleSelect.value)
 
   outputFormatSelect.addEventListener('change', async () => {
     setUIState(false)

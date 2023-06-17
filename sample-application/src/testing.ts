@@ -1,6 +1,5 @@
 import { OutputType, Svg2Roughjs } from '../../src/index'
 import { downloadFile } from './utils'
-// @ts-expect-error
 import { specTests } from '../../test/tests.js'
 import { loadSvgString } from './index'
 
@@ -42,8 +41,8 @@ export function initializeTestUI(svg2roughjs: Svg2Roughjs) {
   downloadTestcaseBtn.addEventListener('click', () => downloadTestcase(svg2roughjs))
 }
 
-function onTestcaseChange(testName: string) {
-  const svgString = loadSvg(`../../specs/${testName}/test.svg`)
+async function onTestcaseChange(testName: string) {
+  const svgString = loadSvg(`/specs/${testName}/test.svg`)
   loadSvgString(svgString)
 }
 

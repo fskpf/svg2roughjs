@@ -1,7 +1,5 @@
 {
   "compilerOptions": {
-    "strict": true,
-    "noImplicitAny": true,
     "module": "es6",
     "target": "es2015",
     "allowJs": true,
@@ -9,7 +7,13 @@
     "moduleResolution": "node",
     "lib": ["dom", "es2015"],
     "outDir": "out-tsc",
-    "declaration": true
+    "declaration": true,
+
+    /* Linting */
+    "strict": true,
+    "noImplicitAny": false,
+    "noUnusedLocals": true,
+    "noFallthroughCasesInSwitch": true
   },
   "include": ["src/**/*.ts"]
 }
