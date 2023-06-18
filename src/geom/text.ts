@@ -1,9 +1,18 @@
 import { getNodeChildren } from '../dom-helpers'
-import { concatStyleStrings } from '../styles/styles'
 import { getEffectiveAttribute } from '../styles/effective-attributes'
+import { concatStyleStrings } from '../styles/styles'
+import { convertToPixelUnit } from '../svg-units'
 import { applyTransform } from '../transformation'
 import { RenderContext } from '../types'
-import { appendSketchElement } from '../utils'
+import { SKETCH_CLIP_ATTRIBUTE, appendSketchElement, measureText } from '../utils'
+import { Size } from './primitives'
+
+type FontAttributes = Partial<{
+  fontStyle: string
+  fontWeight: string
+  fontSize: string
+  fontFamiliy: string
+}>
 
 export function drawText(
   context: RenderContext,
@@ -19,7 +28,10 @@ export function drawText(
     textClone.transform.baseVal.clear()
   }
 
-  const cssFont = getCssFont(context, text, true)
+  // clip-path is applied on the container
+  textClone.removeAttribute('clip-path')
+
+  const { cssFont, fontSize: effectiveFontSize } = getCssFont(context, text, true)
   textClone.setAttribute('style', concatStyleStrings(textClone.getAttribute('style'), cssFont))
   copyTextStyleAttributes(context, text, textClone)
 
@@ -37,6 +49,60 @@ export function drawText(
 
   container.appendChild(textClone)
   appendSketchElement(context, text, container)
+
+  // avoid text clipping by scaling the text when changing the font
+  const useCustomFontFamily = context.fontFamily !== null
+  const hasClipPath = textClone.hasAttribute(SKETCH_CLIP_ATTRIBUTE)
+  if (useCustomFontFamily && hasClipPath && effectiveFontSize) {
+    fitFontSize(context, text, textClone, effectiveFontSize)
+  }
+}
+
+/**
+ * Applies a font-size on the clone such that the clone has a smaller width than the original element.
+ * Only fits the width because the height is usually no problem wrt. clipping.
+ */
+function fitFontSize(
+  context: RenderContext,
+  original: SVGTextElement,
+  clone: SVGTextElement,
+  effectiveFontSize: string
+): void {
+  const { width, height } = original.getBBox()
+  if (width <= 0 || height <= 0) {
+    return
+  }
+  const fontSizePx = convertToPixelUnit(context, clone, effectiveFontSize, 'font-size')
+  fitFontSizeCore(context, { w: width, h: height }, clone, fontSizePx)
+}
+
+/**
+ * Recursively shrinks the font-size on the element until its width is smaller than the original width.
+ */
+function fitFontSizeCore(
+  context: RenderContext,
+  originalSize: Size,
+  clone: SVGTextElement,
+  fontSizePx: number
+): void {
+  const { w: cloneWidth } = measureText(context, clone)
+
+  if (cloneWidth < originalSize.w) {
+    // fits original width
+    return
+  }
+
+  if (fontSizePx <= 1) {
+    // already too small
+    return
+  }
+
+  // try a smaller size
+  const newFontSize = `${fontSizePx - 1}px`
+  clone.style.fontSize = newFontSize
+
+  // check again
+  fitFontSizeCore(context, originalSize, clone, fontSizePx)
 }
 
 /**
@@ -46,22 +112,28 @@ function getCssFont(
   context: RenderContext,
   text: SVGTextElement,
   asStyleString: boolean = false
-): string {
+): FontAttributes & { cssFont: string } {
+  const effectiveAttributes: FontAttributes = {}
+
   let cssFont = ''
   const fontStyle = getEffectiveAttribute(context, text, 'font-style', context.useElementContext)
   if (fontStyle) {
     cssFont += asStyleString ? `font-style: ${fontStyle};` : fontStyle
+    effectiveAttributes.fontStyle = fontStyle
   }
   const fontWeight = getEffectiveAttribute(context, text, 'font-weight', context.useElementContext)
   if (fontWeight) {
     cssFont += asStyleString ? `font-weight: ${fontWeight};` : ` ${fontWeight}`
+    effectiveAttributes.fontWeight = fontWeight
   }
   const fontSize = getEffectiveAttribute(context, text, 'font-size', context.useElementContext)
   if (fontSize) {
     cssFont += asStyleString ? `font-size: ${fontSize};` : ` ${fontSize}`
+    effectiveAttributes.fontSize = fontSize
   }
   if (context.fontFamily) {
     cssFont += asStyleString ? `font-family: ${context.fontFamily};` : ` ${context.fontFamily}`
+    effectiveAttributes.fontFamiliy = context.fontFamily
   } else {
     const fontFamily = getEffectiveAttribute(
       context,
@@ -71,11 +143,12 @@ function getCssFont(
     )
     if (fontFamily) {
       cssFont += asStyleString ? `font-family: ${fontFamily};` : ` ${fontFamily}`
+      effectiveAttributes.fontFamiliy = fontFamily
     }
   }
 
   cssFont = cssFont.trim()
-  return cssFont
+  return { ...effectiveAttributes, cssFont }
 }
 
 function copyTextStyleAttributes(

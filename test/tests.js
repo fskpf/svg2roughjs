@@ -79,6 +79,7 @@ export const specTests = [
   'text-tspan-styling',
   'text-tspans-mixed',
   'text-tspans-repositioned',
+  'text-width-custom-font',
   'text-whitespace',
   'uml-node-style',
   'use-element-styling',

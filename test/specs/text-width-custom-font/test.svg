@@ -1,0 +1,20 @@
+<?xml version="1.0" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="110px" height="90px" viewBox="0 0 110 90" style="overflow: hidden; display: block; width: 110px; height: 90px;">
+	<rect width="110px" height="90px" fill="white"/>
+	<clipPath id="ygc159_0">
+		<rect x="25" y="25" width="60" height="40"/>
+	</clipPath>
+	<g clip-path="url(#ygc159_0)">
+		<g style="pointer-events:visiblePainted" transform="translate(61.5 268.5)" image-rendering="auto" shape-rendering="auto" data-sketchy-clip-path="ygc159_0_0">
+			<g style="box-sizing:initial;" data-sketchy-clip-path="ygc159_0_0">
+				<g data-sketchy-clip-path="ygc159_0_0">
+					<path d="M -31.5,-238.5 L 18.5,-238.5 L 18.5,-208.5 L -31.5,-208.5 Z" stroke="rgb(0,0,0)" stroke-opacity="1" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke-miterlimit="10" fill="rgb(210,222,238)" fill-opacity="1"/>
+				</g>
+				<g transform="translate(-31.5 -238.5)" data-sketchy-clip-path="ygc159_0_0">
+					<text font-family="Arial" font-size="12px" font-style="normal" font-weight="normal" text-decoration="none" text-anchor="middle" fill="rgb(0,0,0)" fill-opacity="1" dy="0.9166666666666666em" transform="translate(25 8)">Hello World</text>
+				</g>
+			</g>
+		</g>
+	</g>
+	<defs/>
+</svg>

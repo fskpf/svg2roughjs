@@ -1,6 +1,6 @@
 import { Options } from 'roughjs/bin/core'
 import { reparentNodes } from './dom-helpers'
-import { Point } from './geom/primitives'
+import { Point, Size } from './geom/primitives'
 import { RenderContext } from './types'
 
 /**
@@ -141,4 +141,32 @@ export function sketchFragment(
     document.createElementNS('http://www.w3.org/2000/svg', 'g'),
     proxyContext.svgSketch
   )
+}
+
+/**
+ * Measures the text in the context of the sketchSvg to account for inherited text
+ * attributes.
+ * The given text element must be a child of the svgSketch.
+ */
+export function measureText({ svgSketch }: RenderContext, text: SVGTextElement): Size {
+  const hiddenElementStyle = 'visibility:hidden;position:absolute;left:-100%;top-100%;'
+  const origStyle = svgSketch.getAttribute('style')
+  if (origStyle) {
+    svgSketch.setAttribute('style', `${origStyle};${hiddenElementStyle}`)
+  } else {
+    svgSketch.setAttribute('style', hiddenElementStyle)
+  }
+
+  const body = document.body
+  body.appendChild(svgSketch)
+  const { width, height } = text.getBBox()
+  body.removeChild(svgSketch)
+
+  if (origStyle) {
+    svgSketch.setAttribute('style', origStyle)
+  } else {
+    svgSketch.removeAttribute('style')
+  }
+
+  return { w: width, h: height }
 }
