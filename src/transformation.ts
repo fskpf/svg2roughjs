@@ -93,7 +93,7 @@ export function applyTransform(
   svgTransform: SVGTransform | null,
   element: SVGGraphicsElement
 ): void {
-  if (svgTransform && svgTransform.matrix) {
+  if (svgTransform && svgTransform.matrix && !isIdentityTransform(svgTransform)) {
     const matrix = svgTransform.matrix
     if (element.transform.baseVal.numberOfItems > 0) {
       element.transform.baseVal.getItem(0).setMatrix(matrix)
