@@ -6,44 +6,22 @@ Utilizes [Rough.js](https://github.com/pshihn/rough) to convert an SVG to a hand
 
 Try the sample application [here](https://fskpf.github.io/).
 
-## Installation
-
 ## NPM
 
-Just install it from the NPM registry with
+Install from the NPM registry with
 
 ```shell
 npm install --save svg2roughjs
 ```
 
-or pack it yourself with `npm pack` and depend on the tar ball to import `Svg2Roughjs`.
-
-```json
-"dependencies": {
-  "svg2roughjs": "<path-to>/svg2roughjs-<version>.tgz"
-},
-```
-
-## UMD
-
-The `build` also creates an UMD bundle that ca be loaded via script tags or a module loader e.g.
-[RequireJS](https://requirejs.org/).
-
-The UMD bundle is also available on [unpkg](https://unpkg.com/):
-
-```
-https://unpkg.com/svg2roughjs/dist/svg2roughjs.umd.min.js
-```
-
 ## Usage
 
-Basically, just import `Svg2Roughjs` and instantiate it with an output div in which the
+Just import `Svg2Roughjs` and instantiate it with an output div in which the
 SVG sketch should be created. Calling `sketch()` outputs the current `svg` to the given element
 as hand-drawn sketch.
 
-For reference, the [sample application](https://fskpf.github.io/) is provided in
-[`/sample-application/`](https://github.com/fskpf/svg2roughjs/tree/master/sample-application)
-as well.
+For reference, a [sample application](https://fskpf.github.io/) is provided in
+[`/sample-application/`](https://github.com/fskpf/svg2roughjs/tree/master/sample-application).
 
 ### ES Module
 
@@ -56,6 +34,14 @@ svg2roughs.sketch()
 ```
 
 ### UMD Bundle
+
+An UMD bundle that ca be loaded via script tags or a module loader e.g.
+[RequireJS](https://requirejs.org/) is included in the NPM package or can
+be loaded from [unpkg](https://unpkg.com/):
+
+```
+https://unpkg.com/svg2roughjs/dist/svg2roughjs.umd.min.js
+```
 
 ```javascript
 <!-- script loading -->
@@ -81,7 +67,7 @@ svg2roughs.sketch()
 
 ## API
 
-### Exports
+### Module Exports
 
 - `Svg2Roughjs`: The main class for the conversion.
 - `OutputType`: An enum that is used to switch between `SVG` and `CANVAS` output when targetting an `HTMLDivElement` as output container.
@@ -96,15 +82,15 @@ svg2roughs.sketch()
 
   The optional `outputType` defaults to the respective mode if `target` is either `SVGSVGElement` or `HTMLCanvasElement`. If targetting an HTML container element, then `OutputType.SVG` is used by default.
 
-- `async sketch()`
+- `sketch(): Promise<SVGSVGElement | HTMLCanvasElement | null>`
 
-  Clears the targetted output `SVGSVGElement` or `HTMLCanvasElement` and converts the set `svg` to a hand-drawn sketch.
+  Clears the configured `target` element and converts the current `svg2roughj.svg` to a hand-drawn sketch.
 
 ### Properties
 
 | Property          | Description                                                                                                          | Default                    |
 | ----------------- | -------------------------------------------------------------------------------------------------------------------- | -------------------------- |
-| `svg`             | The input SVG that should be converted.                                                                              | `undefined`                |
+| `svg`             | The given `SVGSVGElement` that should be converted.                                                                  | `undefined`                |
 | `outputType`      | Switch between canvas or SVG output.                                                                                 | `OutputType.SVG`           |
 | `roughConfig`     | Rough.js style properties, e.g. to change the fill-style, roughness or bowing.                                       | `{}`                       |
 | `fontFamily`      | Font with which text elements should be drawn.<br>If set to `null`, the text element's original font-family is used. | `'Comic Sans MS, cursive'` |
@@ -130,6 +116,29 @@ Some sample images with different Svg2rough.js settings. Try it yourself [here](
 | <img src="https://fskpf.github.io/static/sample-images/comic_boy.svg" width="400px">                                                                        | <img src="https://fskpf.github.io/static/sample-images/comic_boy_sketch.png" width="400px">                    |
 | &nbsp;                                                                                                                                                      | &nbsp;                                                                                                         |
 | <img src="https://fskpf.github.io/static/sample-images/mars_rover_blueprint.svg" width="400px">                                                             | <img src="https://fskpf.github.io/static/sample-images/mars_rover_sketch.png" width="400px">                   |
+
+## Local Build
+
+To build the project locally, make sure to have [Node.js](https://nodejs.org/en) installed and run
+
+```
+> npm install
+> npm run build
+```
+
+This creates a local `/dist/` folder containing both, the ES module and UMD build of `svg2roughjs`.
+
+### Tests
+
+To perform all tests on the current build, run
+
+```
+npm run test-all
+```
+
+This converts all given tests in [`/test/`](https://github.com/fskpf/svg2roughjs/tree/master/test) and
+compares the output SVG with the expected string. Each test contains a configuration file with different
+settings and a fixed seed to account for the randomness in the sketched output.
 
 ## Credits
 
