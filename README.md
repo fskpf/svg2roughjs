@@ -144,7 +144,6 @@ settings and a fixed seed to account for the randomness in the sketched output.
 ## Credits
 
 - [Rough.js](https://github.com/pshihn/rough) – Draws the hand-drawn elements
-- [seedrandom](https://github.com/davidbau/seedrandom) - A seedable RNG
 - [svg-pathdata](https://github.com/nfroidure/svg-pathdata) – Parses SVGPathElements
 - [TinyColor](https://github.com/bgrins/TinyColor) – Color manipulation
 

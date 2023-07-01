@@ -28,7 +28,7 @@ export class Svg2Roughjs {
    * Whether to randomize Rough.js' fillWeight, hachureAngle and hachureGap.
    * Also randomizes the disableMultiStroke option of Rough.js.
    * The randomness may be seeded with the `seed` property.
-   * By default true.
+   * By default `true`.
    */
   randomize: boolean = true
 
@@ -36,7 +36,7 @@ export class Svg2Roughjs {
    * Optional seed for the randomness when creating the sketch.
    * Providing a value implicitly seeds Rough.js which may be overwritten
    * by provding a different seed with the optional `roughConfig` property.
-   * By default null.
+   * By default `null`.
    */
   seed: number | null = null
 
