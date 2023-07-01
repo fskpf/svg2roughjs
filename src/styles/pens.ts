@@ -83,9 +83,9 @@ export function createPen(context: RenderContext, element: SVGElement): Pen {
 
   const { angle, gap, weight } = getPenConfiguration(context.roughConfig.fillStyle)
   return {
-    angle: getHachureAngle(angle, aspectRatio),
-    gap: getHachureGap(gap, sideLength),
-    weight: getFillWeight(weight, sideLength)
+    angle: getHachureAngle(context, angle, aspectRatio),
+    gap: getHachureGap(context, gap, sideLength),
+    weight: getFillWeight(context, weight, sideLength)
   }
 }
 
@@ -95,18 +95,19 @@ export function createPen(context: RenderContext, element: SVGElement): Pen {
  * Rough.js default is -41deg
  */
 function getHachureAngle(
+  { rng }: RenderContext,
   { normal, horizontal, vertical }: AngleConfig,
   aspectRatio: number
 ): number {
   if (isFinite(aspectRatio)) {
     // sketch elements along the smaller side
     if (aspectRatio < 0.25) {
-      return getRandomNumber(horizontal[0], horizontal[1])
+      return rng.next(horizontal)
     } else if (aspectRatio > 6) {
-      return getRandomNumber(vertical[0], vertical[1])
+      return rng.next(vertical)
     }
   }
-  return getRandomNumber(normal[0], normal[1])
+  return rng.next(normal)
 }
 
 /**
@@ -114,10 +115,12 @@ function getHachureAngle(
  *
  * Rough.js default is 4 * strokeWidth
  */
-function getHachureGap({ normal, small }: GapConfig, sideLength: number): number {
-  return sideLength < 45
-    ? getRandomNumber(small[0], small[1])
-    : getRandomNumber(normal[0], normal[1])
+function getHachureGap(
+  { rng }: RenderContext,
+  { normal, small }: GapConfig,
+  sideLength: number
+): number {
+  return sideLength < 45 ? rng.next(small) : rng.next(normal)
 }
 
 /**
@@ -125,15 +128,10 @@ function getHachureGap({ normal, small }: GapConfig, sideLength: number): number
  *
  * Rough.js default is 0.5 * strokeWidth
  */
-function getFillWeight({ normal, small }: WeightConfig, sideLength: number): number {
-  return sideLength < 45
-    ? getRandomNumber(small[0], small[1])
-    : getRandomNumber(normal[0], normal[1])
-}
-
-/**
- * Returns a random number in the given range.
- */
-function getRandomNumber(min: number, max: number): number {
-  return Math.random() * (max - min) + min
+function getFillWeight(
+  { rng }: RenderContext,
+  { normal, small }: WeightConfig,
+  sideLength: number
+): number {
+  return sideLength < 45 ? rng.next(small) : rng.next(normal)
 }

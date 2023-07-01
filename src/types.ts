@@ -1,6 +1,7 @@
 import { Options } from 'roughjs/bin/core'
 import { RoughSVG } from 'roughjs/bin/svg'
 import { Rectangle } from './geom/primitives'
+import { RandomNumberGenerator } from './RandomNumberGenerator'
 
 /**
  * A context that represents the current state of the rendering,
@@ -12,6 +13,7 @@ export type RenderContext = {
   fontFamily: string | null
   pencilFilter: boolean
   randomize: boolean
+  rng: RandomNumberGenerator
   sketchPatterns: boolean
   idElements: Record<string, SVGElement | string>
   sourceSvg: SVGSVGElement

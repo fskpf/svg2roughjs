@@ -88,16 +88,17 @@ https://unpkg.com/svg2roughjs/dist/svg2roughjs.umd.min.js
 
 ### Properties
 
-| Property          | Description                                                                                                          | Default                    |
-| ----------------- | -------------------------------------------------------------------------------------------------------------------- | -------------------------- |
-| `svg`             | The given `SVGSVGElement` that should be converted.                                                                  | `undefined`                |
-| `outputType`      | Switch between canvas or SVG output.                                                                                 | `OutputType.SVG`           |
-| `roughConfig`     | Rough.js style properties, e.g. to change the fill-style, roughness or bowing.                                       | `{}`                       |
-| `fontFamily`      | Font with which text elements should be drawn.<br>If set to `null`, the text element's original font-family is used. | `'Comic Sans MS, cursive'` |
-| `backgroundColor` | Sets a background color onto which the sketch is drawn.                                                              | `transparent`              |
-| `randomize`       | Randomize Rough.js' fillWeight, hachureAngle and hachureGap.                                                         | `true`                     |
-| `sketchPatterns`  | Whether to sketch pattern fills/strokes or just copy them to the output                                              | `true`                     |
-| `pencilFilter`    | Applies a pencil effect on the SVG rendering.                                                                        | `false`                    |
+| Property          | Description                                                                                                                       | Default                    |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| `svg`             | The given `SVGSVGElement` that should be converted.                                                                               | `undefined`                |
+| `outputType`      | Switch between canvas or SVG output.                                                                                              | `OutputType.SVG`           |
+| `roughConfig`     | [Rough.js options](https://github.com/rough-stuff/rough/wiki#options) object, e.g. to change the fill-style, roughness or bowing. | `{}`                       |
+| `fontFamily`      | Font with which text elements should be drawn.<br>If set to `null`, the text element's original font-family is used.              | `'Comic Sans MS, cursive'` |
+| `backgroundColor` | Sets a background color onto which the sketch is drawn.                                                                           | `transparent`              |
+| `randomize`       | Randomize Rough.js' fillWeight, hachureAngle and hachureGap.                                                                      | `true`                     |
+| `seed`            | Optional, numerical seed for the randomness when creating the sketch.                                                             | `null`                     |
+| `sketchPatterns`  | Whether to sketch pattern fills/strokes or just copy them to the output                                                           | `true`                     |
+| `pencilFilter`    | Applies a pencil effect on the SVG rendering.                                                                                     | `false`                    |
 
 ## Sample Images
 
@@ -143,6 +144,7 @@ settings and a fixed seed to account for the randomness in the sketched output.
 ## Credits
 
 - [Rough.js](https://github.com/pshihn/rough) – Draws the hand-drawn elements
+- [seedrandom](https://github.com/davidbau/seedrandom) - A seedable RNG
 - [svg-pathdata](https://github.com/nfroidure/svg-pathdata) – Parses SVGPathElements
 - [TinyColor](https://github.com/bgrins/TinyColor) – Color manipulation
 

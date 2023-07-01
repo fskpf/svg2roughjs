@@ -129,7 +129,7 @@ export function parseStyleConfig(
     config.fillWeight = parseFloat(weight.toFixed(precision)) // value is used in the sketched output as-is
     // randomize double stroke effect if not explicitly set through user config
     if (typeof config.disableMultiStroke === 'undefined') {
-      config.disableMultiStroke = Math.random() > 0.3
+      config.disableMultiStroke = context.rng.next() > 0.3
     }
   }
 
