@@ -6,3 +6,4 @@ dist
 debug.log
 out-tsc
 coverage
+/nodejs-cli/*.svg

@@ -1,0 +1,16 @@
+{
+  "name": "svg2roughjs-nodejs",
+  "version": "1.0.0",
+  "description": "An svg2roughjs CLI that runs in Nodejs with a headless browser",
+  "main": "svg2roughjs.js",
+  "type": "module",
+  "scripts": {
+    "test": "node src/svg2roughjs ../test/complex/bpmn-diagram/test.svg -o ./test.svg --roughConfig.roughness 1.5 --roughConfig.bowing 2 --backgroundColor white"
+  },
+  "author": "Fabian Schwarzkopf",
+  "license": "MIT",
+  "dependencies": {
+    "minimist": "^1.2.8",
+    "puppeteer": "^20.7.4"
+  }
+}
