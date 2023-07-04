@@ -14,6 +14,7 @@ export const specTests = [
   'clippath-rect-rounded-transformed2',
   'clippath-rect-text',
   'clippath-rect-transformed',
+  'clipped-text-scaling',
   'css-units',
   'dotted-stroke',
   'ellipse-transform',

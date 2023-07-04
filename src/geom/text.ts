@@ -85,6 +85,7 @@ function fitFontSizeCore(
   clone: SVGTextElement,
   fontSizePx: number
 ): void {
+  const STEP_SIZE = 1
   const { w: cloneWidth } = measureText(context, clone)
 
   if (cloneWidth < originalSize.w) {
@@ -98,11 +99,11 @@ function fitFontSizeCore(
   }
 
   // try a smaller size
-  const newFontSize = `${fontSizePx - 1}px`
-  clone.style.fontSize = newFontSize
+  const newFontSize = fontSizePx - STEP_SIZE
+  clone.style.fontSize = `${newFontSize}px`
 
   // check again
-  fitFontSizeCore(context, originalSize, clone, fontSizePx)
+  fitFontSizeCore(context, originalSize, clone, newFontSize)
 }
 
 /**
