@@ -148,7 +148,10 @@ export function sketchFragment(
  * attributes.
  * The given text element must be a child of the svgSketch.
  */
-export function measureText({ svgSketch }: RenderContext, text: SVGTextElement): Size {
+export function measureText(
+  { svgSketch, svgSketchIsInDOM }: RenderContext,
+  text: SVGTextElement
+): Size {
   const hiddenElementStyle = 'visibility:hidden;position:absolute;left:-100%;top-100%;'
   const origStyle = svgSketch.getAttribute('style')
   if (origStyle) {
@@ -157,10 +160,21 @@ export function measureText({ svgSketch }: RenderContext, text: SVGTextElement):
     svgSketch.setAttribute('style', hiddenElementStyle)
   }
 
+  // the element must be in the DOM for getBBox
   const body = document.body
-  body.appendChild(svgSketch)
+  const previousParent = svgSketch.parentElement
+  if (!svgSketchIsInDOM) {
+    body.appendChild(svgSketch)
+  }
   const { width, height } = text.getBBox()
-  body.removeChild(svgSketch)
+
+  // make sure to not change the DOM hierarchy of the element
+  if (!svgSketchIsInDOM) {
+    body.removeChild(svgSketch)
+    if (previousParent) {
+      previousParent.appendChild(svgSketch)
+    }
+  }
 
   if (origStyle) {
     svgSketch.setAttribute('style', origStyle)

@@ -18,6 +18,7 @@ export type RenderContext = {
   idElements: Record<string, SVGElement | string>
   sourceSvg: SVGSVGElement
   svgSketch: SVGSVGElement
+  svgSketchIsInDOM: boolean
   svgSketchDefs?: SVGDefsElement
   useElementContext?: UseContext | null
   viewBox?: Rectangle
