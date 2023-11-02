@@ -11,6 +11,6 @@
   "license": "MIT",
   "dependencies": {
     "minimist": "^1.2.8",
-    "puppeteer": "^20.7.4"
+    "puppeteer": "^21.5.0"
   }
 }
