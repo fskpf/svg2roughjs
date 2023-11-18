@@ -379,7 +379,7 @@ function run() {
     if (originalFontCheckbox.checked) {
       svg2roughjs.fontFamily = null
     } else {
-      svg2roughjs.fontFamily = 'Comic Sans MS, sans-serif'
+      svg2roughjs.fontFamily = 'Comic Sans MS, cursive'
     }
     setUIState(false)
     await svg2roughjs.sketch()

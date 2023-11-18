@@ -125,7 +125,7 @@ export function parseStyleConfig(
   if (context.randomize) {
     const { angle, gap, weight } = createPen(context, element)
     config.hachureAngle = angle
-    config.hachureGap = gap
+    config.hachureGap = Math.round(gap) // must be integer (avg gap in pixels)
     config.fillWeight = parseFloat(weight.toFixed(precision)) // value is used in the sketched output as-is
     // randomize double stroke effect if not explicitly set through user config
     if (typeof config.disableMultiStroke === 'undefined') {

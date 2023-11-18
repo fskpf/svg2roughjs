@@ -39,7 +39,7 @@ function getPenConfiguration(fillStyle?: string): PenConfiguration {
     },
     gap: {
       normal: [2, 5],
-      small: [1.5, 2]
+      small: [1, 3]
     }
   }
 
@@ -52,7 +52,7 @@ function getPenConfiguration(fillStyle?: string): PenConfiguration {
       return {
         ...defaultConfig,
         weight: { normal: [0.5, 3], small: [0.5, 2] },
-        gap: { normal: [3.5, 6], small: [2.5, 4.5] }
+        gap: { normal: [2, 6], small: [2, 5] }
       }
     case 'cross-hatch':
       return {

@@ -1,6 +1,6 @@
 {
   "name": "svg2roughjs",
-  "version": "3.1.3",
+  "version": "3.1.5",
   "description": "Leverages Rough.js to convert SVGs to a hand-drawn, sketchy representation",
   "author": "Fabian Schwarzkopf",
   "contributors": [
@@ -27,7 +27,7 @@
   "scripts": {
     "prepare": "npm run lint && npm run build",
     "build": "npm run clean && tsc && rollup -c rollup.config.js",
-    "clean": "rimraf dist/ && rimraf out-tsc/",
+    "clean": "rimraf -g *.tgz && rimraf dist/ && rimraf out-tsc/",
     "lint": "eslint --ext .ts ./src",
     "tsc": "tsc --noEmit",
     "test-all": "npm run clean && tsc && wtr"

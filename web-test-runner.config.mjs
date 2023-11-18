@@ -1,5 +1,4 @@
-// import { playwrightLauncher } from '@web/test-runner-playwright';
-
+import { defaultReporter, summaryReporter } from '@web/test-runner'
 import { rollupBundlePlugin } from '@web/dev-server-rollup'
 import { nodeResolve } from '@rollup/plugin-node-resolve'
 import commonjs from '@rollup/plugin-commonjs'
@@ -24,6 +23,13 @@ export default /** @type {import("@web/test-runner").TestRunnerConfig} */ ({
         plugins: [nodeResolve(), commonjs()]
       }
     })
+  ],
+
+  reporters: [
+    // use the default reporter only for reporting test progress
+    // enable reportTestResults to see the actual diff of the results
+    defaultReporter({ reportTestResults: false, reportTestProgress: true }),
+    summaryReporter()
   ],
 
   /** Whether to analyze code coverage */
