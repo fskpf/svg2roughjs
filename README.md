@@ -1,6 +1,15 @@
 # svg2rough.js
 
-[![npm version](https://badge.fury.io/js/svg2roughjs.svg)](https://badge.fury.io/js/svg2roughjs)
+<p align="center">
+  <img src="https://fskpf.github.io/static/assets/svg2roughjs-hero-sketch.svg" alt="hero-image">
+</p>
+
+<p align="center">
+    <a href="https://github.com/fskpf/svg2roughjs"><img src="https://img.shields.io/github/stars/fskpf/svg2roughjs?style=for-the-badge&logo=github&color=%23eac54f" alt="npm"></a>
+    <a href="https://github.com/fskpf/svg2roughjs/blob/master/LICENSE.md"><img src="https://img.shields.io/github/license/fskpf/svg2roughjs?style=for-the-badge&logo=github" alt="github"></a>
+    <a href="https://www.npmjs.com/package/svg2roughjs" target="_blank"><img src="https://img.shields.io/npm/dt/svg2roughjs?style=for-the-badge&logo=npm" alt="npm"></a>
+    <a href="https://www.npmjs.com/package/svg2roughjs" target="_blank"><img src="https://img.shields.io/npm/v/svg2roughjs?style=for-the-badge&logo=npm" alt="npm"></a>
+</p>
 
 Utilizes [Rough.js](https://github.com/pshihn/rough) to convert an SVG to a hand-drawn visualization.
 
