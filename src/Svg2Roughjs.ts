@@ -68,13 +68,7 @@ export class Svg2Roughjs {
   set svg(svg: SVGSVGElement) {
     if (this.$svg !== svg) {
       this.$svg = svg
-
-      const precision = this.roughConfig.fixedDecimalPlaceDigits
-      this.width = parseFloat(this.coerceSize(svg, 'width', 300).toFixed(precision))
-      this.height = parseFloat(this.coerceSize(svg, 'height', 150).toFixed(precision))
-
-      // pre-process defs for subsequent references
-      this.collectElementsWithID()
+      this.sourceSvgChanged()
     }
   }
 
@@ -178,11 +172,17 @@ export class Svg2Roughjs {
   /**
    * Triggers an entire redraw of the SVG which
    * processes the input element anew.
+   * @param sourceSvgChanged When `true`, the given {@link svg} is re-evaluated as if it was set anew.
+   *  This allows the Svg2Rough.js instance to be used mutliple times with the same source SVG container but different contents.
    * @returns A promise that resolves with the sketched output element or null if no {@link svg} is set.
    */
-  sketch(): Promise<SVGSVGElement | HTMLCanvasElement | null> {
+  sketch(sourceSvgChanged = false): Promise<SVGSVGElement | HTMLCanvasElement | null> {
     if (!this.svg) {
       return Promise.resolve(null)
+    }
+
+    if (sourceSvgChanged) {
+      this.sourceSvgChanged()
     }
 
     const sketchContainer = this.prepareRenderContainer()
@@ -319,6 +319,22 @@ export class Svg2Roughjs {
     svgElement.setAttribute('stroke-linecap', 'round')
 
     return svgElement
+  }
+
+  /**
+   * Initializes the size based on the currently set SVG and collects elements
+   * with an ID property that may be referenced in the SVG.
+   */
+  private sourceSvgChanged() {
+    const svg = this.$svg
+    if (svg) {
+      const precision = this.roughConfig.fixedDecimalPlaceDigits
+      this.width = parseFloat(this.coerceSize(svg, 'width', 300).toFixed(precision))
+      this.height = parseFloat(this.coerceSize(svg, 'height', 150).toFixed(precision))
+
+      // pre-process defs for subsequent references
+      this.collectElementsWithID()
+    }
   }
 
   /**

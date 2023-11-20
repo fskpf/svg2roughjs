@@ -91,9 +91,11 @@ https://unpkg.com/svg2roughjs/dist/svg2roughjs.umd.min.js
 
   The optional `outputType` defaults to the respective mode if `target` is either `SVGSVGElement` or `HTMLCanvasElement`. If targetting an HTML container element, then `OutputType.SVG` is used by default.
 
-- `sketch(): Promise<SVGSVGElement | HTMLCanvasElement | null>`
+- `sketch(sourceSvgChanged = false): Promise<SVGSVGElement | HTMLCanvasElement | null>`
 
   Clears the configured `target` element and converts the current `svg2roughj.svg` to a hand-drawn sketch.
+
+  Setting `sourceSvgChanged` to `true` re-evaluates the given `svg2roughj.svg` as it was set anew. May be used to re-use the same Svg2Rough.js instance and the same SVG element as source container.
 
 ### Properties
 
