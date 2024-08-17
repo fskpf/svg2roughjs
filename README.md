@@ -87,7 +87,7 @@ https://unpkg.com/svg2roughjs/dist/svg2roughjs.umd.min.js
 
   Creates a new Svg2Rough.js instance.
 
-  `target` may either be a selector for a parent HTML element into which a new canvas or SVG should be created, or directly an `SVGSVGElement` or `HTMLCanvasElement` that should be used for the output.
+  `target` may either be a container `HTMLDivElement` (or a selector for the container) into which a new sketch should be created, or directly an `SVGSVGElement` or `HTMLCanvasElement` that should be used for the output.
 
   The optional `outputType` defaults to the respective mode if `target` is either `SVGSVGElement` or `HTMLCanvasElement`. If targetting an HTML container element, then `OutputType.SVG` is used by default.
 

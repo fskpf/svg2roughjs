@@ -135,7 +135,7 @@ export class Svg2Roughjs {
 
   /**
    * Creates a new instance of Svg2roughjs.
-   * @param target Either a selector for the container to which a canvas should be added
+   * @param target Either a container `HTMLDivElement` (or a selector for the container) to which a sketch should be added
    * or an `HTMLCanvasElement` or `SVGSVGElement` that should be used as output target.
    * @param outputType Whether the output should be an SVG or drawn to an HTML canvas.
    * Defaults to SVG or CANVAS depending if the given target is of type `HTMLCanvasElement` or `SVGSVGElement`,
@@ -144,7 +144,7 @@ export class Svg2Roughjs {
    * rendering of the `SVGElement`s.
    */
   constructor(
-    target: string | HTMLCanvasElement | SVGSVGElement,
+    target: string | HTMLDivElement | HTMLCanvasElement | SVGSVGElement,
     outputType: OutputType = OutputType.SVG,
     roughConfig: Options = {}
   ) {
