@@ -1,8 +1,8 @@
 import './assets/styles.css'
-
-import CodeMirror from 'codemirror'
-import 'codemirror/lib/codemirror.css'
-import 'codemirror/mode/xml/xml.js'
+import { EditorView } from 'codemirror'
+import { syntaxHighlighting, defaultHighlightStyle } from '@codemirror/language'
+import { lineNumbers } from '@codemirror/view'
+import { xml } from '@codemirror/lang-xml'
 
 import SAMPLE_BPMN from './samples/bpmn1.svg?raw'
 import SAMPLE_COMPUTER_NETWORK from './samples/computer-network.svg?raw'
@@ -24,7 +24,8 @@ let svg2roughjs: Svg2Roughjs
 let loadingSvg = false
 let scheduledLoad: string | null = null
 let debouncedTimer: ReturnType<typeof setTimeout> | null = null
-let codeMirrorInstance: CodeMirror.Editor
+let codeMirror: EditorView
+let silentCodeMirrorChange = false
 
 // just for easier access, it's a debug project, so who cares...
 const patternsCheckbox = document.getElementById('sketchPatterns') as HTMLInputElement
@@ -40,15 +41,15 @@ const fileInput = document.getElementById('file-chooser') as HTMLInputElement
 const originalFontCheckbox = document.getElementById('original-font') as HTMLInputElement
 const randomizeCheckbox = document.getElementById('randomize') as HTMLInputElement
 
-const onCodeMirrorChange = () => {
+const onCodeMirrorChange = (newCode: string) => {
   if (debouncedTimer) {
     clearTimeout(debouncedTimer)
   }
   debouncedTimer = setTimeout(() => {
     debouncedTimer = null
     try {
-      loadSvgString(codeMirrorInstance.getValue())
-    } catch (e) {
+      loadSvgString(newCode)
+    } catch (_) {
       /* do nothing */
     }
   }, 500)
@@ -58,9 +59,10 @@ const onCodeMirrorChange = () => {
  * Sets CodeMirror content without triggering the change listener
  */
 function setCodeMirrorValue(value: string) {
-  codeMirrorInstance.off('change', onCodeMirrorChange)
-  codeMirrorInstance.setValue(value)
-  codeMirrorInstance.on('change', onCodeMirrorChange)
+  silentCodeMirrorChange = true
+  codeMirror.dispatch({
+    changes: { from: 0, to: codeMirror.state.doc.length, insert: value }
+  })
 }
 
 function getSvgSize(svg: SVGSVGElement): { width: number; height: number } {
@@ -236,24 +238,39 @@ function run() {
     if (toggleSourceBtn.checked) {
       codeContainer.classList.remove('hidden')
       setTimeout(() => {
-        codeMirrorInstance.refresh()
-        codeMirrorInstance.focus()
+        codeMirror.requestMeasure()
+        codeMirror.focus()
       }, 20)
     } else {
       codeContainer.classList.add('hidden')
     }
   })
 
-  codeMirrorInstance = CodeMirror(codeContainer, {
-    mode: 'xml',
-    lineNumbers: true
+  codeMirror = new EditorView({
+    parent: codeContainer,
+    extensions: [
+      lineNumbers(),
+      xml(),
+      syntaxHighlighting(defaultHighlightStyle),
+      EditorView.updateListener.of(e => {
+        if (e.docChanged && !silentCodeMirrorChange) {
+          onCodeMirrorChange(e.state.doc.toString())
+        }
+        silentCodeMirrorChange = false
+      })
+    ]
   })
+
+  // codeMirrorInstance = CodeMirror(codeContainer, {
+  //   mode: 'xml',
+  //   lineNumbers: true
+  // })
 
   // make sure codemirror is rendered when the expand animation has finished
   codeContainer.addEventListener('transitionend', () => {
     if (toggleSourceBtn.checked) {
-      codeMirrorInstance.refresh()
-      codeMirrorInstance.focus()
+      codeMirror.requestMeasure()
+      codeMirror.focus()
     }
   })
 
