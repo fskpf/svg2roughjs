@@ -28,7 +28,7 @@
     "prepare": "npm run lint && npm run build",
     "build": "npm run clean && tsc && rollup -c rollup.config.js",
     "clean": "rimraf -g *.tgz && rimraf dist/ && rimraf out-tsc/",
-    "lint": "eslint --ext .ts ./src",
+    "lint": "eslint ./src",
     "tsc": "tsc --noEmit",
     "test-all": "npm run clean && tsc && wtr"
   },
@@ -38,28 +38,28 @@
     "README.md"
   ],
   "dependencies": {
-    "roughjs": "^4.6.5",
+    "roughjs": "^4.6.6",
     "svg-pathdata": "^6.0.3",
     "tinycolor2": "^1.6.0"
   },
   "devDependencies": {
-    "@open-wc/testing": "3.2.0",
-    "@rollup/plugin-commonjs": "^25.0.2",
-    "@rollup/plugin-node-resolve": "^15.1.0",
-    "@rollup/plugin-terser": "^0.4.3",
-    "@types/node": "^20.3.3",
-    "@types/tinycolor2": "^1.4.3",
-    "@typescript-eslint/eslint-plugin": "^5.60.1",
-    "@typescript-eslint/parser": "^5.60.1",
-    "@web/dev-server-rollup": "0.5.1",
-    "@web/test-runner": "0.18.0",
-    "eslint": "^8.44.0",
-    "eslint-config-prettier": "^8.8.0",
-    "eslint-plugin-prettier": "^4.2.1",
-    "prettier": "2.8.8",
-    "rimraf": "^5.0.1",
-    "rollup": "^3.26.0",
-    "rollup-plugin-dts": "^5.3.0",
-    "typescript": "^5.1.6"
+    "@eslint/js": "^9.9.0",
+    "@open-wc/testing": "4.0.0",
+    "@rollup/plugin-commonjs": "^26.0.1",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@types/eslint__js": "^8.42.3",
+    "@types/node": "^22.4.0",
+    "@types/tinycolor2": "^1.4.6",
+    "@web/dev-server-rollup": "0.6.4",
+    "@web/test-runner": "0.18.3",
+    "eslint": "^9.9.0",
+    "eslint-plugin-prettier": "^5.2.1",
+    "prettier": "3.3.3",
+    "rimraf": "^6.0.1",
+    "rollup": "^4.20.0",
+    "rollup-plugin-dts": "^6.1.1",
+    "typescript": "^5.1.6",
+    "typescript-eslint": "^8.1.0"
   }
 }

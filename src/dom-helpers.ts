@@ -42,11 +42,11 @@ export function getMatchedCssRules(context: RenderContext, el: Element): CSSStyl
   el.matches =
     el.matches ||
     el.webkitMatchesSelector ||
-    // @ts-ignore
+    // @ts-expect-error: legacy browser support
     el.mozMatchesSelector ||
-    // @ts-ignore
+    // @ts-expect-error: legacy browser support
     el.msMatchesSelector ||
-    // @ts-ignore
+    // @ts-expect-error: legacy browser support
     el.oMatchesSelector
 
   context.styleSheets.forEach(sheet => {
