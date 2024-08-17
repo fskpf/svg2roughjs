@@ -39,7 +39,7 @@ import { Svg2Roughjs } from 'svg2roughjs'
 
 const svg2roughjs = new Svg2Roughjs('#output-div')
 svg2roughjs.svg = document.getElementById('input-svg')
-svg2roughs.sketch()
+svg2roughjs.sketch()
 ```
 
 ### UMD Bundle
