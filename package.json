@@ -39,7 +39,7 @@
   ],
   "dependencies": {
     "roughjs": "^4.6.6",
-    "svg-pathdata": "^6.0.3",
+    "svg-pathdata": "^8.0.0",
     "tinycolor2": "^1.6.0"
   },
   "devDependencies": {
