@@ -57,7 +57,7 @@ export function getEffectiveElementOpacity(
   currentOpacity: number,
   currentUseCtx?: UseContext | null
 ): number {
-  let attr
+  let attr: string | null
   if (!currentUseCtx) {
     attr = getComputedStyle(element)['opacity'] || element.getAttribute('opacity')
   } else {
@@ -65,7 +65,7 @@ export function getEffectiveElementOpacity(
     attr = element.getAttribute('opacity')
   }
   if (attr) {
-    let elementOpacity = 1
+    let elementOpacity: number
     if (attr.indexOf('%') !== -1) {
       elementOpacity = Math.min(
         1,

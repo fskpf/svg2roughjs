@@ -1,11 +1,11 @@
-import eslint from '@eslint/js'
+import js from '@eslint/js'
 import tseslint from 'typescript-eslint'
-import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
+import prettier from 'eslint-plugin-prettier/recommended'
 
-export default tseslint.config(
-  eslint.configs.recommended,
+export default [
+  js.configs.recommended,
   ...tseslint.configs.recommended,
-  eslintPluginPrettierRecommended,
+  prettier,
   {
     rules: {
       '@typescript-eslint/no-non-null-assertion': 'off',
@@ -27,4 +27,4 @@ export default tseslint.config(
     ignores: ['test/**'],
     files: ['**/*.ts']
   }
-)
+]
